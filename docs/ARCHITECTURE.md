@@ -31,6 +31,10 @@ flowchart TD
 
 The diagram shows planned ownership, not implemented persistence. All modules share the same database and connection pool; no per-module databases or network calls between modules.
 
+## Approved deployment target
+
+Host the single NestJS backend, PostgreSQL, and primary image files on one Hostinger VPS. Run Caddy, NestJS, and PostgreSQL in separate Docker containers. Caddy provides the public HTTPS entry point and routes API requests to the backend; PostgreSQL stays on the private Docker network. Persist database data, images, and Caddy certificate state, with backups outside the VPS. See [DEPLOYMENT.md](DEPLOYMENT.md) for boundaries and remaining inputs. This target is approved, but production configuration and deployment are not implemented or authorized by this documentation change.
+
 ## Code organization
 
 ```text

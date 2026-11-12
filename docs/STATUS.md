@@ -48,7 +48,7 @@ All 75 documented endpoints, business services, entities, migrations, views, see
 | Currency and fee            | Single currency and constant delivery fee are specified, but the currency and fee amount are unset.                                                                                               | Quote/checkout                  |
 | Default company             | Automatic assignment on restaurant acceptance uses a configured active company; no company ID is known before provisioning.                                                                       | Order acceptance                |
 | Quote validation            | The contract proposes a signed quote token; confirm format, expiry, and secret handling. No quote table is approved.                                                                              | Cart quote/checkout             |
-| PostgreSQL hosting          | Local Compose targets version 17; confirm provider/version and TLS trust requirements for deployment.                                                                                             | Production deployment           |
+| PostgreSQL hosting          | Hostinger VPS with Docker is approved. Local Compose targets version 17; confirm production PostgreSQL version and connection/TLS settings.                                                       | Production deployment           |
 
 These questions do not block the foundation scaffold. Resolve them at the relevant feature boundary instead of inventing values now.
 
@@ -62,3 +62,9 @@ Once the user approves the foundation and authorizes Feature 01, finalize its bl
 - Initial foundation baseline is shared by `main` and `dev`. Future features branch from `dev` and return through a PR to `dev`.
 - Promotion from `dev` to `main` requires explicit owner instruction after the full flow is ready. This GitHub setup does not approve business implementation.
 - README, repository description, PR template, and `GITHUB-FLOW.md` describe the project and contribution flow. No CI, deployment, or branch protections are configured in this setup.
+
+## Approved deployment direction
+
+- The owner approved one Hostinger VPS for backend, PostgreSQL, and primary image storage, with Docker and Caddy for routing and HTTPS.
+- Persistent database/image/Caddy volumes and off-VPS backups are documented in `DEPLOYMENT.md`. Domain, server sizing/OS, production database version, image-serving method, and backup/release details remain unset.
+- Documentation only: no Dockerfile, production Compose/Caddy configuration, upload endpoint, backup job, server provisioning, DNS change, or deployment was performed. This decision does not lift the business-implementation approval gate.

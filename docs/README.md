@@ -15,6 +15,8 @@ Read `../AGENTS.md` first. Documentation, not previous conversations, defines th
 
 Git operations: read [GITHUB-FLOW.md](GITHUB-FLOW.md) for feature branches, PR targets, and owner-approved releases.
 
+Deployment and image-storage work: read [DEPLOYMENT.md](DEPLOYMENT.md) for the approved Hostinger VPS, Docker, Caddy, persistence, and backup plan.
+
 ## Canonical business specifications
 
 These four existing files are included by reference, not duplicated or moved. Edit only when an authorized change requires it.
