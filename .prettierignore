@@ -1,0 +1,8 @@
+node_modules
+dist
+dist-test
+coverage
+.npm-cache
+work
+package-lock.json
+AKEELA-*.md
