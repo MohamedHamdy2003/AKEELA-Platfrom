@@ -19,7 +19,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 - All BIGINT IDs are returned and accepted as decimal strings. Registration requires `full_name`, `email`, `password`, and `phone`. Map `phone` to `Users.phone_number`.
 - Customer registration creates a Customer and its profile. Restaurant registration creates a Restaurant and its profile with `activation_status = Pending`. Create both in one transaction. Email and phone must be unique. Public registration cannot create Admin or Delivery_Company accounts.
-- Passwords are 12–128 characters; phones use international `+` format. Restaurant registration requires title, address, coordinates, and opening/closing times; description and image URL are optional.
+- Passwords are 8–128 characters with at least one letter and one digit; phones use international `+` format. Restaurant registration requires title, address, coordinates, and opening/closing times; description and image URL are optional.
 - Login uses email and password. Verify only the email by OTP; no phone OTP is required.
 - Send the email OTP after registration. Keep `email_verified_at` NULL until verification succeeds. Do not issue login tokens before email verification.
 - Use short-lived JWT access tokens and rotating refresh tokens. Check token signature, expiry, issuer, audience, account activity, verified email, and session revocation on protected requests.

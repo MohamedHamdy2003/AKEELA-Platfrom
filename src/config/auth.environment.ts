@@ -54,15 +54,43 @@ export function validateAuthEnvironment(
   const otpSecret = secret('OTP_SECRET');
   if (jwtSecret === otpSecret)
     throw new Error('JWT_SECRET and OTP_SECRET must be different.');
-  const smtpUser = typeof input.SMTP_USER === 'string' ? input.SMTP_USER : '';
-  const smtpPassword =
+  const smtpHost = text('SMTP_HOST', 'localhost').trim().toLowerCase();
+  const smtpPort = integer('SMTP_PORT', 11025, 65535);
+  const smtpUser =
+    typeof input.SMTP_USER === 'string' ? input.SMTP_USER.trim() : '';
+  let smtpPassword =
     typeof input.SMTP_PASSWORD === 'string' ? input.SMTP_PASSWORD : '';
+  const smtpFrom = text('SMTP_FROM', 'AKEELA <noreply@example.com>');
   if (Boolean(smtpUser) !== Boolean(smtpPassword))
     throw new Error('SMTP_USER and SMTP_PASSWORD must be provided together.');
   const secure = bool('SMTP_SECURE', false);
   const requireTls = bool('SMTP_REQUIRE_TLS', input.NODE_ENV === 'production');
   if (input.NODE_ENV === 'production' && !secure && !requireTls)
     throw new Error('Production SMTP requires TLS.');
+  if (smtpHost === 'smtp.gmail.com') {
+    smtpPassword = smtpPassword.replace(/\s/g, '');
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(smtpUser) ||
+      !/^[A-Za-z0-9]{16}$/.test(smtpPassword)
+    )
+      throw new Error(
+        'Gmail requires SMTP_USER and a 16-character Google App Password in SMTP_PASSWORD.',
+      );
+    if (!(
+      (smtpPort === 465 && secure) ||
+      (smtpPort === 587 && !secure && requireTls)
+    ))
+      throw new Error(
+        'Gmail requires port 465 with SMTP_SECURE=true, or port 587 with required STARTTLS.',
+      );
+    const fromAddress = (smtpFrom.match(/<([^<>]+)>/)?.[1] ?? smtpFrom)
+      .trim()
+      .toLowerCase();
+    if (/[\r\n]/.test(smtpFrom) || fromAddress !== smtpUser.toLowerCase())
+      throw new Error(
+        'For Gmail, SMTP_FROM must use the authenticated SMTP_USER address.',
+      );
+  }
   return {
     JWT_SECRET: jwtSecret,
     OTP_SECRET: otpSecret,
@@ -80,13 +108,13 @@ export function validateAuthEnvironment(
     AUTH_RATE_WINDOW_SECONDS: integer('AUTH_RATE_WINDOW_SECONDS', 900, 86400),
     AUTH_RATE_IP_LIMIT: integer('AUTH_RATE_IP_LIMIT', 60, 10000),
     AUTH_RATE_ACCOUNT_LIMIT: integer('AUTH_RATE_ACCOUNT_LIMIT', 10, 10000),
-    SMTP_HOST: text('SMTP_HOST', 'localhost'),
-    SMTP_PORT: integer('SMTP_PORT', 11025, 65535),
+    SMTP_HOST: smtpHost,
+    SMTP_PORT: smtpPort,
     SMTP_SECURE: secure,
     SMTP_REQUIRE_TLS: requireTls,
     SMTP_USER: smtpUser,
     SMTP_PASSWORD: smtpPassword,
-    SMTP_FROM: text('SMTP_FROM', 'AKEELA <noreply@example.com>'),
+    SMTP_FROM: smtpFrom,
     TRUST_PROXY: bool('TRUST_PROXY', false),
   };
 }

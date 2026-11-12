@@ -1,0 +1,33 @@
+meta {
+  name: Verify email
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/auth/verify-email
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "otp": "{{verification_otp}}"
+  }
+}
+
+tests {
+  test('Successful verify email', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Set VERIFICATION_OTP privately from the inbox, then send this request.
+}

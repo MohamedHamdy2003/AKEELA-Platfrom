@@ -1,0 +1,22 @@
+meta {
+  name: Get me
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{base_url}}/me
+  body: none
+  auth: inherit
+}
+
+tests {
+  test('Successful get me', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Returns the current account and role profile. Pending restaurants may read their status.
+}

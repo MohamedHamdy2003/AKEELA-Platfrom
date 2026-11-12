@@ -1,0 +1,32 @@
+meta {
+  name: Resend verification
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/auth/resend-verification
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}"
+  }
+}
+
+tests {
+  test('Successful resend verification', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Requests a new verification code, subject to cooldown.
+}

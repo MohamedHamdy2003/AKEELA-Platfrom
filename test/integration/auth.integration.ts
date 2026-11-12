@@ -335,7 +335,7 @@ test('Feature 01 — PostgreSQL, actual HTTP APIs, and local SMTP', async (t) =>
         .set('Authorization', bearer(a.access_token))
         .send({
           current_password: 'incorrect password',
-          new_password: 'Changed password!2026',
+          new_password: 'Changed8',
         });
       assert.equal(bad.status, 401);
       const changed = await api()
@@ -343,7 +343,7 @@ test('Feature 01 — PostgreSQL, actual HTTP APIs, and local SMTP', async (t) =>
         .set('Authorization', bearer(a.access_token))
         .send({
           current_password: password,
-          new_password: 'Changed password!2026',
+          new_password: 'Changed8',
         });
       assert.equal(changed.status, 200);
       for (const token of [a.access_token, b.access_token])
@@ -357,7 +357,7 @@ test('Feature 01 — PostgreSQL, actual HTTP APIs, and local SMTP', async (t) =>
           .status,
         401,
       );
-      const fresh = await login(email, 'Changed password!2026');
+      const fresh = await login(email, 'Changed8');
       access = fresh.access_token;
     },
   );
@@ -382,7 +382,7 @@ test('Feature 01 — PostgreSQL, actual HTTP APIs, and local SMTP', async (t) =>
       );
       const reset = await api()
         .post('/api/v1/auth/reset-password')
-        .send({ email, otp: code, new_password: 'Reset password!2026' });
+        .send({ email, otp: code, new_password: 'Reset123' });
       assert.equal(reset.status, 200);
       assert.equal(
         (await api().get('/api/v1/me').set('Authorization', bearer(access)))
@@ -397,7 +397,7 @@ test('Feature 01 — PostgreSQL, actual HTTP APIs, and local SMTP', async (t) =>
         ).status,
         400,
       );
-      await login(email, 'Reset password!2026');
+      await login(email, 'Reset123');
     },
   );
   await t.test(
@@ -651,7 +651,7 @@ test('Feature 01 — PostgreSQL, actual HTTP APIs, and local SMTP', async (t) =>
   await t.test(
     'access JWT expiry, issuer, audience, signature, and session expiry are checked',
     async () => {
-      const tokens = await login(email, 'Reset password!2026');
+      const tokens = await login(email, 'Reset123');
       const jwt = app.get(JwtService);
       const decoded = jwt.decode(tokens.access_token) as {
         sub: string;
@@ -757,7 +757,7 @@ test('Feature 01 — PostgreSQL, actual HTTP APIs, and local SMTP', async (t) =>
             "INSERT INTO delivery_company_profiles(user_id,company_name,company_phone,company_address) VALUES($1,'Test Company',$2,'Test Address')",
             [id, phone],
           );
-        const tokens = await login(address, 'Reset password!2026');
+        const tokens = await login(address, 'Reset123');
         const me = await api()
           .get('/api/v1/me')
           .set('Authorization', bearer(tokens.access_token));

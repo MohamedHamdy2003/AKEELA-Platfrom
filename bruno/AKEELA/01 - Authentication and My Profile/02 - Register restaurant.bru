@@ -1,0 +1,45 @@
+meta {
+  name: Register restaurant
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/auth/register/restaurant
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "full_name": "{{full_name}}",
+    "email": "{{email}}",
+    "password": "{{password}}",
+    "phone": "{{phone}}",
+    "profile": {
+      "rest_title": "My Restaurant",
+      "rest_description": "",
+      "rest_image_url_mobile": null,
+      "rest_address": "Set the pickup address",
+      "longitude": "32.2723000",
+      "latitude": "30.5965000",
+      "opens_at": "10:00:00",
+      "closes_at": "02:00:00"
+    }
+  }
+}
+
+tests {
+  test('Successful register restaurant', function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Alternative signup for a Restaurant. Set real restaurant details. Starts Pending; email verification does not grant Admin activation.
+}

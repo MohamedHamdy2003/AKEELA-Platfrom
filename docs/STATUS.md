@@ -20,9 +20,9 @@ Features 02–14, including Admin activation/provisioning APIs, restaurant dashb
 ## Decisions confirmed by the user
 
 - PostgreSQL BIGINT IDs are decimal strings in API payloads and JWT subjects.
-- Generic SMTP from environment; local Mailpit for test mail.
+- Real Gmail SMTP with encrypted connections and Google App Passwords; Mailpit remains isolated automated test mail. Real Gmail connection verification awaits privately supplied credentials.
 - Access JWT 15 minutes, refresh session 30 days, OTP six digits for ten minutes, five attempts, resend after 60 seconds. Lifetimes/limits are configurable.
-- Passwords are 12–128 characters; refresh tokens use JSON for now.
+- Passwords are 8–128 characters with at least one letter and one digit; refresh tokens use JSON for now.
 - Restaurant registration requires title/address/coordinates/opening hours as in the specification.
 - Hostinger VPS hosts backend, database, and primary images through separate Docker containers, with Caddy as public HTTPS entry point.
 
@@ -30,7 +30,7 @@ Features 02–14, including Admin activation/provisioning APIs, restaurant dashb
 
 - PostgreSQL migration applied locally and auth HTTP/SMTP integration flow passed, including concurrent refresh/verification and rollback/reapply in a dedicated test database.
 - Local port 5432 was unavailable on Windows; local Compose now defaults to 15432, configurable through LOCAL_POSTGRES_PORT.
-- npm run check passed (19 unit/bootstrap/security tests, lint, formatting, TypeScript, build, and API documentation consistency). All 18 reported PostgreSQL/SMTP integration tests passed, including migration rollback/reapply and entity-versus-schema agreement.
+- npm run check passed (23 unit/bootstrap/security/password/Gmail configuration tests, lint, formatting, TypeScript, build, and API documentation consistency). All 18 reported PostgreSQL/SMTP integration tests passed, including migration rollback/reapply and entity-versus-schema agreement.
 - Docker image built and ran as non-root; container HTTP checks, compiled migration command, writable future image storage, and absence of development CLI passed. Production Compose and Caddy configuration validation passed. These do not test real DNS, certificates, backups, or VPS operation.
 - Runtime dependency audit reported zero known advisories at feature verification time.
 - The full dependency audit retains previously noted development-tooling advisories. No forced upgrades or unverified dependency overrides are applied.
@@ -48,3 +48,12 @@ Remote: https://github.com/MohamedHamdy2003/AKEELA-Platfrom.git. Deployment docu
 - Browser token storage/transport requirements; shared rate-limit storage before running multiple API instances. Current counters are bounded and process-local for one instance; OTP limits persist in PostgreSQL.
 
 Read AUTH.md for local setup, security choices, testing safety, and implementation boundaries. The four root specifications remain canonical and were updated only where the approved auth decisions required it.
+
+## Auth / Gmail / Bruno release update
+
+- Owner changed new passwords to 8�128 characters with at least one letter and one digit. JWT, refresh, and OTP settings remain unchanged and configurable.
+- Added Gmail-specific configuration validation and a real SMTP verification command without sending email. Owner will add credentials later; do not claim real Gmail authentication/delivery was tested yet.
+- Added a Git-managed Bruno collection containing the 12 implemented APIs in the Feature 01 folder, Local/Production templates, private dotenv values, runtime-only tokens, and route/syntax checks.
+- Owner explicitly approved promotion of the complete Auth + Bruno release to main. This does not authorize VPS deployment or future main promotions. Future models should read BRUNO.md and GMAIL.md alongside AUTH.md and update only relevant specifications/contracts.
+
+- Current verification: password policy tests cover signup/reset/change inputs, including the eight-character boundary and letter/digit requirements. Real PostgreSQL/Mailpit integration passed using eight-character password change/reset values. Bruno syntax/route parity passed for all 12 requests. Live Gmail credentials were explicitly deferred by the owner; only local SMTP connectivity can be checked now.

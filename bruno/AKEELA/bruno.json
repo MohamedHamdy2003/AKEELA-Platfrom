@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "AKEELA APIs",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
