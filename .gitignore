@@ -6,6 +6,8 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.production.example
+storage/
 *.log
 *.tsbuildinfo
 work/

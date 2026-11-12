@@ -1,6 +1,6 @@
 # Module Ownership
 
-All eight modules currently contain only an empty `@Module`. The table below describes intended ownership when feature work is approved; it does not authorize creating tables.
+Auth, Users, Customers, Restaurants, and Delivery contain the services and mappings needed by Feature 01. Catalog, Cart, and Orders remain empty. Only seven identity/profile/auth tables exist. The table also describes future ownership; it does not authorize the remaining tables. See `AUTH.md`.
 
 | Module        | Responsibilities                                                                                    | Owned logical tables / view                                 | Feature sections                                       |
 | ------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ |
@@ -36,6 +36,6 @@ All eight modules currently contain only an empty `@Module`. The table below des
 | Cart        | Customers, Restaurants, Catalog                        |
 | Orders      | Users, Customers, Restaurants, Catalog, Cart, Delivery |
 
-These are permitted directions, not imports to add in advance. Technical config/database dependencies are shared. Auth guards should attach authentication context; business ownership and restaurant activation checks remain in owning services as well. Decide reusable guard wiring during Auth implementation without introducing a reverse dependency on Auth from modules it already orchestrates.
+These are permitted directions, not imports to add in advance. Technical config/database dependencies are shared. Auth registers AccessGuard once as APP_GUARD. Routes are protected by default; public auth endpoints opt out with the common PublicRoute decorator, and logout explicitly remains protected. CurrentActor is a common HTTP decorator exposing only user/session IDs, never credentials. Other modules do not import Auth to authenticate requests, avoiding reverse dependencies. Business role, ownership, and activation checks remain in owning services.
 
 No other module may write Orders tables, and Orders may not bypass another module's service to write its tables. Foreign keys and cross-module transactions do not change ownership.

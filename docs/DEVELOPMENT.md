@@ -3,21 +3,22 @@
 ## Prerequisites and setup
 
 - Node.js 24 LTS, npm 11, PostgreSQL 17 (local default). Dependency versions are pinned in `package.json` and `package-lock.json`.
-- Docker Compose is optional; `compose.yml` starts only a local PostgreSQL service on localhost. Its sample credentials are for local development only.
+- Local Compose starts PostgreSQL on localhost:15432 and Mailpit on SMTP 11025 / UI 18025. Sample credentials are for local development only.
 
 ```sh
 npm ci
 ```
 
-Copy `.env.example` to `.env`. In PowerShell:
+Generate an ignored `.env` with independent random auth secrets (existing files are preserved). In PowerShell:
 
 ```powershell
-Copy-Item -LiteralPath .env.example -Destination .env
-docker compose up -d postgres
+npm run setup:local
+docker compose up -d postgres mailpit
+npm run migration:run
 npm run start:dev
 ```
 
-Run from the repository root. Use an existing PostgreSQL server by changing `DATABASE_URL` instead of starting Compose. Do not run migrations yet: no migrations or entities exist.
+Run from the repository root. Use an existing PostgreSQL server by changing DATABASE_URL instead of starting Compose. Run the reviewed Feature 01 migration explicitly; never enable automatic schema changes.
 
 ## Settings
 
@@ -48,9 +49,9 @@ The project-local `.npm-cache/` avoids relying on a writable user-global cache. 
 | `npm run docs:check`   | Check API route parity, JSON examples, and local doc links             |
 | `npm run check`        | All local foundation checks                                            |
 
-Foundation application tests replace only the DatabaseModule with an empty test module; they do not claim PostgreSQL connectivity or schema correctness. Database option tests verify configuration without opening a connection.
+Unit/bootstrap tests do not open a database. `npm run test:integration` uses the actual Auth APIs with a dedicated local PostgreSQL database and Mailpit. Read `AUTH.md` first: tests intentionally truncate that test database and roll back/reapply migrations. Auth secrets and SMTP/token/OTP/rate-limit settings are described in `AUTH.md` and `.env.example`.
 
-## Future migration workflow — only after authorization
+## Migration workflow
 
 The CLI uses `src/database/data-source.ts`, with the same validated configuration as the Nest connection. Migrations run as an explicit release step, never during application boot.
 
@@ -66,11 +67,11 @@ npm run migration:run
 npm run migration:revert
 ```
 
-These development commands use TypeScript and dev dependencies. Before a production deployment, define the compiled migration command and release procedure for that environment; do not use development `ts-node` in a production-only install. Do not generate or apply placeholder migrations, create migration tables, or seed accounts during foundation review.
+Development commands use TypeScript and dev dependencies. Production uses `npm run migration:run:prod` to run compiled migrations. Never use development ts-node in a production-only install. Additional schema changes and seeds require authorization.
 
 ## Future feature workflow
 
-1. Obtain foundation approval and authorization for the feature.
+1. Obtain authorization for the feature; Feature 01 is already authorized.
 2. Read AGENTS and relevant docs; resolve only decisions that block that feature.
 3. Add minimal DTO/service/controller/entity files within the owning module.
 4. Implement database constraints and tested transaction boundaries when schema work is authorized.
@@ -78,4 +79,4 @@ These development commands use TypeScript and dev dependencies. Before a product
 
 ## Production target
 
-Production is planned on one Hostinger VPS using Docker and Caddy, with backend, database, and primary image files on the same server. Read [DEPLOYMENT.md](DEPLOYMENT.md) before infrastructure or image handling work. The existing `compose.yml` remains local PostgreSQL only; do not reuse its sample credentials or published database port as a production configuration. No production services are started by local setup.
+Production is planned on one Hostinger VPS using Docker and Caddy, with backend, database, and primary image files on the same server. Read [DEPLOYMENT.md](DEPLOYMENT.md). Local compose.yml provides PostgreSQL and Mailpit only; never reuse its sample credentials or published database port as production configuration. No production services are started by local setup.

@@ -2,9 +2,9 @@
 
 Backend for a local restaurant ordering platform: customer ordering, restaurant management, and delivery company workflows.
 
-NestJS modular monolith with PostgreSQL and TypeORM. **Foundation only — awaiting architecture review.** No business endpoints, entities, migrations, tables, seeds, or authentication are implemented.
+NestJS modular monolith with PostgreSQL and TypeORM. **Feature 01 implemented: Authentication and My Profile.** Customer/restaurant signup, email OTP, JWT sessions, password recovery, and shared profile APIs are available. Other business features and production deployment remain pending.
 
-Start with [AGENTS.md](AGENTS.md) and the [documentation index](docs/README.md). The four root specifications remain the canonical business documents; they have not been edited during foundation setup.
+Start with [AGENTS.md](AGENTS.md) and the [documentation index](docs/README.md). The four root specifications remain canonical; approved auth decisions and string-ID examples are aligned with implementation.
 
 ## Specifications
 
@@ -23,17 +23,19 @@ See the short [GitHub PR flow](docs/GITHUB-FLOW.md). The initial foundation is t
 
 ## Local setup
 
-Use Node.js 24 LTS and npm 11. Copy `.env.example` to `.env`, then:
+Use Node.js 24 LTS and npm 11:
 
 ```sh
 npm ci
-docker compose up -d postgres
+npm run setup:local
+docker compose up -d postgres mailpit
+npm run migration:run
 npm run start:dev
 ```
 
 An existing PostgreSQL server may be used instead; set `DATABASE_URL` accordingly. No schema is created on application startup. The app needs PostgreSQL to boot; no database bypass exists in runtime configuration.
 
-The HTTP prefix is `/api/v1`. There are currently no registered routes, so requests return 404. This is intentional; documented business APIs are not yet implemented.
+The HTTP prefix is `/api/v1`. The 12 Feature 01 routes are implemented; other documented business APIs remain planned. See [Auth setup and tests](docs/AUTH.md). Mailpit at http://localhost:18025 captures local OTP mail.
 
 ## Checks
 
@@ -45,15 +47,15 @@ This runs lint, formatting, TypeScript checks, foundation tests, build, and docu
 
 ## Repository map
 
-| Location           | Contents                                                                |
-| ------------------ | ----------------------------------------------------------------------- |
-| `src/modules/`     | Eight empty feature module boundaries                                   |
-| `src/config/`      | Validated environment configuration                                     |
-| `src/database/`    | Shared TypeORM configuration and CLI DataSource; no entities/migrations |
-| `src/bootstrap.ts` | HTTP prefix, strict DTO validation, CORS, shutdown hooks                |
-| `test/`            | Foundation configuration and application composition tests              |
-| `docs/`            | Architecture, ownership, conventions, decisions, current status         |
-| `AKEELA-*.md`      | Four canonical business specifications                                  |
-| `work/`            | Ignored scratch material; not a source of truth                         |
+| Location           | Contents                                                         |
+| ------------------ | ---------------------------------------------------------------- |
+| `src/modules/`     | Auth/account/profile services; catalog/cart/order module shells  |
+| `src/config/`      | Validated environment configuration                              |
+| `src/database/`    | Shared TypeORM configuration, auth migration, and CLI DataSource |
+| `src/bootstrap.ts` | HTTP prefix, strict DTO validation, CORS, shutdown hooks         |
+| `test/`            | Unit/bootstrap checks and PostgreSQL/SMTP auth integration tests |
+| `docs/`            | Architecture, ownership, conventions, decisions, current status  |
+| `AKEELA-*.md`      | Four canonical business specifications                           |
+| `work/`            | Ignored scratch material; not a source of truth                  |
 
-Business implementation may begin only after the user reviews and approves this foundation and authorizes the next feature.
+Feature 01 is authorized and implemented. Additional features and actual VPS deployment require further authorization. Deployment-ready Docker/Caddy templates are described in [DEPLOYMENT.md](docs/DEPLOYMENT.md).

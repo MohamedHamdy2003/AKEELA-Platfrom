@@ -19,6 +19,8 @@ Deployment and image-storage work: read [DEPLOYMENT.md](DEPLOYMENT.md) for the a
 
 ## Canonical business specifications
 
+Authentication implementation: read [AUTH.md](AUTH.md) for approved settings, setup, test safety, and the implemented Feature 01 scope.
+
 These four existing files are included by reference, not duplicated or moved. Edit only when an authorized change requires it.
 
 | Document                                                        | Authority                                                     |

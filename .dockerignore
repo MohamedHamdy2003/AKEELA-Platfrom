@@ -1,0 +1,15 @@
+.git
+.github
+node_modules
+dist
+dist-test
+.npm-cache
+.env
+.env.*
+work
+storage
+coverage
+*.log
+docs
+test
+AKEELA-*.md

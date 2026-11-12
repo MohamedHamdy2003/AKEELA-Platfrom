@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: local_password
       POSTGRES_DB: akeela
     ports:
-      - '127.0.0.1:5432:5432'
+      - '127.0.0.1:${LOCAL_POSTGRES_PORT:-15432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,5 +15,10 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - '127.0.0.1:11025:1025'
+      - '127.0.0.1:18025:8025'
 volumes:
   postgres_data:
