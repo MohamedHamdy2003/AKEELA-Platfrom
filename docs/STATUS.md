@@ -54,6 +54,7 @@ Read AUTH.md for local setup, security choices, testing safety, and implementati
 - Owner changed new passwords to 8�128 characters with at least one letter and one digit. JWT, refresh, and OTP settings remain unchanged and configurable.
 - Added Gmail-specific configuration validation and a real SMTP verification command without sending email. Owner will add credentials later; do not claim real Gmail authentication/delivery was tested yet.
 - Added a Git-managed Bruno collection containing the 12 implemented APIs in the Feature 01 folder, Local/Production templates, private dotenv values, runtime-only tokens, and route/syntax checks.
+- Owner requested a single checkout: open `G:\AKEELA\bruno\AKEELA` in Bruno. The separate testing checkout was removed; collection changes follow the backend branch and normal PR flow.
 - Owner explicitly approved promotion of the complete Auth + Bruno release to main. This does not authorize VPS deployment or future main promotions. Future models should read BRUNO.md and GMAIL.md alongside AUTH.md and update only relevant specifications/contracts.
 
 - Current verification: password policy tests cover signup/reset/change inputs, including the eight-character boundary and letter/digit requirements. Real PostgreSQL/Mailpit integration passed using eight-character password change/reset values. Bruno syntax/route parity passed for all 12 requests. Live Gmail credentials were explicitly deferred by the owner; only local SMTP connectivity can be checked now.
