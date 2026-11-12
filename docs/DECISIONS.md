@@ -1,6 +1,6 @@
 # Architecture Decisions
 
-Status: foundation choices below are implemented for review; business choices are deferred. Update this file when changing an architectural convention, with the reason and consequences.
+Status: foundation approved and Feature 01 authorized/implemented. Other business choices remain deferred. Update decisions and reasons with architectural changes.
 
 | ID  | Choice                                                                                   | Reason / consequence                                                                                                                                                                                                     |
 | --- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -25,9 +25,9 @@ Status: foundation choices below are implemented for review; business choices ar
 
 ## Deferred; no implementation permission implied
 
-- Entity classes, initial migrations, seeds, and every business endpoint.
-- Response/error adapters and OpenAPI generation: implement from the API contract with the first approved feature, not by inferring routes from empty modules.
-- Email provider, OTP hashing configuration, JWT signing approach, token lifetimes, rate limits, refresh-token transport/storage, and browser security details.
+- Feature 01 mappings, initial migration, and 12 endpoints are implemented. Other schema changes, endpoints, and seeds remain deferred.
+- Response/error mapping is implemented; OpenAPI generation remains deferred.
+- Confirmed auth choices: decimal-string IDs, SMTP with local Mailpit, HS256 JWT/live DB sessions, JSON refresh tokens, 15-minute/30-day token lifetimes, six-digit/10-minute OTP with five attempts and 60-second cooldown, and 12–128 character passwords. See `AUTH.md`. Production SMTP credentials, browser token storage, and future shared rate-limit storage remain deployment/client decisions.
 - Quote format: signed opaque token is proposed in the request/response document; final design and expiry still require confirmation before Cart/Checkout.
 - Delivery fee, currency, and default delivery company settings: requirements exist but values are not specified.
 - Image storage location is approved: a persistent volume on the Hostinger VPS. Upload APIs, validation, permissions, image-serving method, and URL conventions still need specifications before implementation.

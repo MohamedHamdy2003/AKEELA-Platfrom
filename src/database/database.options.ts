@@ -2,7 +2,9 @@ import { join } from 'node:path';
 import { DataSourceOptions } from 'typeorm';
 import { Environment } from '../config/environment';
 
-export function databaseOptions(config: Environment): DataSourceOptions {
+export function databaseOptions(
+  config: Pick<Environment, 'DATABASE_URL' | 'DATABASE_SSL'>,
+): DataSourceOptions {
   const extension = __filename.endsWith('.ts') ? 'ts' : 'js';
   return {
     type: 'postgres',

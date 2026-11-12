@@ -1,0 +1,84 @@
+# Template only. Requires server-side secrets and an actual domain before deployment.
+services:
+  api:
+    image: akeela-api:${IMAGE_TAG:-local}
+    build: .
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL with postgres as the database hostname}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      TRUST_PROXY: 'true'
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      OTP_SECRET: ${OTP_SECRET:?Set OTP_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER:-akeela-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-akeela-clients}
+      JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
+      AUTH_REFRESH_TTL_SECONDS: ${AUTH_REFRESH_TTL_SECONDS:-2592000}
+      OTP_TTL_SECONDS: ${OTP_TTL_SECONDS:-600}
+      OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-5}
+      OTP_RESEND_SECONDS: ${OTP_RESEND_SECONDS:-60}
+      AUTH_RATE_WINDOW_SECONDS: ${AUTH_RATE_WINDOW_SECONDS:-900}
+      AUTH_RATE_IP_LIMIT: ${AUTH_RATE_IP_LIMIT:-60}
+      AUTH_RATE_ACCOUNT_LIMIT: ${AUTH_RATE_ACCOUNT_LIMIT:-10}
+      SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_REQUIRE_TLS: 'true'
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM}
+    volumes:
+      - images:/app/storage/images
+    networks: [edge, database]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: akeela
+      POSTGRES_DB: akeela
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [database]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U akeela -d akeela']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    depends_on: [api]
+networks:
+  edge:
+  database:
+    internal: true
+volumes:
+  postgres_data:
+  images:
+  caddy_data:
+  caddy_config:

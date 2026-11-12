@@ -62,7 +62,15 @@ Backups: stored outside this VPS
 
 ## Current implementation and remaining inputs
 
-The current `compose.yml` is local-development PostgreSQL only. No backend Dockerfile, production Compose file, Caddyfile, upload API, backup jobs, DNS, certificates, CI/CD, or VPS resources have been configured.
+Local Compose provides PostgreSQL and Mailpit. Dockerfile, compose.production.yml, deploy/Caddyfile, and .env.production.example now provide deployment-ready templates for Feature 01. The runtime uses a non-root user and production dependencies only. Backend and database have no published production ports. Image storage is reserved in a volume, without an upload API or public static route. No backup jobs, real DNS/certificates, CI/CD, or VPS resources have been configured.
+
+## Production preparation — templates only
+
+Copy .env.production.example to an ignored server-side .env.production and set the real domain, SMTP values, independent random keys, and database password. DATABASE_URL uses hostname `postgres`, not localhost; URL-encode its password consistently with POSTGRES_PASSWORD. Caddy reads APP_DOMAIN and ACME_EMAIL; Express trusts one proxy hop only in this private topology.
+
+After explicit deployment authorization, the release order is: build the API image; start PostgreSQL and wait for health; run a one-off API container with `npm run migration:run:prod`; start API and Caddy. Use compose.production.yml with the server-side environment file for each step. Never use example credentials in production.
+
+Public image serving remains undecided and is not enabled in the Caddyfile. Profile image fields store HTTP(S) URLs, not server filesystem paths. Define upload validation and public base URL handling when that feature is authorized. Container checks do not test live TLS/DNS, backups, or VPS capacity and are not production deployment approval.
 
 Before deployment, confirm the domain, VPS operating system/resources, image-serving approach, production PostgreSQL version, backup destination/policy, and release procedure. The single VPS is a shared failure point; this plan does not claim high availability.
 

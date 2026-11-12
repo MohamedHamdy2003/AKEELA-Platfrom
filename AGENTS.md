@@ -17,7 +17,7 @@ Read this file before changing any code or documentation.
 
 - Documentation is the source of truth. Do not rely on earlier chats.
 - Follow the current user's explicit instructions. If specifications disagree or omit a business decision, record the issue and ask before implementing the affected behavior.
-- The architecture foundation is **awaiting user review**. Do not implement business features, entities, migrations, views, tables, or seeds until the user approves the foundation and authorizes that work.
+- The user approved the foundation and authorized Feature 01 (Authentication and My Profile), its required schema/migrations and local test database, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization. Read `docs/AUTH.md` for implemented decisions and scope.
 - Preserve the four root specifications unless the requested change requires updating them. Do not silently rewrite them to match an implementation.
 - When a convention or architectural decision changes, update its documentation in the same change. Record progress and unresolved issues in `docs/STATUS.md`.
 

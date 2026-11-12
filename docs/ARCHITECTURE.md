@@ -2,9 +2,9 @@
 
 ## Scope and status
 
-One deployable NestJS application, one PostgreSQL database, and TypeORM. The current code is a composition/configuration scaffold. Feature modules are empty and expose no routes or providers. No schema objects or business behavior have been generated.
+One deployable NestJS application, one PostgreSQL database, and TypeORM. Feature 01 is implemented: Auth controllers/services, owning account/profile services, seven table mappings, and one reviewed migration. Catalog, Cart, and Orders remain empty. See [AUTH.md](AUTH.md).
 
-The user must review and approve the foundation before business implementation begins.
+The user approved the foundation and authorized Feature 01, local DB preparation, and deployment-ready templates. Other features and actual VPS deployment still require authorization.
 
 ## Runtime structure
 
@@ -33,7 +33,7 @@ The diagram shows planned ownership, not implemented persistence. All modules sh
 
 ## Approved deployment target
 
-Host the single NestJS backend, PostgreSQL, and primary image files on one Hostinger VPS. Run Caddy, NestJS, and PostgreSQL in separate Docker containers. Caddy provides the public HTTPS entry point and routes API requests to the backend; PostgreSQL stays on the private Docker network. Persist database data, images, and Caddy certificate state, with backups outside the VPS. See [DEPLOYMENT.md](DEPLOYMENT.md) for boundaries and remaining inputs. This target is approved, but production configuration and deployment are not implemented or authorized by this documentation change.
+Host the single NestJS backend, PostgreSQL, and primary image files on one Hostinger VPS. Run Caddy, NestJS, and PostgreSQL in separate Docker containers. Caddy is the public HTTPS entry point; PostgreSQL stays private. Persist database data, images, and Caddy state, with off-VPS backups. Dockerfile, production Compose, and Caddy templates now exist, but actual server provisioning/deployment is not performed or authorized. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Code organization
 
@@ -47,7 +47,7 @@ src/
     database.module.ts       # Nest TypeORM connection
     database.options.ts      # shared application/CLI options
     data-source.ts           # CLI DataSource; not a second runtime connection
-    migrations/              # empty until schema work is authorized
+    migrations/              # reviewed Feature 01 identity migration
   modules/
     auth/ users/ customers/ restaurants/
     catalog/ delivery/ cart/ orders/
@@ -97,6 +97,6 @@ Cart writes lock the parent cart row. Order transitions lock/check the order row
 - Environment validation fails on invalid settings without echoing credentials.
 - Database startup fails when PostgreSQL is unavailable. Graceful shutdown hooks close application resources.
 - Application and CLI use the same TypeORM options, with synchronization, schema dropping, SQL logging, and automatic migrations disabled.
-- No controllers, success-envelope interceptor, business exception mapping, JWT guards, health endpoint, SMTP client, Swagger document, or seeds exist yet. Add the HTTP response adapter with the first authorized API feature so responses follow the existing contract.
+- Feature 01 controllers return explicit success envelopes. A shared filter normalizes errors and validation failures. JWT guards check live sessions/accounts, and SMTP sends codes after commit. No health endpoint, Swagger document, or seeds exist.
 
 Module boundaries follow [Nest module encapsulation](https://docs.nestjs.com/modules). Database changes use [TypeORM migrations](https://typeorm.io/docs/migrations/why/) rather than automatic synchronization.
