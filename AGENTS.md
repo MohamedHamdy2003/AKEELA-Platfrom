@@ -10,7 +10,7 @@ Read this file before changing any code or documentation.
    - `AKEELA-Features.md`: scope, routes, permissions, and implementation order.
    - `AKEELA-Responses-Requests.md`: request and response contracts.
    - `AKEELA-Flows.md`: role journeys.
-3. Read `docs/DECISIONS.md` before schema, authentication, or infrastructure work.
+3. Read `docs/DECISIONS.md` before schema, authentication, or infrastructure work. Also read `docs/DEPLOYMENT.md` before infrastructure, Docker, Caddy, database connection, or image-storage work.
 4. Read `docs/GITHUB-FLOW.md` before branch, commit, push, or pull-request work.
 
 ## Authority and scope
@@ -24,6 +24,7 @@ Read this file before changing any code or documentation.
 ## Architecture boundaries
 
 - One NestJS application, one PostgreSQL database, TypeORM, feature modules.
+- Approved deployment target: one Hostinger VPS with separate Docker containers for Caddy, backend, and PostgreSQL; persistent image/database/Caddy storage and off-VPS backups. Follow `docs/DEPLOYMENT.md`. This does not authorize provisioning or deployment.
 - Controllers handle HTTP; services handle use cases; TypeORM repositories handle persistence within the owning module.
 - Import exported services through Nest module imports. Do not access another module's repository or internal files.
 - Keep cross-module transactions in the owning use-case service; pass the transaction EntityManager explicitly to participating services.

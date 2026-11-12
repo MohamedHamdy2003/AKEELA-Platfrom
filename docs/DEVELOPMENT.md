@@ -75,3 +75,7 @@ These development commands use TypeScript and dev dependencies. Before a product
 3. Add minimal DTO/service/controller/entity files within the owning module.
 4. Implement database constraints and tested transaction boundaries when schema work is authorized.
 5. Verify contract, permissions, and success/failure behavior. Update docs and status in the same change.
+
+## Production target
+
+Production is planned on one Hostinger VPS using Docker and Caddy, with backend, database, and primary image files on the same server. Read [DEPLOYMENT.md](DEPLOYMENT.md) before infrastructure or image handling work. The existing `compose.yml` remains local PostgreSQL only; do not reuse its sample credentials or published database port as a production configuration. No production services are started by local setup.

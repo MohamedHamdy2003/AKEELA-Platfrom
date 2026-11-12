@@ -16,6 +16,13 @@ Status: foundation choices below are implemented for review; business choices ar
 | A10 | Node test runner + Nest testing utilities + Supertest                                    | Sufficient unit/HTTP testing without another test framework                                                                                                                                                              |
 | A11 | PostgreSQL 17 for local Compose                                                          | Stable local baseline; hosting/provider version remains to be confirmed                                                                                                                                                  |
 
+## Approved hosting decision — implementation pending
+
+- A12: One Hostinger VPS hosts the NestJS backend, PostgreSQL, and primary image files.
+- A13: Docker containers separate the services; Caddy handles public routing and HTTPS/certificate management.
+- A14: Persistent volumes hold database data, images, and Caddy state. Database and image backups must also be kept outside the VPS.
+- These choices do not introduce microservices or approve production provisioning. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Deferred; no implementation permission implied
 
 - Entity classes, initial migrations, seeds, and every business endpoint.
@@ -23,7 +30,7 @@ Status: foundation choices below are implemented for review; business choices ar
 - Email provider, OTP hashing configuration, JWT signing approach, token lifetimes, rate limits, refresh-token transport/storage, and browser security details.
 - Quote format: signed opaque token is proposed in the request/response document; final design and expiry still require confirmation before Cart/Checkout.
 - Delivery fee, currency, and default delivery company settings: requirements exist but values are not specified.
-- Image upload/storage: specifications use URL fields; no upload API or provider is authorized.
+- Image storage location is approved: a persistent volume on the Hostinger VPS. Upload APIs, validation, permissions, image-serving method, and URL conventions still need specifications before implementation.
 - Source hosting is GitHub (`MohamedHamdy2003/AKEELA-Platfrom`). Feature PRs target `dev`; release PRs from `dev` to `main` require explicit owner instruction. See `GITHUB-FLOW.md`. CI workflows, branch protection, and deployment are not configured yet.
 
 Official references used for foundation choices: [Nest modules](https://docs.nestjs.com/modules), [configuration](https://docs.nestjs.com/techniques/configuration), [validation](https://docs.nestjs.com/techniques/validation), and [TypeORM DataSource options](https://typeorm.io/docs/data-source/data-source-options/). Installed versions and lockfile are authoritative for the APIs available in this project; avoid copying incompatible newer examples.
