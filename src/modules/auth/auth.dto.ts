@@ -25,7 +25,12 @@ export class EmailDto {
 }
 export class RegisterDto extends EmailDto {
   @Transform(trim) @IsString() @Length(1, 150) full_name!: string;
-  @IsString() @Length(12, 128) password!: string;
+  @IsString()
+  @Length(8, 128)
+  @Matches(/(?=.*\p{L})(?=.*\p{Nd})/su, {
+    message: 'Password must contain at least one letter and one digit.',
+  })
+  password!: string;
   @Transform(trim) @Matches(/^\+[1-9]\d{7,14}$/) phone!: string;
 }
 export class RestaurantProfileDto {
@@ -57,7 +62,12 @@ export class OtpDto extends EmailDto {
   @Matches(/^\d{6}$/) otp!: string;
 }
 export class ResetPasswordDto extends OtpDto {
-  @IsString() @Length(12, 128) new_password!: string;
+  @IsString()
+  @Length(8, 128)
+  @Matches(/(?=.*\p{L})(?=.*\p{Nd})/su, {
+    message: 'Password must contain at least one letter and one digit.',
+  })
+  new_password!: string;
 }
 export class LoginDto extends EmailDto {
   @IsString() @Length(1, 128) password!: string;
@@ -82,5 +92,10 @@ export class PatchMeDto {
 }
 export class ChangePasswordDto {
   @IsString() @Length(1, 128) current_password!: string;
-  @IsString() @Length(12, 128) new_password!: string;
+  @IsString()
+  @Length(8, 128)
+  @Matches(/(?=.*\p{L})(?=.*\p{Nd})/su, {
+    message: 'Password must contain at least one letter and one digit.',
+  })
+  new_password!: string;
 }

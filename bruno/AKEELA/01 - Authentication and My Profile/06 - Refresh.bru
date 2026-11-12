@@ -1,0 +1,42 @@
+meta {
+  name: Refresh
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/auth/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refresh_token": "{{refresh_token}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const tokens = res.getBody().data;
+    if (tokens && tokens.access_token && tokens.refresh_token) {
+      bru.setVar('access_token', tokens.access_token);
+      bru.setVar('refresh_token', tokens.refresh_token);
+    }
+  }
+}
+
+tests {
+  test('Successful refresh', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Run after login. Rotates both runtime token values.
+}

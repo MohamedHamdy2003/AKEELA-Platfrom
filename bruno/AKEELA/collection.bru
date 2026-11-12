@@ -1,0 +1,17 @@
+meta {
+  type: collection
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+docs {
+  Implemented APIs only. Run requests individually; OTP codes are read manually from email.
+  Select Local or Production. Configure private values in the collection-root .env.
+  Login and Refresh keep tokens in runtime variables only; do not save them to environment files.
+}

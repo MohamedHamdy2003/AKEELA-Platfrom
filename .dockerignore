@@ -12,4 +12,5 @@ coverage
 *.log
 docs
 test
+bruno
 AKEELA-*.md

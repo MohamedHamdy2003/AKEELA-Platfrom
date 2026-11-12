@@ -9,8 +9,8 @@ Implemented scope: the 12 routes in Feature 01 of the root API documents. Admin 
 | IDs               | PostgreSQL BIGINT and decimal-string API IDs; UUID session IDs                                              |
 | Registration      | Customer or Restaurant only; one transaction creates the user, matching profile, and verification challenge |
 | Restaurant fields | Required title, address, coordinates, opens_at, closes_at; optional description/mobile image URL            |
-| Email             | Generic SMTP from environment; Mailpit captures local mail; no phone OTP                                    |
-| Password          | 12–128 characters; salted scrypt N=65536, r=8, p=2; no truncation                                           |
+| Email             | Real Gmail SMTP from environment; Mailpit is isolated test mail only; no phone OTP                          |
+| Password          | 8–128 characters with at least one letter and one digit; salted scrypt N=65536, r=8, p=2; no truncation     |
 | Access token      | HS256 JWT; 900-second default; issuer, audience, signature, expiry, account and live session checked        |
 | Refresh session   | 30-day absolute expiry; opaque random token, SHA-256 hash only in DB; rotate once under lock                |
 | OTP               | 6 random digits, purpose/user-bound keyed hash; 600 seconds, 5 attempts, 60-second resend cooldown          |
@@ -69,3 +69,9 @@ Tests cover validation, roles/profiles, duplicate rollback, OTP expiry/attempts/
 - Production SMTP requires TLS. JWT and OTP keys must be different random secrets of at least 32 characters. No built-in production fallback secrets exist.
 - `npm run migration:run:prod` runs compiled migrations explicitly. Application startup never runs them.
 - These templates have not been deployed to a VPS; domain, actual SMTP settings, backups, server sizing, and release authorization are still required. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Current handoff
+
+New password policy applies at registration, reset, and password change. Login and current-password checks keep accepting existing valid credentials; they do not rewrite stored hashes. The approved minimum is eight characters with a letter and a digit (including Unicode letters/digits); maximum remains 128.
+
+Real email configuration and connectivity checks are in [GMAIL.md](GMAIL.md). The current Bruno collection is in [BRUNO.md](BRUNO.md). Future feature agents update requests and concise docs together. Real Gmail verification remains pending until the owner supplies the account/App Password privately. The owner explicitly approved promoting the current Auth + Bruno release from dev to main; future main promotions still need explicit approval.

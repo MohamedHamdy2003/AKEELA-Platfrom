@@ -2,7 +2,7 @@
   "name": "akeela-api",
   "version": "0.1.0",
   "private": true,
-  "description": "AKEELA modular monolith \u2014 restaurant ordering API",
+  "description": "AKEELA modular monolith \u00e2\u20ac\u201d restaurant ordering API",
   "engines": {
     "node": ">=24.11.0 <25",
     "npm": ">=11 <12"
@@ -18,7 +18,7 @@
     "format:check": "prettier --check src test scripts docs README.md AGENTS.md *.json *.yml .prettierrc.json",
     "docs:check": "node scripts/check-docs.mjs",
     "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build && npm run docs:check",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build && npm run docs:check && npm run bruno:check",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:show": "npm run typeorm -- migration:show -d src/database/data-source.ts",
     "migration:generate": "npm run typeorm -- migration:generate -d src/database/data-source.ts",
@@ -26,7 +26,10 @@
     "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
     "test:integration": "tsc -p tsconfig.test.json && node --test dist-test/test/integration/*.js",
     "migration:run:prod": "node node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js",
-    "setup:local": "node scripts/setup-local.mjs"
+    "setup:local": "node scripts/setup-local.mjs",
+    "smtp:check": "ts-node src/commands/check-smtp.ts",
+    "smtp:check:prod": "node dist/commands/check-smtp.js",
+    "bruno:check": "node scripts/check-bruno.mjs"
   },
   "dependencies": {
     "@nestjs/common": "12.5.0",
@@ -53,6 +56,7 @@
     "@types/nodemailer": "8.0.2",
     "@types/pg": "8.23.1",
     "@types/supertest": "7.2.1",
+    "@usebruno/lang": "0.41.0",
     "eslint": "10.14.0",
     "prettier": "3.10.1",
     "supertest": "7.3.2",

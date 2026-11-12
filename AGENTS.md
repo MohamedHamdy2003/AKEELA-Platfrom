@@ -11,7 +11,7 @@ Read this file before changing any code or documentation.
    - `AKEELA-Responses-Requests.md`: request and response contracts.
    - `AKEELA-Flows.md`: role journeys.
 3. Read `docs/DECISIONS.md` before schema, authentication, or infrastructure work. Also read `docs/DEPLOYMENT.md` before infrastructure, Docker, Caddy, database connection, or image-storage work.
-4. Read `docs/GITHUB-FLOW.md` before branch, commit, push, or pull-request work.
+4. Read `docs/GITHUB-FLOW.md` before branch, commit, push, or pull-request work. Read `docs/BRUNO.md` for API collection changes and `docs/GMAIL.md` for real email setup.
 
 ## Authority and scope
 
@@ -41,3 +41,5 @@ Read this file before changing any code or documentation.
 - Never commit `.env`, passwords, OTPs, raw tokens, or database credentials. Do not log secrets.
 - `work/` is scratch material, not authoritative documentation. Do not run its legacy API generator over the maintained documents.
 - Start feature branches from `dev` and target feature PRs to `dev`. Do not merge or push feature changes directly to `main`; promotion from `dev` to `main` requires the user's explicit instruction after the full flow is complete.
+
+- Keep implemented API requests in `bruno/AKEELA`, using the feature names/order from the specifications. Add or update matching requests and concise docs in the same feature PR. Never commit private test credentials, SMTP credentials, OTPs, or runtime tokens.

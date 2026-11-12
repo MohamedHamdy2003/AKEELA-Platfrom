@@ -36,6 +36,8 @@ The project-local `.npm-cache/` avoids relying on a writable user-global cache. 
 
 ## Commands
 
+Manual API testing uses [Bruno](BRUNO.md). Real Gmail setup uses [GMAIL.md](GMAIL.md); run `npm run smtp:check` after privately configuring credentials. `npm run bruno:check` validates all numbered collection folders and is included in `npm run check`.
+
 | Command                | Purpose                                                                |
 | ---------------------- | ---------------------------------------------------------------------- |
 | `npm run start:dev`    | Start with file watching; requires PostgreSQL                          |

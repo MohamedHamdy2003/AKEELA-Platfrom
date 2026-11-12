@@ -27,10 +27,17 @@ Status: foundation approved and Feature 01 authorized/implemented. Other busines
 
 - Feature 01 mappings, initial migration, and 12 endpoints are implemented. Other schema changes, endpoints, and seeds remain deferred.
 - Response/error mapping is implemented; OpenAPI generation remains deferred.
-- Confirmed auth choices: decimal-string IDs, SMTP with local Mailpit, HS256 JWT/live DB sessions, JSON refresh tokens, 15-minute/30-day token lifetimes, six-digit/10-minute OTP with five attempts and 60-second cooldown, and 12–128 character passwords. See `AUTH.md`. Production SMTP credentials, browser token storage, and future shared rate-limit storage remain deployment/client decisions.
+- Confirmed auth choices: decimal-string IDs, SMTP with local Mailpit, HS256 JWT/live DB sessions, JSON refresh tokens, 15-minute/30-day token lifetimes, six-digit/10-minute OTP with five attempts and 60-second cooldown, and 8–128 character passwords with at least one letter and one digit. See `AUTH.md`. Production SMTP credentials, browser token storage, and future shared rate-limit storage remain deployment/client decisions.
 - Quote format: signed opaque token is proposed in the request/response document; final design and expiry still require confirmation before Cart/Checkout.
 - Delivery fee, currency, and default delivery company settings: requirements exist but values are not specified.
 - Image storage location is approved: a persistent volume on the Hostinger VPS. Upload APIs, validation, permissions, image-serving method, and URL conventions still need specifications before implementation.
 - Source hosting is GitHub (`MohamedHamdy2003/AKEELA-Platfrom`). Feature PRs target `dev`; release PRs from `dev` to `main` require explicit owner instruction. See `GITHUB-FLOW.md`. CI workflows, branch protection, and deployment are not configured yet.
 
 Official references used for foundation choices: [Nest modules](https://docs.nestjs.com/modules), [configuration](https://docs.nestjs.com/techniques/configuration), [validation](https://docs.nestjs.com/techniques/validation), and [TypeORM DataSource options](https://typeorm.io/docs/data-source/data-source-options/). Installed versions and lockfile are authoritative for the APIs available in this project; avoid copying incompatible newer examples.
+
+## Auth / testing update
+
+- New password inputs now require 8�128 characters, including a letter and a digit. Existing login/current-password checks remain compatible. Other approved token/OTP defaults are unchanged.
+- Gmail uses the existing real SMTP adapter with a Google App Password and TLS. The shared SMTP options also drive the connectivity checker. No credentials are committed; live Gmail verification awaits the owner.
+- Bruno requests live next to code, in numbered feature folders. A separate main-branch checkout is used for testing released APIs. Only implemented endpoints appear; secrets stay outside Git and tokens stay in runtime memory.
+- This Auth + Bruno release is approved for main by the owner; future releases retain the explicit approval requirement.

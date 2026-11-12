@@ -13,6 +13,12 @@ Start with [AGENTS.md](AGENTS.md) and the [documentation index](docs/README.md).
 - [Requests and responses](AKEELA-Responses-Requests.md)
 - [Role flows](AKEELA-Flows.md)
 
+## Test the APIs in Bruno
+
+Open the collection in [bruno/AKEELA](bruno/AKEELA/README.md), following [BRUNO.md](docs/BRUNO.md). It contains the implemented APIs only, grouped by feature; Local and Production environments contain no credentials.
+
+Set up real Gmail SMTP with [GMAIL.md](docs/GMAIL.md), then run `npm run smtp:check`. Actual Gmail credentials are supplied privately through environment settings, never through GitHub or Bruno.
+
 ## Branches and contributions
 
 - `main`: release baseline; merge into it only when the project owner explicitly requests it after a complete flow is ready.

@@ -66,7 +66,7 @@ Local Compose provides PostgreSQL and Mailpit. Dockerfile, compose.production.ym
 
 ## Production preparation — templates only
 
-Copy .env.production.example to an ignored server-side .env.production and set the real domain, SMTP values, independent random keys, and database password. DATABASE_URL uses hostname `postgres`, not localhost; URL-encode its password consistently with POSTGRES_PASSWORD. Caddy reads APP_DOMAIN and ACME_EMAIL; Express trusts one proxy hop only in this private topology.
+Copy .env.production.example to an ignored server-side .env.production and set the real domain, Gmail SMTP values, independent random keys, and database password. Follow GMAIL.md and run smtp:check:prod inside the configured runtime before accepting OTP traffic. DATABASE_URL uses hostname `postgres`, not localhost; URL-encode its password consistently with POSTGRES_PASSWORD. Caddy reads APP_DOMAIN and ACME_EMAIL; Express trusts one proxy hop only in this private topology.
 
 After explicit deployment authorization, the release order is: build the API image; start PostgreSQL and wait for health; run a one-off API container with `npm run migration:run:prod`; start API and Caddy. Use compose.production.yml with the server-side environment file for each step. Never use example credentials in production.
 

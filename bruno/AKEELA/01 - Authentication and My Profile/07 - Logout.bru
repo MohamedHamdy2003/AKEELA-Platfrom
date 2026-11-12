@@ -1,0 +1,29 @@
+meta {
+  name: Logout
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/auth/logout
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar('access_token', '');
+    bru.setVar('refresh_token', '');
+  }
+}
+
+tests {
+  test('Successful logout', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Revokes this session and clears its runtime tokens.
+}
