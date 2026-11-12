@@ -28,6 +28,9 @@ Features 02–14, including Admin activation/provisioning APIs, restaurant dashb
 
 ## Verification
 
+- Validation errors now use simple English instructions for phone numbers, passwords, email, OTPs, restaurant details, coordinates, hours, image links, and session refresh. Validation rules and response structure are unchanged.
+- Validation-message update: `npm run check` passed, including 24 tests and an HTTP regression test for nested field messages and unknown fields. No database behavior changed.
+
 - PostgreSQL migration applied locally and auth HTTP/SMTP integration flow passed, including concurrent refresh/verification and rollback/reapply in a dedicated test database.
 - Local port 5432 was unavailable on Windows; local Compose now defaults to 15432, configurable through LOCAL_POSTGRES_PORT.
 - npm run check passed (23 unit/bootstrap/security/password/Gmail configuration tests, lint, formatting, TypeScript, build, and API documentation consistency). All 18 reported PostgreSQL/SMTP integration tests passed, including migration rollback/reapply and entity-versus-schema agreement.

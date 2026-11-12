@@ -27,7 +27,14 @@ export function configureApplication(
         const visit = (items: ValidationError[], prefix = '') => {
           for (const item of items) {
             const key = prefix + item.property;
-            if (item.constraints) fields[key] = Object.values(item.constraints);
+            if (item.constraints) {
+              fields[key] = Object.entries(item.constraints).map(
+                ([constraint, message]) =>
+                  constraint === 'whitelistValidation'
+                    ? 'This field is not allowed.'
+                    : message,
+              );
+            }
             if (item.children?.length) visit(item.children, key + '.');
           }
         };
