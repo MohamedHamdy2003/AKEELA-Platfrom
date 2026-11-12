@@ -2,15 +2,15 @@
 
 The Git-managed collection lives at `bruno/AKEELA`. It contains the 12 implemented Feature 01 requests under `01 - Authentication and My Profile`. New implemented features get the same numbered folder names as the API specifications; do not add runnable placeholders for unimplemented endpoints.
 
-## Main-branch testing copy
+## Open the project collection
 
-Use a separate checkout so testing follows released `main` while development continues on feature branches:
+Use the collection inside the backend repository. In Bruno, choose **Open Collection** and select:
 
-```sh
-git clone --branch main --single-branch https://github.com/MohamedHamdy2003/AKEELA-Platfrom.git AKEELA-Bruno
+```text
+G:\AKEELA\bruno\AKEELA
 ```
 
-In Bruno, choose **Open Collection** and select `AKEELA-Bruno/bruno/AKEELA`. The prepared local testing checkout is `G:\AKEELA-Bruno`. Pull updates from main using Bruno's Git controls or `git pull --ff-only origin main` in that checkout. Changes are Git-synchronized by pulling, not streamed automatically from GitHub.
+The collection follows the current branch of the same repository as the backend. Update requests with their feature, then use the normal feature branch → dev → owner-approved main flow. Do not create a separate testing checkout. GitHub updates arrive through Git pulls, not automatically in Bruno.
 
 ## Private values and test flow
 
@@ -31,6 +31,6 @@ Tokens are held in memory and cleared after successful logout or password reset/
 - Run `npm run bruno:check` and `npm run docs:check`. The first discovers numbered feature folders and validates their syntax, request bodies, scripts, auth modes, and route coverage against the matching specification section.
 - Keep one collection, two shared environment templates, private `.env` values, and runtime tokens. Avoid new tooling layers or generated endpoint placeholders.
 - Feature PRs target dev. Publishing newer collections to main follows the owner-approved release flow; this Auth/Bruno promotion is explicitly approved, not blanket permission for future main merges.
-- Main shows released APIs. To test an unreleased feature before promotion, open the collection from that feature checkout instead of changing the main testing copy.
+- Test the current feature using this same project collection; its requests follow the checked-out branch.
 
 References: [Bruno Git collaboration](https://docs.usebruno.com/git-integration/overview), [private dotenv files](https://docs.usebruno.com/secrets-management/dotenv-file), [runtime variables](https://docs.usebruno.com/variables/runtime-variables).
