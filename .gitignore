@@ -6,6 +6,9 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.production.example
+!.env.gmail.example
+storage/
 *.log
 *.tsbuildinfo
 work/

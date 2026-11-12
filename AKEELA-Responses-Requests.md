@@ -12,6 +12,7 @@ API contract draft, in the same order as `AKEELA-Features.md`. All routes start 
 | Path values | Replace `{user_id}`, `{rest_id}`, and other placeholders with the record ID. |
 | GET / DELETE | No request body. Query examples appear separately in the tables. |
 | PATCH | Examples show editable fields; send only fields to change. |
+| Identifiers | BIGINT IDs are decimal strings, such as `"200"`; use UUID strings for sessions. |
 | Money | Decimal strings, such as `"100.00"`. |
 | Coordinates | Decimal strings, such as `"32.2723000"`. |
 | Timestamps | UTC ISO 8601; restaurant hours use local `HH:mm:ss`. |
@@ -21,19 +22,44 @@ API contract draft, in the same order as `AKEELA-Features.md`. All routes start 
 ### Success response
 
 ```json
-{"success":true,"message":"Request completed.","data":{}}
+{
+  "success": true,
+  "message": "Request completed.",
+  "data": {}
+}
 ```
 
 `Message` means `data: null` with a short message. `List<Model>` uses the following shape, with model objects inside `data`:
 
 ```json
-{"success":true,"message":"Records returned.","data":[],"meta":{"page":1,"per_page":20,"total":0,"last_page":1}}
+{
+  "success": true,
+  "message": "Records returned.",
+  "data": [],
+  "meta": {
+    "page": 1,
+    "per_page": 20,
+    "total": 0,
+    "last_page": 1
+  }
+}
 ```
 
 ### Error response
 
 ```json
-{"success":false,"message":"Please check the input.","error":{"code":"VALIDATION_ERROR","fields":{"email":["Enter a valid email address."]}}}
+{
+  "success": false,
+  "message": "Please check the input.",
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "fields": {
+      "email": [
+        "Enter a valid email address."
+      ]
+    }
+  }
+}
 ```
 
 | HTTP | Example code | Meaning |
@@ -67,7 +93,7 @@ API contract draft, in the same order as `AKEELA-Features.md`. All routes start 
 | PATCH | `/me` | Update allowed profile fields, including full name, phone, and customer avatar. | Body: `{"full_name":"Ahmed Ali","phone":"+201000000001","cus_avatar_url":"https://example.com/avatar.jpg"}` | `200` · User |
 | PATCH | `/me/password` | Check the current password, save the new password hash, and revoke all sessions. | Body: `{"current_password":"ExamplePassword!2026","new_password":"NewExamplePassword!2026"}` | `200` · Message |
 
-Customer and restaurant registration return unverified accounts without tokens. Restaurant registration also returns a Pending profile; after email verification the owner may log in to view activation status, while management stays blocked until Admin activation. Verify-email returns `Message`; login then returns `Login`. Forgot-password and resend use: `"If this account is eligible, an email has been sent."` Password change/reset returns a message and requires login again. Token lifetimes in examples are sample values.
+Customer and restaurant registration return unverified accounts without tokens. Restaurant registration also returns a Pending profile; after email verification the owner may log in to view activation status, while management stays blocked until Admin activation. Verify-email returns `Message`; login then returns `Login`. Forgot-password and resend use: `"If this account is eligible, an email has been sent."` Password change/reset returns a message and requires login again. Approved defaults are access JWT 900 seconds, refresh session 2592000 seconds, and OTP 600 seconds with 5 attempts and 60-second resend cooldown. Remaining refresh lifetime may be lower in responses. Passwords are 8–128 characters with at least one letter and one digit; phone is in international + format.
 
 ## 02. Admin — Accounts
 
@@ -135,8 +161,8 @@ Admin create-user body variants use the same account fields with one of these `r
 |---|---|---|---|---|
 | GET | `/restaurant/products` | List owned products; optionally filter by category. | Query: `page=1&per_page=20&cat_id=100` | `200` · List<Product> |
 | GET | `/restaurant/products/{prod_id}` | Read product details for editing. | No body | `200` · Product |
-| POST | `/restaurant/products` | Create a product in an owned category. | Body: `{"cat_id":100,"prod_name":"Burger","prod_description":"Grilled beef burger","prod_image_url":"https://example.com/burger.jpg","price":"100.00","is_active":true}` | `201` · Product |
-| PATCH | `/restaurant/products/{prod_id}` | Update product details, price, category, or activity. | Body: `{"cat_id":100,"prod_name":"Burger","prod_description":"Grilled beef burger","prod_image_url":"https://example.com/burger.jpg","price":"100.00","is_active":true}` | `200` · Product |
+| POST | `/restaurant/products` | Create a product in an owned category. | Body: `{"cat_id":"100","prod_name":"Burger","prod_description":"Grilled beef burger","prod_image_url":"https://example.com/burger.jpg","price":"100.00","is_active":true}` | `201` · Product |
+| PATCH | `/restaurant/products/{prod_id}` | Update product details, price, category, or activity. | Body: `{"cat_id":"100","prod_name":"Burger","prod_description":"Grilled beef burger","prod_image_url":"https://example.com/burger.jpg","price":"100.00","is_active":true}` | `200` · Product |
 
 ## 07. Addons and Product Links
 
@@ -185,19 +211,19 @@ Product-addon PUT returns `200` for both a new link and an update.
 | Method | Route | Purpose | Request | Response data |
 |---|---|---|---|---|
 | GET | `/customer/cart` | Read the cart, selected addons, and current calculated prices. Return an empty cart if none exists. | No body | `200` · Cart or EmptyCart |
-| POST | `/customer/cart/items` | Add a product or offer, quantity, and chosen addons; create the cart if needed. | Body: `{"rest_id":10,"prod_id":200,"offer_id":null,"quantity":2,"addons":[{"addon_id":300,"quantity":2}]}` | `201` · Cart |
-| PATCH | `/customer/cart/items/{cart_item_id}` | Update quantity and addon choices for an owned item. | Body: `{"quantity":2,"addons":[{"addon_id":300,"quantity":2}]}` | `200` · Cart |
+| POST | `/customer/cart/items` | Add a product or offer, quantity, and chosen addons; create the cart if needed. | Body: `{"rest_id":"10","prod_id":"200","offer_id":null,"quantity":2,"addons":[{"addon_id":"300","quantity":2}]}` | `201` · Cart |
+| PATCH | `/customer/cart/items/{cart_item_id}` | Update quantity and addon choices for an owned item. | Body: `{"quantity":2,"addons":[{"addon_id":"300","quantity":2}]}` | `200` · Cart |
 | DELETE | `/customer/cart/items/{cart_item_id}` | Remove an item and its selected addons. | No body | `200` · Cart or EmptyCart |
 | DELETE | `/customer/cart` | Clear the cart and its items. | No body | `200` · EmptyCart |
-| POST | `/customer/cart/quote` | Validate the cart and selected address; return current item prices, addon prices, and delivery fee for review. | Body: `{"address_id":50}` | `200` · Quote |
+| POST | `/customer/cart/quote` | Validate the cart and selected address; return current item prices, addon prices, and delivery fee for review. | Body: `{"address_id":"50"}` | `200` · Quote |
 
 Offer item body example:
 
 ```json
 {
-  "rest_id": 10,
+  "rest_id": "10",
   "prod_id": null,
-  "offer_id": 400,
+  "offer_id": "400",
   "quantity": 1,
   "addons": []
 }
@@ -209,7 +235,7 @@ For PATCH, `addons` is the full replacement selection when supplied; `[]` clears
 
 | Method | Route | Purpose | Request | Response data |
 |---|---|---|---|---|
-| POST | `/customer/orders` | Checkout the cart using the address, reviewed prices, optional notes, and checkout key. | Body: `{"address_id":50,"quote_token":"<opaque-signed-quote>","notes":"Call on arrival","checkout_key":"7c453937-243e-4e4c-bc6c-5d4a8a18e303"}` | `201` · Order |
+| POST | `/customer/orders` | Checkout the cart using the address, reviewed prices, optional notes, and checkout key. | Body: `{"address_id":"50","quote_token":"<opaque-signed-quote>","notes":"Call on arrival","checkout_key":"7c453937-243e-4e4c-bc6c-5d4a8a18e303"}` | `201` · Order |
 | GET | `/customer/orders` | List own orders; filter by active/history or status. | Query: `page=1&per_page=20&scope=history&status=Delivered` | `200` · List<OrderSummary> |
 | GET | `/customer/orders/{order_id}` | Read an owned order with saved items, addons, address, total, and current status. | No body | `200` · Order |
 | POST | `/customer/orders/{order_id}/cancel` | Cancel an owned Pending order. | No body | `200` · OrderState |
@@ -234,7 +260,7 @@ For PATCH, `addons` is the full replacement selection when supplied; `[]` clears
 | POST | `/admin/orders/{order_id}/fail` | Mark an eligible order as Failed. | No body | `200` · OrderState |
 | GET | `/delivery-company/orders` | List orders assigned to the company. | Query: `page=1&per_page=20&status=Accepted&date_from=2026-11-01&date_to=2026-11-30` | `200` · List<OrderSummary> |
 | GET | `/delivery-company/orders/{order_id}` | Read assigned order details, pickup location, and delivery address. | No body | `200` · DeliveryOrder |
-| PUT | `/delivery-company/orders/{order_id}/driver` | Assign or change an owned active driver before pickup. | Body: `{"driver_id":30}` | `200` · OrderState |
+| PUT | `/delivery-company/orders/{order_id}/driver` | Assign or change an owned active driver before pickup. | Body: `{"driver_id":"30"}` | `200` · OrderState |
 | POST | `/delivery-company/orders/{order_id}/pickup` | Mark an assigned Accepted order as Picked_Up. | No body | `200` · OrderState |
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. | No body | `200` · OrderState |
 
@@ -258,7 +284,7 @@ The JSON blocks below are the `data` value inside the success envelope. Repeated
 
 ```json
 {
-  "user_id": 1,
+  "user_id": "1",
   "full_name": "Ahmed Ali",
   "email": "ahmed@example.com",
   "phone": "+201000000001",
@@ -266,7 +292,7 @@ The JSON blocks below are the `data` value inside the success envelope. Repeated
   "is_active": true,
   "email_verified_at": "2026-11-12T10:00:00Z",
   "profile": {
-    "user_id": 1,
+    "user_id": "1",
     "profile_role": "Customer",
     "cus_avatar_url": null,
     "created_at": "2026-11-12T10:00:00Z",
@@ -283,7 +309,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "user_id": 1,
+  "user_id": "1",
   "full_name": "Ahmed Ali",
   "email": "ahmed@example.com",
   "phone": "+201000000001",
@@ -291,7 +317,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "is_active": true,
   "email_verified_at": null,
   "profile": {
-    "user_id": 1,
+    "user_id": "1",
     "profile_role": "Customer",
     "cus_avatar_url": null,
     "created_at": "2026-11-12T10:00:00Z",
@@ -319,7 +345,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 ```json
 {
   "user": {
-    "user_id": 1,
+    "user_id": "1",
     "full_name": "Ahmed Ali",
     "email": "ahmed@example.com",
     "phone": "+201000000001",
@@ -327,7 +353,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
     "is_active": true,
     "email_verified_at": "2026-11-12T10:00:00Z",
     "profile": {
-      "user_id": 1,
+      "user_id": "1",
       "profile_role": "Customer",
       "cus_avatar_url": null,
       "created_at": "2026-11-12T10:00:00Z",
@@ -350,8 +376,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "address_id": 50,
-  "user_id": 1,
+  "address_id": "50",
+  "user_id": "1",
   "address_title": "Home",
   "address_line": "8 Main Street, floor 2",
   "longitude": "32.2800000",
@@ -366,7 +392,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "rest_id": 10,
+  "rest_id": "10",
   "rest_title": "AKEELA Kitchen",
   "rest_description": "Grilled meals",
   "rest_image_url_mobile": "https://example.com/restaurant.jpg",
@@ -386,7 +412,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "company_id": 20,
+  "company_id": "20",
   "company_name": "Local Delivery",
   "company_phone": "+201000000020",
   "company_email": "office@example.com",
@@ -401,8 +427,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "cat_id": 100,
-  "rest_id": 10,
+  "cat_id": "100",
+  "rest_id": "10",
   "cat_title": "Sandwiches",
   "display_order": 0,
   "is_active": true,
@@ -415,9 +441,9 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "prod_id": 200,
-  "rest_id": 10,
-  "cat_id": 100,
+  "prod_id": "200",
+  "rest_id": "10",
+  "cat_id": "100",
   "prod_name": "Burger",
   "prod_description": "Grilled beef burger",
   "prod_image_url": "https://example.com/burger.jpg",
@@ -432,8 +458,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "addon_id": 300,
-  "rest_id": 10,
+  "addon_id": "300",
+  "rest_id": "10",
   "addon_name": "Cheese",
   "addon_price": "10.00",
   "is_active": true,
@@ -446,13 +472,13 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "rest_id": 10,
-  "prod_id": 200,
-  "addon_id": 300,
+  "rest_id": "10",
+  "prod_id": "200",
+  "addon_id": "300",
   "is_active": true,
   "addon": {
-    "addon_id": 300,
-    "rest_id": 10,
+    "addon_id": "300",
+    "rest_id": "10",
     "addon_name": "Cheese",
     "addon_price": "10.00",
     "is_active": true,
@@ -468,8 +494,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "offer_id": 400,
-  "rest_id": 10,
+  "offer_id": "400",
+  "rest_id": "10",
   "offer_title": "Lunch Offer",
   "offer_description": "Lunch meal",
   "initial_price": "150.00",
@@ -487,8 +513,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "driver_id": 30,
-  "company_id": 20,
+  "driver_id": "30",
+  "company_id": "20",
   "driver_name": "Omar Hassan",
   "driver_phone": "+201000000030",
   "driver_email": null,
@@ -502,7 +528,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "rest_id": 10,
+  "rest_id": "10",
   "rest_title": "AKEELA Kitchen",
   "rest_description": "Grilled meals",
   "rest_image_url_mobile": "https://example.com/restaurant.jpg",
@@ -519,7 +545,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "cat_id": 100,
+  "cat_id": "100",
   "cat_title": "Sandwiches",
   "display_order": 0
 }
@@ -529,8 +555,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "prod_id": 200,
-  "cat_id": 100,
+  "prod_id": "200",
+  "cat_id": "100",
   "prod_name": "Burger",
   "prod_description": "Grilled beef burger",
   "prod_image_url": "https://example.com/burger.jpg",
@@ -542,8 +568,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "offer_id": 400,
-  "rest_id": 10,
+  "offer_id": "400",
+  "rest_id": "10",
   "offer_title": "Lunch Offer",
   "offer_description": "Lunch meal",
   "initial_price": "150.00",
@@ -558,12 +584,12 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 
 ```json
 {
-  "cart_id": 70,
-  "rest_id": 10,
+  "cart_id": "70",
+  "rest_id": "10",
   "items": [
     {
-      "cart_item_id": 60,
-      "prod_id": 200,
+      "cart_item_id": "60",
+      "prod_id": "200",
       "offer_id": null,
       "item_name": "Burger",
       "quantity": 2,
@@ -571,7 +597,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
       "subtotal": "200.00",
       "addons": [
         {
-          "addon_id": 300,
+          "addon_id": "300",
           "addon_name": "Cheese",
           "quantity": 2,
           "unit_price": "10.00",
@@ -611,14 +637,14 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
 {
   "quote_token": "<opaque-signed-quote>",
   "expires_at": "2026-11-12T10:05:00Z",
-  "address_id": 50,
+  "address_id": "50",
   "cart": {
-    "cart_id": 70,
-    "rest_id": 10,
+    "cart_id": "70",
+    "rest_id": "10",
     "items": [
       {
-        "cart_item_id": 60,
-        "prod_id": 200,
+        "cart_item_id": "60",
+        "prod_id": "200",
         "offer_id": null,
         "item_name": "Burger",
         "quantity": 2,
@@ -626,7 +652,7 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
         "subtotal": "200.00",
         "addons": [
           {
-            "addon_id": 300,
+            "addon_id": "300",
             "addon_name": "Cheese",
             "quantity": 2,
             "unit_price": "10.00",
@@ -651,8 +677,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
 
 ```json
 {
-  "order_id": 80,
-  "rest_id": 10,
+  "order_id": "80",
+  "rest_id": "10",
   "status": "Pending",
   "company_id": null,
   "driver_id": null,
@@ -666,9 +692,9 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
 
 ```json
 {
-  "order_id": 80,
-  "customer_id": 1,
-  "rest_id": 10,
+  "order_id": "80",
+  "customer_id": "1",
+  "rest_id": "10",
   "company_id": null,
   "driver_id": null,
   "status": "Pending",
@@ -680,8 +706,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
   "notes": "Call on arrival",
   "items": [
     {
-      "order_item_id": 90,
-      "prod_id": 200,
+      "order_item_id": "90",
+      "prod_id": "200",
       "offer_id": null,
       "item_name": "Burger",
       "unit_price": "100.00",
@@ -689,8 +715,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
       "subtotal": "200.00",
       "addons": [
         {
-          "order_item_addon_id": 91,
-          "addon_id": 300,
+          "order_item_addon_id": "91",
+          "addon_id": "300",
           "addon_name": "Cheese",
           "unit_price": "10.00",
           "quantity": 2,
@@ -710,9 +736,9 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
 
 ```json
 {
-  "order_id": 80,
-  "customer_id": 1,
-  "rest_id": 10,
+  "order_id": "80",
+  "customer_id": "1",
+  "rest_id": "10",
   "company_id": null,
   "driver_id": null,
   "status": "Pending",
@@ -724,8 +750,8 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "notes": "Call on arrival",
   "items": [
     {
-      "order_item_id": 90,
-      "prod_id": 200,
+      "order_item_id": "90",
+      "prod_id": "200",
       "offer_id": null,
       "item_name": "Burger",
       "unit_price": "100.00",
@@ -733,8 +759,8 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
       "subtotal": "200.00",
       "addons": [
         {
-          "order_item_addon_id": 91,
-          "addon_id": 300,
+          "order_item_addon_id": "91",
+          "addon_id": "300",
           "addon_name": "Cheese",
           "unit_price": "10.00",
           "quantity": 2,
@@ -758,9 +784,9 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
 
 ```json
 {
-  "order_id": 80,
+  "order_id": "80",
   "status": "Accepted",
-  "company_id": 20,
+  "company_id": "20",
   "driver_id": null,
   "updated_at": "2026-11-12T10:00:00Z"
 }
@@ -770,15 +796,15 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
 
 ```json
 {
-  "prod_id": 200,
-  "cat_id": 100,
+  "prod_id": "200",
+  "cat_id": "100",
   "prod_name": "Burger",
   "prod_description": "Grilled beef burger",
   "prod_image_url": "https://example.com/burger.jpg",
   "price": "100.00",
   "addons": [
     {
-      "addon_id": 300,
+      "addon_id": "300",
       "addon_name": "Cheese",
       "addon_price": "10.00"
     }
@@ -790,7 +816,7 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
 
 ```json
 {
-  "user_id": 10,
+  "user_id": "10",
   "full_name": "Restaurant Owner",
   "email": "owner@example.com",
   "phone": "+201000000010",
@@ -798,7 +824,7 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "is_active": true,
   "email_verified_at": null,
   "profile": {
-    "rest_id": 10,
+    "rest_id": "10",
     "rest_title": "AKEELA Kitchen",
     "rest_description": "Grilled meals",
     "rest_image_url_mobile": "https://example.com/restaurant.jpg",
@@ -811,7 +837,7 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
     "created_at": "2026-11-12T10:00:00Z",
     "updated_at": "2026-11-12T10:00:00Z",
     "activation_status": "Pending",
-    "user_id": 10,
+    "user_id": "10",
     "profile_role": "Restaurant"
   },
   "created_at": "2026-11-12T10:00:00Z",
@@ -824,7 +850,7 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
 ```json
 {
   "owner": {
-    "user_id": 10,
+    "user_id": "10",
     "full_name": "Restaurant Owner",
     "email": "owner@example.com",
     "phone": "+201000000010",
@@ -832,7 +858,7 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
     "is_active": true
   },
   "profile": {
-    "rest_id": 10,
+    "rest_id": "10",
     "rest_title": "AKEELA Kitchen",
     "rest_description": "Grilled meals",
     "rest_image_url_mobile": "https://example.com/restaurant.jpg",
@@ -845,7 +871,7 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
     "created_at": "2026-11-12T10:00:00Z",
     "updated_at": "2026-11-12T10:00:00Z",
     "activation_status": "Pending",
-    "user_id": 10,
+    "user_id": "10",
     "profile_role": "Restaurant"
   }
 }
@@ -855,10 +881,9 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
 
 ```json
 {
-  "rest_id": 10,
+  "rest_id": "10",
   "activation_status": "Pending",
   "can_manage": false,
   "message": "Your restaurant is waiting for Admin activation."
 }
 ```
-

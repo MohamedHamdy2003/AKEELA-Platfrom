@@ -17,12 +17,14 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 **Rules**
 
-- Registration requires `full_name`, `email`, `password`, and `phone`. Map `phone` to `Users.phone_number`.
+- All BIGINT IDs are returned and accepted as decimal strings. Registration requires `full_name`, `email`, `password`, and `phone`. Map `phone` to `Users.phone_number`.
 - Customer registration creates a Customer and its profile. Restaurant registration creates a Restaurant and its profile with `activation_status = Pending`. Create both in one transaction. Email and phone must be unique. Public registration cannot create Admin or Delivery_Company accounts.
+- Passwords are 8–128 characters with at least one letter and one digit; phones use international `+` format. Restaurant registration requires title, address, coordinates, and opening/closing times; description and image URL are optional.
 - Login uses email and password. Verify only the email by OTP; no phone OTP is required.
 - Send the email OTP after registration. Keep `email_verified_at` NULL until verification succeeds. Do not issue login tokens before email verification.
 - Use short-lived JWT access tokens and rotating refresh tokens. Check token signature, expiry, issuer, audience, account activity, verified email, and session revocation on protected requests.
 - Logout revokes the current session; password changes and resets revoke all sessions. Never return password hashes or saved token/OTP hashes.
+- Approved defaults: access JWT 15 minutes, refresh session 30 days, OTP 6 digits for 10 minutes with 5 attempts and a 60-second resend cooldown. Limits and lifetimes are configurable. SMTP is configured through environment variables; local development uses Mailpit.
 - Email verification and password reset use separate OTP purposes. Codes expire, work once, and have attempt limits. Resending replaces the previous code and has a cooldown; rate-limit requests by account and IP.
 - Store only protected OTP hashes and refresh-token hashes. Do not put codes in logs or API responses.
 - Forgot-password sends a password-reset OTP to the account email. Reset-password requires `email`, `otp`, and `new_password`; verify and consume the OTP in the same transaction as the password update.
@@ -276,4 +278,4 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 - Implement Feature 01 first, then continue in order.
 - For each feature: build its routes, role/ownership checks, validation, and database rules; verify its main success and failure cases before moving on.
-- Choose quote validation storage during implementation. Auth uses `Auth_Challenges` and `Auth_Sessions` from the database design; rate limits may also use a cache.
+- Choose quote validation storage during implementation. Auth settings and setup are documented in `docs/AUTH.md`. Auth uses `Auth_Challenges` and `Auth_Sessions` from the database design; rate limits may also use a cache.

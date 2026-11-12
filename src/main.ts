@@ -9,7 +9,11 @@ import { Environment } from './config/environment';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService<Environment, true>);
-  configureApplication(app, config.get('CORS_ORIGINS', { infer: true }));
+  configureApplication(
+    app,
+    config.get('CORS_ORIGINS', { infer: true }),
+    config.get('TRUST_PROXY', { infer: true }),
+  );
   await app.listen(config.get('PORT', { infer: true }));
 }
 

@@ -5,6 +5,8 @@ import { databaseOptions } from '../src/database/database.options';
 
 const input = {
   DATABASE_URL: 'postgresql://test:test@localhost:5432/akeela_test',
+  JWT_SECRET: 'test-only-jwt-secret-012345678901234567890',
+  OTP_SECRET: 'test-only-otp-secret-012345678901234567890',
 };
 
 test('environment defaults and explicit settings are parsed', () => {

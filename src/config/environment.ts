@@ -1,4 +1,6 @@
-export interface Environment {
+import { AuthEnvironment, validateAuthEnvironment } from './auth.environment';
+
+export interface Environment extends AuthEnvironment {
   NODE_ENV: 'development' | 'test' | 'production';
   PORT: number;
   DATABASE_URL: string;
@@ -71,6 +73,7 @@ export function validateEnvironment(
   }
 
   return {
+    ...validateAuthEnvironment(input),
     NODE_ENV: mode,
     PORT: port,
     DATABASE_URL: databaseUrl,

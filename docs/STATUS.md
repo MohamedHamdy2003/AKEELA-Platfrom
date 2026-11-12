@@ -1,64 +1,59 @@
 # Project Status
 
-## Approval gate
+## Authorization and current scope
 
-**Architecture foundation prepared; awaiting user review and approval.** Do not begin business implementation or generate entities, tables, migrations, views, or seeds until explicitly authorized.
+The user approved the foundation, authorized Feature 01 (Authentication and My Profile), local PostgreSQL preparation, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization.
 
-## Repository inspection
+## Implemented
 
-On 2026-11-12 the folder contained four business Markdown documents and a scratch Python generator in `work/`. There was no application, package manifest, AGENTS file, or Git repository. Node 24 and npm 11 were available. Docker CLI was installed, but the Docker daemon was not running; no `psql` command was found.
-
-The four original documents remain unchanged in the root and are linked from `docs/README.md`. The old generator is scratch material, not an authoritative API contract generator; do not run it over future manual edits.
-
-## Implemented in this stage
-
-- Nest application composition, eight empty feature modules, strict TypeScript.
-- Environment validation, HTTP prefix, CORS allowlist, DTO-validation configuration, shutdown hooks.
-- PostgreSQL/TypeORM app connection and CLI configuration with all automatic schema operations disabled.
-- Local PostgreSQL Compose definition; no database or containers created by setup.
-- Package scripts, formatting/lint configuration, tests, and documentation checks.
-- Agent instructions, documentation index, module ownership, architecture, conventions, setup, decisions, and this handoff.
+- Twelve Feature 01 routes: customer/restaurant registration, email OTP verification/resend, email/password login, JWT refresh/logout, forgot/reset password, GET/PATCH me, and password change.
+- Seven identity/profile/auth table mappings and one reviewed reversible migration. Local application database initialized; no fake users seeded there.
+- Separate owning-module services, user-first transaction locks, persistent OTP attempts/expiry/cooldown, hashed credentials/codes/tokens, and session revocation checked on protected requests.
+- String BIGINT IDs, explicit response/error envelopes, strict DTO allowlists, role-aware profile updates, and current restaurant activation checks.
+- Local PostgreSQL and Mailpit, environment validation, setup script generating independent ignored local secrets, and integration tests against actual PostgreSQL/SMTP.
+- Dockerfile, production Compose/Caddy templates, production environment example, compiled migration command, non-root runtime, and reserved persistent image storage.
 
 ## Not implemented
 
-All 75 documented endpoints, business services, entities, migrations, views, seeds, JWT/OTP/email functionality, response mapping, production health checks, CI, and deployment. Empty modules do not imply completed features.
+Features 02–14, including Admin activation/provisioning APIs, restaurant dashboard/profile APIs, addresses, menu management, public catalog, cart, orders, delivery operations, image upload/serving, seeds, OpenAPI, health endpoints, CI/CD, backup automation, or live VPS deployment. Pending restaurant status is available through GET /me; no frontend dashboard is built.
+
+## Decisions confirmed by the user
+
+- PostgreSQL BIGINT IDs are decimal strings in API payloads and JWT subjects.
+- Real Gmail SMTP with encrypted connections and Google App Passwords; Mailpit remains isolated automated test mail. Real Gmail connection verification awaits privately supplied credentials.
+- Access JWT 15 minutes, refresh session 30 days, OTP six digits for ten minutes, five attempts, resend after 60 seconds. Lifetimes/limits are configurable.
+- Passwords are 8–128 characters with at least one letter and one digit; refresh tokens use JSON for now.
+- Restaurant registration requires title/address/coordinates/opening hours as in the specification.
+- Hostinger VPS hosts backend, database, and primary images through separate Docker containers, with Caddy as public HTTPS entry point.
 
 ## Verification
 
-- Strict TypeScript check, ESLint, and application build passed.
-- All 14 foundation tests passed, including config validation, database safety flags, CORS, and application composition without business routes.
-- Documentation checks passed: 75 matching method/path pairs, valid JSON examples, and working local documentation links.
-- SHA-256 comparison confirmed the four original business documents are byte-for-byte unchanged.
-- Zero entity files and zero migration files exist. No database commands, schema changes, seeds, or containers were run.
-- Runtime dependency audit reported zero known advisories at setup time. Full audit reported 10 moderate development-tooling advisories, through ESLint/TypeScript-ESLint and minimatch. No forced upgrades or unverified overrides were applied; reassess compatible upstream fixes before setting up CI. Audit results are time-dependent.
-- Live PostgreSQL connectivity and integration were not tested: Docker daemon is not running and no database was configured. Foundation tests replace the database module; they do not validate PostgreSQL behavior.
-- Final `npm run check` passed: lint, formatting, typecheck, all 14 tests, build, and documentation checks.
+- PostgreSQL migration applied locally and auth HTTP/SMTP integration flow passed, including concurrent refresh/verification and rollback/reapply in a dedicated test database.
+- Local port 5432 was unavailable on Windows; local Compose now defaults to 15432, configurable through LOCAL_POSTGRES_PORT.
+- npm run check passed (23 unit/bootstrap/security/password/Gmail configuration tests, lint, formatting, TypeScript, build, and API documentation consistency). All 18 reported PostgreSQL/SMTP integration tests passed, including migration rollback/reapply and entity-versus-schema agreement.
+- Docker image built and ran as non-root; container HTTP checks, compiled migration command, writable future image storage, and absence of development CLI passed. Production Compose and Caddy configuration validation passed. These do not test real DNS, certificates, backups, or VPS operation.
+- Runtime dependency audit reported zero known advisories at feature verification time.
+- The full dependency audit retains previously noted development-tooling advisories. No forced upgrades or unverified dependency overrides are applied.
 
-## Decisions to confirm before affected feature work
+## GitHub workflow
 
-| Topic                       | Current specification / question                                                                                                                                                                  | Blocks                          |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| ID representation           | DB uses BIGINT; JSON examples use numbers. Use decimal-string IDs or enforce a safe-integer limit? Do not silently cast PostgreSQL BIGINT.                                                        | First entity and final API DTOs |
-| Email delivery              | Which provider/SMTP service and sender should deliver OTP messages? No credentials needed in chat; use environment configuration later.                                                           | Auth sending                    |
-| Auth security settings      | Confirm OTP lifetime/attempts/cooldown, JWT signing and access/refresh lifetimes, password policy, and rate-limit storage. Sample token lifetimes in examples are not approved production values. | Auth                            |
-| Refresh transport           | Current draft sends refresh tokens in JSON. Confirm target clients (mobile/browser) and secure storage/transport before implementing browser auth.                                                | Auth client contract            |
-| Public registration payload | Full name/email/password/phone are required. Confirm which restaurant-profile fields are required at registration; current examples supply address/location/hours and optional image/description. | Restaurant registration         |
-| Profile fields              | Auth GET `/me` permits profile fields; direct restaurant profile examples omit `user_id` and `profile_role`. Keep endpoint-specific mappings; do not expose private account data publicly.        | Profile serialization           |
-| Decimal values              | Preserve documented string money and coordinates; choose decimal-safe computation approach during pricing implementation.                                                                         | Cart/order prices               |
-| Currency and fee            | Single currency and constant delivery fee are specified, but the currency and fee amount are unset.                                                                                               | Quote/checkout                  |
-| Default company             | Automatic assignment on restaurant acceptance uses a configured active company; no company ID is known before provisioning.                                                                       | Order acceptance                |
-| Quote validation            | The contract proposes a signed quote token; confirm format, expiry, and secret handling. No quote table is approved.                                                                              | Cart quote/checkout             |
-| PostgreSQL hosting          | Local Compose targets version 17; confirm provider/version and TLS trust requirements for deployment.                                                                                             | Production deployment           |
+Remote: https://github.com/MohamedHamdy2003/AKEELA-Platfrom.git. Deployment documentation was merged through its own PR into dev. Feature 01 is developed on feature/email-auth; completed feature PRs target dev. Main receives a release only at the owner's explicit request after a full flow is ready. Merging a PR is not deployment permission.
 
-These questions do not block the foundation scaffold. Resolve them at the relevant feature boundary instead of inventing values now.
+## Remaining decisions for later features/deployment
 
-## Next action after review
+- Single currency, constant delivery fee amount, and default company after provisioning.
+- Quote-token format/expiry and decimal-safe price calculations before Cart/Checkout.
+- Actual SMTP credentials/sender, domain, VPS OS/sizing, production database version and trust settings, and backup destination/retention/restore procedure.
+- Upload validation, image access/deletion policy, public URL base, and Caddy-versus-API image serving. Current APIs store image URLs only.
+- Browser token storage/transport requirements; shared rate-limit storage before running multiple API instances. Current counters are bounded and process-local for one instance; OTP limits persist in PostgreSQL.
 
-Once the user approves the foundation and authorizes Feature 01, finalize its blocking decisions first. Build the minimum authorized account/profile/schema/auth slice according to the specifications and ownership map, rather than generating the entire schema or all 75 routes at once.
+Read AUTH.md for local setup, security choices, testing safety, and implementation boundaries. The four root specifications remain canonical and were updated only where the approved auth decisions required it.
 
-## GitHub setup
+## Auth / Gmail / Bruno release update
 
-- Remote: `https://github.com/MohamedHamdy2003/AKEELA-Platfrom.git`. The remote was empty before initial publication.
-- Initial foundation baseline is shared by `main` and `dev`. Future features branch from `dev` and return through a PR to `dev`.
-- Promotion from `dev` to `main` requires explicit owner instruction after the full flow is ready. This GitHub setup does not approve business implementation.
-- README, repository description, PR template, and `GITHUB-FLOW.md` describe the project and contribution flow. No CI, deployment, or branch protections are configured in this setup.
+- Owner changed new passwords to 8�128 characters with at least one letter and one digit. JWT, refresh, and OTP settings remain unchanged and configurable.
+- Added Gmail-specific configuration validation and a real SMTP verification command without sending email. Owner will add credentials later; do not claim real Gmail authentication/delivery was tested yet.
+- Added a Git-managed Bruno collection containing the 12 implemented APIs in the Feature 01 folder, Local/Production templates, private dotenv values, runtime-only tokens, and route/syntax checks.
+- Owner explicitly approved promotion of the complete Auth + Bruno release to main. This does not authorize VPS deployment or future main promotions. Future models should read BRUNO.md and GMAIL.md alongside AUTH.md and update only relevant specifications/contracts.
+
+- Current verification: password policy tests cover signup/reset/change inputs, including the eight-character boundary and letter/digit requirements. Real PostgreSQL/Mailpit integration passed using eight-character password change/reset values. Bruno syntax/route parity passed for all 12 requests. Live Gmail credentials were explicitly deferred by the owner; only local SMTP connectivity can be checked now.

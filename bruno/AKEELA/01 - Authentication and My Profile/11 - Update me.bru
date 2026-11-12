@@ -1,0 +1,33 @@
+meta {
+  name: Update me
+  type: http
+  seq: 11
+}
+
+patch {
+  url: {{base_url}}/me
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "full_name": "{{full_name}}",
+    "phone": "{{phone}}"
+  }
+}
+
+tests {
+  test('Successful update me', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Updates shared fields. Customers may add cus_avatar_url (URL or null). Pending/Suspended restaurant edits return 403.
+}

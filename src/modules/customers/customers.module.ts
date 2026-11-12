@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-
-// Foundation only. Add providers and controllers after feature approval.
-@Module({})
+import { CustomersService } from './customers.service';
+@Module({ providers: [CustomersService], exports: [CustomersService] })
 export class CustomersModule {}

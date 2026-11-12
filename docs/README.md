@@ -15,7 +15,13 @@ Read `../AGENTS.md` first. Documentation, not previous conversations, defines th
 
 Git operations: read [GITHUB-FLOW.md](GITHUB-FLOW.md) for feature branches, PR targets, and owner-approved releases.
 
+Deployment and image-storage work: read [DEPLOYMENT.md](DEPLOYMENT.md) for the approved Hostinger VPS, Docker, Caddy, persistence, and backup plan.
+
+API testing: [BRUNO.md](BRUNO.md) explains the main-branch collection and private test values. Email setup: [GMAIL.md](GMAIL.md) explains Gmail App Passwords and the real SMTP connectivity check.
+
 ## Canonical business specifications
+
+Authentication implementation: read [AUTH.md](AUTH.md) for approved settings, setup, test safety, and the implemented Feature 01 scope.
 
 These four existing files are included by reference, not duplicated or moved. Edit only when an authorized change requires it.
 

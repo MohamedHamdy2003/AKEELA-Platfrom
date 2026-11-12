@@ -9,6 +9,7 @@
 - `Restaurant_Profiles` and `Delivery_Company_Profiles` store restaurant and company data; no separate tables are needed for these entities.
 - Each restaurant or company account manages one restaurant or company.
 - Drivers belong to companies and have no login accounts in this version.
+- Keep BIGINT identifiers as decimal strings in APIs and application data; do not cast them to JavaScript numbers.
 - Use one app-wide currency and `DECIMAL(12,2)` for money.
 - Use `Picked_Up` for the pickup status.
 - Each customer may keep one cart for one restaurant. Cart checkout creates a separate order with saved names and prices.
