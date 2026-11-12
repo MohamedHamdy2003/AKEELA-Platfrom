@@ -13,6 +13,7 @@
 
 - Follow the existing `/api/v1` routes, methods, request names, status codes, envelopes, and pagination from the API specifications.
 - Unknown DTO fields produce 422; convert query values explicitly, not with broad implicit conversion. Define limits when the relevant feature is authorized.
+- Write simple English validation messages that explain how to fix the input. Set explicit DTO validator messages; never expose regular expressions or validator internals. Keep field keys, error codes, and status codes unchanged.
 - Preserve decimal money/coordinate values as strings in JSON; use decimal-safe arithmetic or PostgreSQL numeric operations, never binary floating point for prices.
 - Do not silently implement every editable field merely because it appears in an example. Apply role-specific allowlists and document ambiguity first.
 - Use 401 for unauthenticated, 403 for role/account/activation denial, and the documented 404/409/422/429 cases. Do not expose SQL, stack traces, hashes, or secrets to clients.
