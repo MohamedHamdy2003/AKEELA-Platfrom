@@ -1,0 +1,32 @@
+meta {
+  name: Set restaurant activation
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{base_url}}/admin/restaurants/{{rest_id}}/activation
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "activation_status": "Active"
+  }
+}
+
+tests {
+  test('Successful set restaurant activation', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Activate, suspend, or reactivate a restaurant profile.
+}

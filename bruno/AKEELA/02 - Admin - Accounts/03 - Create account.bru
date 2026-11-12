@@ -1,0 +1,43 @@
+meta {
+  name: Create account
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/admin/users
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "full_name": "Company Owner",
+    "email": "company@example.com",
+    "password": "ExamplePassword!2026",
+    "phone": "+201000000020",
+    "role": "Delivery_Company",
+    "profile": {
+      "company_name": "Local Delivery",
+      "company_phone": "+201000000020",
+      "company_email": "office@example.com",
+      "company_address": "5 Main Street, Ismailia",
+      "is_active": true
+    }
+  }
+}
+
+tests {
+  test('Successful create account', function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Create a Delivery_Company account and its profile in one transaction. Email verification is required before login.
+}

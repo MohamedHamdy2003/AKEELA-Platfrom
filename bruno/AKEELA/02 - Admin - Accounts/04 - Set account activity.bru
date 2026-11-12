@@ -1,0 +1,32 @@
+meta {
+  name: Set account activity
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}/admin/users/{{user_id}}/activity
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "is_active": false
+  }
+}
+
+tests {
+  test('Successful set account activity', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Enable or disable login for an account. The sole Admin account cannot be disabled.
+}

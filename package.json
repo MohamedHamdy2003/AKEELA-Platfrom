@@ -27,6 +27,8 @@
     "test:integration": "tsc -p tsconfig.test.json && node --test dist-test/test/integration/*.js",
     "migration:run:prod": "node node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js",
     "setup:local": "node scripts/setup-local.mjs",
+    "create:admin": "ts-node src/commands/create-admin.ts",
+    "create:admin:prod": "node dist/commands/create-admin.js",
     "smtp:check": "ts-node src/commands/check-smtp.ts",
     "smtp:check:prod": "node dist/commands/check-smtp.js",
     "bruno:check": "node scripts/check-bruno.mjs"

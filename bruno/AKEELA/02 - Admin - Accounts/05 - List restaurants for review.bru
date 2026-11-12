@@ -1,0 +1,29 @@
+meta {
+  name: List restaurants for review
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/admin/restaurants?page=1&per_page=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  per_page: 20
+  ~activation_status: Pending
+}
+
+tests {
+  test('Successful list restaurants for review', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data).to.be.an('array');
+  });
+}
+
+docs {
+  List restaurant owners and profiles with pagination. Filter optionally by activation status (Pending, Active, Suspended).
+}

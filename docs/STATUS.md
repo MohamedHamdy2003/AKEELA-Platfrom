@@ -2,11 +2,13 @@
 
 ## Authorization and current scope
 
-The user approved the foundation, authorized Feature 01 (Authentication and My Profile), local PostgreSQL preparation, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization.
+The user approved the foundation, authorized Feature 01 (Authentication and My Profile) and Feature 02 (Admin Accounts), local PostgreSQL preparation, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization.
 
 ## Implemented
 
 - Twelve Feature 01 routes: customer/restaurant registration, email OTP verification/resend, email/password login, JWT refresh/logout, forgot/reset password, GET/PATCH me, and password change.
+- Six Feature 02 routes: list accounts with pagination/filtering (`GET /admin/users`), read account and profile (`GET /admin/users/{user_id}`), create Delivery_Company account and profile in one transaction (`POST /admin/users`), toggle account login activity with sole Admin guard (`PATCH /admin/users/{user_id}/activity`), list restaurants for review (`GET /admin/restaurants`), and activate/suspend/reactivate restaurant profile (`PATCH /admin/restaurants/{rest_id}/activation`).
+- CLI command `npm run create:admin` to bootstrap the sole Admin account.
 - Seven identity/profile/auth table mappings and one reviewed reversible migration. Local application database initialized; no fake users seeded there.
 - Separate owning-module services, user-first transaction locks, persistent OTP attempts/expiry/cooldown, hashed credentials/codes/tokens, and session revocation checked on protected requests.
 - String BIGINT IDs, explicit response/error envelopes, strict DTO allowlists, role-aware profile updates, and current restaurant activation checks.
@@ -15,7 +17,7 @@ The user approved the foundation, authorized Feature 01 (Authentication and My P
 
 ## Not implemented
 
-Features 02–14, including Admin activation/provisioning APIs, restaurant dashboard/profile APIs, addresses, menu management, public catalog, cart, orders, delivery operations, image upload/serving, seeds, OpenAPI, health endpoints, CI/CD, backup automation, or live VPS deployment. Pending restaurant status is available through GET /me; no frontend dashboard is built.
+Features 03–14, including customer addresses, restaurant dashboard/profile APIs, menu management, public catalog, cart, orders, delivery operations, image upload/serving, seeds, OpenAPI, health endpoints, CI/CD, backup automation, or live VPS deployment. Pending restaurant status is available through GET /me; no frontend dashboard is built.
 
 ## Decisions confirmed by the user
 
@@ -56,8 +58,8 @@ Read AUTH.md for local setup, security choices, testing safety, and implementati
 
 - Owner changed new passwords to 8�128 characters with at least one letter and one digit. JWT, refresh, and OTP settings remain unchanged and configurable.
 - Added Gmail-specific configuration validation and a real SMTP verification command without sending email. Owner will add credentials later; do not claim real Gmail authentication/delivery was tested yet.
-- Added a Git-managed Bruno collection containing the 12 implemented APIs in the Feature 01 folder, Local/Production templates, private dotenv values, runtime-only tokens, and route/syntax checks.
+- Added a Git-managed Bruno collection containing the 12 implemented APIs in the Feature 01 folder and 6 APIs in the Feature 02 folder, Local/Production templates, private dotenv values, runtime-only tokens, and route/syntax checks.
 - Owner requested a single checkout: open `G:\AKEELA\bruno\AKEELA` in Bruno. The separate testing checkout was removed; collection changes follow the backend branch and normal PR flow.
 - Owner explicitly approved promotion of the complete Auth + Bruno release to main. This does not authorize VPS deployment or future main promotions. Future models should read BRUNO.md and GMAIL.md alongside AUTH.md and update only relevant specifications/contracts.
 
-- Current verification: password policy tests cover signup/reset/change inputs, including the eight-character boundary and letter/digit requirements. Real PostgreSQL/Mailpit integration passed using eight-character password change/reset values. Bruno syntax/route parity passed for all 12 requests. Live Gmail credentials were explicitly deferred by the owner; only local SMTP connectivity can be checked now.
+- Current verification: password policy tests cover signup/reset/change inputs, including the eight-character boundary and letter/digit requirements. Real PostgreSQL/Mailpit integration passed using eight-character password change/reset values. All 26 integration tests passed (covering both Feature 01 and Feature 02). Bruno syntax/route parity passed for all 18 requests across Feature 01 and Feature 02. Live Gmail credentials were explicitly deferred by the owner; only local SMTP connectivity can be checked now.

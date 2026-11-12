@@ -347,7 +347,11 @@ export class AuthService {
     const account = await this.users.byId(payload.sub);
     if (!account) this.unauthorized();
     this.checkAccount(account);
-    return { userId: account.user_id, sessionId: session.session_id };
+    return {
+      userId: account.user_id,
+      sessionId: session.session_id,
+      role: account.role,
+    };
   }
 
   private async revokeAll(
@@ -484,15 +488,61 @@ export class AuthService {
     });
     return this.userData(account);
   }
-  private async userData(account: Account) {
-    const profile =
-      account.role === 'Customer'
-        ? await this.customers.profile(account.user_id)
-        : account.role === 'Restaurant'
-          ? await this.restaurants.profile(account.user_id)
-          : account.role === 'Delivery_Company'
-            ? await this.delivery.profile(account.user_id)
-            : await this.users.adminProfile(account.user_id);
+
+  async createAccountByAdmin(input: {
+    full_name: string;
+    email: string;
+    phone: string;
+    password: string;
+    role: 'Delivery_Company' | 'Admin';
+    profile?: {
+      company_name: string;
+      company_phone: string;
+      company_email?: string | null;
+      company_address: string;
+      is_active?: boolean;
+    };
+  }) {
+    if (input.role === 'Admin') {
+      throw new ApiError(
+        409,
+        'CONFLICT',
+        'An Admin account already exists. Only one Admin is permitted and must be created via CLI.',
+      );
+    }
+    const email = input.email.trim().toLowerCase();
+    const passwordHash = await this.crypto.hashPassword(input.password);
+    const account = await this.db.transaction(async (manager) => {
+      const created = await this.users.create(
+        {
+          full_name: input.full_name,
+          email,
+          phone_number: input.phone,
+          password_hash: passwordHash,
+          role: input.role,
+        },
+        manager,
+      );
+      if (input.role === 'Delivery_Company' && input.profile) {
+        await this.delivery.create(created.user_id, input.profile, manager);
+      }
+      return created;
+    });
+    return this.userData(account);
+  }
+
+  async getProfileFor(account: Account) {
+    return account.role === 'Customer'
+      ? await this.customers.profile(account.user_id)
+      : account.role === 'Restaurant'
+        ? await this.restaurants.profile(account.user_id)
+        : account.role === 'Delivery_Company'
+          ? await this.delivery.profile(account.user_id)
+          : await this.users.adminProfile(account.user_id);
+  }
+
+  async userData(account: Account) {
+    const profile = await this.getProfileFor(account);
     return {
       user_id: account.user_id,
       full_name: account.full_name,

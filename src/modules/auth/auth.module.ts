@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
+import { UsersService } from '../users/users.service';
 import { CustomersModule } from '../customers/customers.module';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { DeliveryModule } from '../delivery/delivery.module';
@@ -11,6 +12,8 @@ import { OtpMailService } from './otp-mail.service';
 import { AccessGuard } from './access.guard';
 import { AuthRateLimitGuard } from './auth-rate-limit.guard';
 import { AuthController, MeController } from './auth.controller';
+import { AdminUsersAuthController } from './admin-users-auth.controller';
+
 @Module({
   imports: [
     UsersModule,
@@ -19,7 +22,7 @@ import { AuthController, MeController } from './auth.controller';
     DeliveryModule,
     JwtModule.register({}),
   ],
-  controllers: [AuthController, MeController],
+  controllers: [AuthController, MeController, AdminUsersAuthController],
   providers: [
     AuthService,
     AuthCryptoService,
@@ -28,5 +31,17 @@ import { AuthController, MeController } from './auth.controller';
     { provide: APP_GUARD, useExisting: AccessGuard },
     AuthRateLimitGuard,
   ],
+  exports: [AuthService, AuthCryptoService],
 })
-export class AuthModule {}
+export class AuthModule implements OnModuleInit {
+  constructor(
+    private readonly users: UsersService,
+    private readonly auth: AuthService,
+  ) {}
+
+  onModuleInit(): void {
+    this.users.registerProfileResolver((account) =>
+      this.auth.getProfileFor(account),
+    );
+  }
+}
