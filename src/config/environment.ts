@@ -6,6 +6,7 @@ export interface Environment extends AuthEnvironment {
   DATABASE_URL: string;
   DATABASE_SSL: boolean;
   CORS_ORIGINS: string[];
+  DEFAULT_DELIVERY_COMPANY_ID: string | null;
 }
 
 export function validateEnvironment(
@@ -72,6 +73,17 @@ export function validateEnvironment(
     }
   }
 
+  const companyId = input.DEFAULT_DELIVERY_COMPANY_ID ?? '';
+  if (
+    typeof companyId !== 'string' ||
+    (companyId !== '' &&
+      (!/^[1-9]\d{0,18}$/.test(companyId) ||
+        BigInt(companyId) > 9223372036854775807n))
+  ) {
+    throw new Error(
+      'DEFAULT_DELIVERY_COMPANY_ID must be a positive BIGINT ID or empty.',
+    );
+  }
   return {
     ...validateAuthEnvironment(input),
     NODE_ENV: mode,
@@ -79,5 +91,6 @@ export function validateEnvironment(
     DATABASE_URL: databaseUrl,
     DATABASE_SSL: ssl === 'true',
     CORS_ORIGINS: origins,
+    DEFAULT_DELIVERY_COMPANY_ID: companyId || null,
   };
 }

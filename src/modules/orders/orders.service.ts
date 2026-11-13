@@ -1,8 +1,16 @@
+import { AuthActor } from '../../common/http/current-actor.decorator';
+import { UsersService } from '../users/users.service';
+import { RestaurantsService } from '../restaurants/restaurants.service';
+import { DeliveryService } from '../delivery/delivery.service';
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
 import { CartService } from '../cart/cart.service';
-import { CheckoutDto, ListOrdersQuery } from './orders.dto';
+import {
+  CheckoutDto,
+  ListOrdersQuery,
+  OperationalOrdersQuery,
+} from './orders.dto';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderItemAddon } from './entities/order-item-addon.entity';
@@ -13,6 +21,9 @@ export class OrdersService {
   constructor(
     private readonly db: DataSource,
     private readonly cart: CartService,
+    private readonly users: UsersService,
+    private readonly restaurants: RestaurantsService,
+    private readonly delivery: DeliveryService,
   ) {}
   private summary(order: Order) {
     return {
@@ -35,6 +46,10 @@ export class OrdersService {
       .getRepository(Order)
       .findOneBy({ order_id: orderId, customer_id: userId });
     if (!order) throw new ApiError(404, 'NOT_FOUND', 'Order not found.');
+    return this.renderDetails(order, m);
+  }
+  private async renderDetails(order: Order, m: EntityManager) {
+    const orderId = order.order_id;
     const rows = await m
       .getRepository(OrderItem)
       .find({ where: { order_id: orderId }, order: { order_item_id: 'ASC' } });
@@ -145,6 +160,209 @@ export class OrdersService {
       items: rows.map((o) => this.summary(o)),
       meta: paginationMeta(total, page.page, page.per_page),
     };
+  }
+
+  private assertRole(
+    actor: AuthActor,
+    role: 'Restaurant' | 'Delivery_Company' | 'Admin',
+  ) {
+    if (actor.role !== role)
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        `${role.replace('_', ' ')} access required.`,
+      );
+  }
+  private async scope(actor: AuthActor, m: EntityManager, lock = false) {
+    if (!['Restaurant', 'Delivery_Company', 'Admin'].includes(actor.role))
+      throw new ApiError(403, 'FORBIDDEN', 'Order management access required.');
+    const account = await this.users.byId(actor.userId, m, lock);
+    if (
+      !account ||
+      account.role !== actor.role ||
+      !account.is_active ||
+      !account.email_verified_at
+    )
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        'An active verified account is required.',
+      );
+    if (actor.role === 'Restaurant')
+      return {
+        restId: await this.restaurants.forOrderHandling(actor.userId, m, lock),
+        companyId: null,
+      };
+    if (actor.role === 'Delivery_Company') {
+      const company = await this.delivery.ownedProfile(actor.userId, m);
+      if (!company.is_active)
+        throw new ApiError(
+          403,
+          'DELIVERY_COMPANY_INACTIVE',
+          'Delivery company service is not active.',
+        );
+      return { restId: null, companyId: company.company_id };
+    }
+    return { restId: null, companyId: null };
+  }
+  private scopedQuery(
+    scope: { restId: string | null; companyId: string | null },
+    m: EntityManager,
+  ) {
+    const qb = m.getRepository(Order).createQueryBuilder('o');
+    if (scope.restId)
+      qb.andWhere('o.rest_id = :restId', { restId: scope.restId });
+    if (scope.companyId)
+      qb.andWhere('o.company_id = :companyId', { companyId: scope.companyId });
+    return qb;
+  }
+  async operationalList(actor: AuthActor, query: OperationalOrdersQuery) {
+    const scope = await this.scope(actor, this.db.manager);
+    const page = resolvePagination(query);
+    if (query.date_from && query.date_to && query.date_from > query.date_to)
+      throw new ApiError(
+        422,
+        'VALIDATION_ERROR',
+        'Start date must not be after end date.',
+      );
+    const qb = this.scopedQuery(scope, this.db.manager);
+    if (query.status)
+      qb.andWhere('o.status = :status', { status: query.status });
+    if (query.date_from)
+      qb.andWhere(
+        "o.created_at >= (CAST(:date_from AS date)::timestamp AT TIME ZONE 'Africa/Cairo')",
+        { date_from: query.date_from },
+      );
+    if (query.date_to)
+      qb.andWhere(
+        "o.created_at < ((CAST(:date_to AS date) + 1)::timestamp AT TIME ZONE 'Africa/Cairo')",
+        { date_to: query.date_to },
+      );
+    const [rows, total] = await qb
+      .orderBy('o.created_at', 'DESC')
+      .addOrderBy('o.order_id', 'DESC')
+      .skip(page.skip)
+      .take(page.take)
+      .getManyAndCount();
+    return {
+      items: rows.map((o) => this.summary(o)),
+      meta: paginationMeta(total, page.page, page.per_page),
+    };
+  }
+  async operationalDetails(actor: AuthActor, id: string) {
+    const scope = await this.scope(actor, this.db.manager);
+    const order = await this.scopedQuery(scope, this.db.manager)
+      .andWhere('o.order_id = :id', { id })
+      .getOne();
+    if (!order) throw new ApiError(404, 'NOT_FOUND', 'Order not found.');
+    const data = await this.renderDetails(order, this.db.manager);
+    if (actor.role !== 'Delivery_Company') return data;
+    const pickup = await this.restaurants.profileById(order.rest_id);
+    if (!pickup)
+      throw new ApiError(404, 'NOT_FOUND', 'Pickup restaurant not found.');
+    return {
+      ...data,
+      pickup: {
+        rest_title: pickup.rest_title,
+        rest_address: pickup.rest_address,
+        longitude: pickup.longitude,
+        latitude: pickup.latitude,
+      },
+    };
+  }
+  private state(o: Order) {
+    return {
+      order_id: o.order_id,
+      status: o.status,
+      company_id: o.company_id,
+      driver_id: o.driver_id,
+      updated_at: o.updated_at,
+    };
+  }
+  private async change(
+    actor: AuthActor,
+    id: string,
+    work: (o: Order, m: EntityManager) => Promise<void>,
+  ) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.db.transaction('SERIALIZABLE', async (m) => {
+          const scope = await this.scope(actor, m, true);
+          const order = await this.scopedQuery(scope, m)
+            .andWhere('o.order_id = :id', { id })
+            .setLock('pessimistic_write')
+            .getOne();
+          if (!order) throw new ApiError(404, 'NOT_FOUND', 'Order not found.');
+          await work(order, m);
+          return this.state(order);
+        });
+      } catch (error) {
+        const code = (error as { driverError?: { code?: string } }).driverError
+          ?.code;
+        if (!['40001', '40P01'].includes(code ?? '')) throw error;
+        if (attempt >= 2)
+          throw new ApiError(
+            409,
+            'ORDER_CONFLICT',
+            'The order changed. Refresh it and try again.',
+          );
+      }
+    }
+  }
+  private requireState(order: Order, allowed: string[]) {
+    if (!allowed.includes(order.status))
+      throw new ApiError(
+        409,
+        'CONFLICT',
+        'This action is not allowed for the current order status.',
+      );
+  }
+  async restaurantDecision(actor: AuthActor, id: string, accept: boolean) {
+    this.assertRole(actor, 'Restaurant');
+    return this.change(actor, id, async (order, m) => {
+      if (accept && order.status === 'Accepted') return;
+      this.requireState(order, ['Pending']);
+      if (accept) {
+        order.company_id = await this.delivery.defaultCompany(m);
+        order.status = 'Accepted';
+      } else order.status = 'Rejected';
+      await m.getRepository(Order).save(order);
+    });
+  }
+  async fail(actor: AuthActor, id: string) {
+    this.assertRole(actor, 'Admin');
+    return this.change(actor, id, async (order, m) => {
+      this.requireState(order, ['Accepted', 'Picked_Up']);
+      order.status = 'Failed';
+      await m.getRepository(Order).save(order);
+    });
+  }
+  async assignDriver(actor: AuthActor, id: string, driverId: string) {
+    this.assertRole(actor, 'Delivery_Company');
+    return this.change(actor, id, async (order, m) => {
+      this.requireState(order, ['Accepted']);
+      order.driver_id = await this.delivery.driverForOrder(
+        order.company_id!,
+        driverId,
+        m,
+      );
+      await m.getRepository(Order).save(order);
+    });
+  }
+  async deliveryAction(actor: AuthActor, id: string, pickup: boolean) {
+    this.assertRole(actor, 'Delivery_Company');
+    return this.change(actor, id, async (order, m) => {
+      this.requireState(order, [pickup ? 'Accepted' : 'Picked_Up']);
+      if (!order.driver_id)
+        throw new ApiError(
+          409,
+          'DRIVER_REQUIRED',
+          'Assign an active driver before pickup.',
+        );
+      await this.delivery.driverForOrder(order.company_id!, order.driver_id, m);
+      order.status = pickup ? 'Picked_Up' : 'Delivered';
+      await m.getRepository(Order).save(order);
+    });
   }
   async cancel(userId: string, id: string) {
     return this.cart.transaction(userId, async (m) => {

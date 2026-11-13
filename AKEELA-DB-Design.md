@@ -167,7 +167,7 @@ erDiagram
 - `DEFAULT 'Delivery_Company'` for `profile_role`.
 - `CHECK (profile_role = 'Delivery_Company')`.
 - `FK (user_id, profile_role) → Users (user_id, role)`.
-- Company contact details may differ from the account owner's details.
+- Company contact details may differ from the account owner's details. In the current single-company version, APIs must not create inactive companies or disable company service/login accounts; keep the existing activity fields for validation and future policy.
 
 ### 3.5 Admin_Profiles
 
@@ -334,7 +334,7 @@ erDiagram
 - `FK (company_id, driver_id) → Delivery_Drivers (company_id, driver_id)`.
 - `CHECK (driver_id IS NULL OR company_id IS NOT NULL)`.
 - Pending orders start with `company_id` and `driver_id` NULL. Restaurant acceptance automatically sets Accepted and assigns the configured default delivery company in one transaction.
-- Keep `default_delivery_company_id` in app settings for the single-company version. Check company and account activity; if either is unavailable, roll back acceptance and keep the order Pending.
+- Keep `DEFAULT_DELIVERY_COMPANY_ID` in environment settings for the single-company version. Check company/account activity and verified account email; if either is unavailable, roll back acceptance and keep the order Pending.
 - The company selects its active driver afterward. Admin does not assign the company. Retry of acceptance must not assign it again or change an existing assignment.
 - Future company routing rules replace only the selection step; keep the saved company on existing orders unchanged.
 - `CHECK (delivery_fee >= 0 AND total_price >= delivery_fee)`.
@@ -692,7 +692,7 @@ erDiagram
 - Enforce status changes on the server. Normal flow: `Pending → Accepted → Picked_Up → Delivered`. Define who can reject, cancel, or fail an order and when. `Delivered`, `Rejected`, `Cancelled`, and `Failed` are final states.
 - Use `RESTRICT / NO ACTION` for changes to linked history. Do not cascade-delete orders or items, or clear item references. Disable records with `is_active` when needed.
 - Saved addresses may be deleted; orders keep their own address copies.
-- Check both account activity and restaurant or company activity before allowing an action. Restaurant business operations and new sales also require `activation_status = Active`; only status/profile/dashboard reads and auth flows are available before activation or during suspension.
+- New sales require active accounts, restaurant service activity, and `activation_status = Active`. Setting restaurant `is_active=false` stops new sales but does not block handling existing orders while activation remains Active. Pending/Suspended owners may read status/profile/dashboard and correct their restaurant details; operational order/catalog APIs stay blocked. Company order operations require an active verified account and active service.
 - Normalize spaces in unique titles and choose a clear case-sensitivity rule.
 - Store timestamp values in UTC; restaurant opening hours remain local times. Set `created_at` and `updated_at` automatically.
 - Index FK columns and common searches. Reuse existing indexes where possible:

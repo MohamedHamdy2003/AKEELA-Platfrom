@@ -29,7 +29,7 @@ Status: foundation approved and Feature 01 authorized/implemented. Other busines
 - Response/error mapping is implemented; OpenAPI generation remains deferred.
 - Confirmed auth choices: decimal-string IDs, SMTP with local Mailpit, HS256 JWT/live DB sessions, JSON refresh tokens, 15-minute/30-day token lifetimes, six-digit/10-minute OTP with five attempts and 60-second cooldown, and 8–128 character passwords with at least one letter and one digit. See `AUTH.md`. Production SMTP credentials, browser token storage, and future shared rate-limit storage remain deployment/client decisions.
 - Cart quotes are informational only. At checkout use current server prices directly; no quote tokens, expiry, or reviewed-total comparison.
-- Currency EGP and initial general delivery fee 30.00 are confirmed. The default delivery company remains a Feature 14 decision.
+- Currency EGP and initial general delivery fee 30.00 are confirmed. DEFAULT_DELIVERY_COMPANY_ID is an optional validated environment setting; missing/unavailable company rejects acceptance and keeps Pending.
 - Image storage location is approved: a persistent volume on the Hostinger VPS. Upload APIs, validation, permissions, image-serving method, and URL conventions still need specifications before implementation.
 - Source hosting is GitHub (`MohamedHamdy2003/AKEELA-Platfrom`). Feature PRs target `dev`; release PRs from `dev` to `main` require explicit owner instruction. See `GITHUB-FLOW.md`. CI workflows, branch protection, and deployment are not configured yet.
 
@@ -53,3 +53,12 @@ Official references used for foundation choices: [Nest modules](https://docs.nes
 - No business caps on cart size or quantities. Validate storage integer range and money overflow.
 - Owner rejected checkout_key and checkout_request_hash. Do not implement them.
 - Owner rejected signed quotes and reviewed-total comparisons. Checkout calculates current prices and places the order directly.
+
+## Order handling and delivery
+
+- Features 13-14 are authorized. No main promotion or deployment is authorized.
+- One always-active company for this version: APIs reject inactive company creation, service deactivation and Delivery_Company account disabling. Defensive database checks remain.
+- Active owned drivers are required for assignment, pickup and delivery. Driver changes stop after pickup.
+- Acceptance assigns the configured company atomically. Retrying Accepted preserves saved company/driver and does not consult changed configuration.
+- Operational date filters use whole Cairo days, including date_to. Delivery pickup fields use the current restaurant profile.
+- Owner confirmed restaurant is_active=false stops new sales only; existing order handling stays available while activation remains Active. Admin suspension still blocks restaurant order operations.

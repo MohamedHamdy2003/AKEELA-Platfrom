@@ -1,6 +1,6 @@
 # Cart and Customer Orders
 
-Features 11 and 12 implement the ten customer routes from the root specifications. Restaurant acceptance and delivery actions remain Features 13 and 14.
+Features 11 and 12 implement the ten customer routes from the root specifications. Restaurant acceptance and delivery actions are implemented in Features 13 and 14; see [ORDER-DELIVERY.md](ORDER-DELIVERY.md).
 
 ## Confirmed behavior
 

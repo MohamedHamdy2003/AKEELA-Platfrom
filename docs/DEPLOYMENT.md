@@ -75,3 +75,5 @@ Public image serving remains undecided and is not enabled in the Caddyfile. Prof
 Before deployment, confirm the domain, VPS operating system/resources, image-serving approach, production PostgreSQL version, backup destination/policy, and release procedure. The single VPS is a shared failure point; this plan does not claim high availability.
 
 References: [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https), [Docker volumes](https://docs.docker.com/engine/storage/volumes/), and [Compose networking](https://docs.docker.com/compose/how-tos/networking/).
+
+Order assignment: production Compose passes DEFAULT_DELIVERY_COMPANY_ID. Set the real company profile ID (not user ID), verify its account email, and keep service/account active. Empty configuration does not prevent startup, but restaurant acceptance returns 409 and keeps Pending until configured. No actual company is provisioned or selected by deployment templates.

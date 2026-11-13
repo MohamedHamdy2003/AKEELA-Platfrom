@@ -52,7 +52,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 - Admin only. Create the only Admin through the CLI, not public registration.
 - Create each account and matching profile in one transaction. Email is required for all roles; restaurant and company accounts verify email before login. The trusted Admin CLI provisions a verified account by default; ADMIN_VERIFIED=false requires normal OTP verification.
-- Do not allow direct role changes. Keep existing orders when disabling an account.
+- Do not allow direct role changes. Keep existing orders when disabling an account. In the current single-company version, Delivery_Company accounts cannot be disabled.
 - Allow exactly one Admin, created through the CLI only. Do not disable it or create Admin accounts through the API.
 - Restaurants register themselves. Admin reviews Pending restaurants and may set their activation status to Active or Suspended; a Suspended restaurant may be reactivated.
 - Activation is separate from email verification and account login activity. Activation never bypasses those checks.
@@ -183,7 +183,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Delivery_Company only; manage its own profile and drivers.
-- Drivers have no login accounts. Use `is_active` to disable drivers.
+- Drivers have no login accounts. Use `is_active` to disable drivers. Delivery company service must remain active in this single-company version; reject creation or updates with `is_active=false`.
 - Do not move a driver record linked to past orders to another company.
 
 | Method | Route | Purpose |
@@ -240,6 +240,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 - Restaurant only; access orders for its own restaurant.
 - Accept or reject only `Pending` orders. Acceptance also assigns the delivery company automatically in the same transaction; apply Feature 14 rules.
 - All status changes must check the current state inside a transaction.
+- Restaurant `is_active=false` stops new sales but does not block reading or handling existing orders when activation remains Active. Pending/Suspended activation still blocks restaurant order APIs.
 - Do not edit customer choices or saved prices after checkout.
 
 | Method | Route | Purpose |
@@ -254,11 +255,12 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - When the restaurant accepts a Pending order, the server automatically assigns the delivery company. Admin does not assign companies.
-- For this version, use one configured `default_delivery_company_id` from app settings. Do not hard-code an ID or choose the first company in the database.
-- Check that the configured company and its account exist and are active. If not, reject acceptance and keep the order Pending; return a clear error.
+- For this version, use one configured `DEFAULT_DELIVERY_COMPANY_ID` from environment settings (the company profile ID, not its user ID). Do not hard-code an ID or choose the first company in the database.
+- Check that the configured company and its account exist, are active, and the account email is verified. If not, reject acceptance and keep the order Pending; return a clear error.
 - Lock the order, change its status to Accepted, and save `company_id` in one transaction. Leave `driver_id` NULL until the assigned company selects an active driver.
 - Retrying acceptance of an already Accepted order returns its current result without changing the company. Reject acceptance from any other state.
 - When more companies are added, replace the company-selection rule with routing rules. Keep the same accept API and preserve the company already saved on existing orders.
+- Driver assignment, pickup, and delivery require an active owned driver. If a driver is disabled, reactivate it or select another driver while the order is still Accepted.
 - Driver and company must match. Only the assigned company may report pickup or delivery; drivers have no login.
 - `Accepted → Picked_Up` requires a company and driver. `Picked_Up → Delivered` completes delivery.
 - Admin may mark an Accepted or Picked_Up order as Failed. Final states cannot be changed.

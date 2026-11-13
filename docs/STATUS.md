@@ -2,7 +2,7 @@
 
 ## Authorized scope
 
-Features 01-12 are authorized. Features 01-10 were released to main; Features 11-12 are implemented for dev through feature/cart-and-checkout. This change has no authorization to promote to main. No live VPS deployment is authorized.
+Features 01-14 are authorized. Features 01-10 were released to main; later features target dev. Features 13-14 are implemented through feature/order-handling-and-delivery. This change has no authorization to promote to main or deploy a VPS.
 
 ## Implemented
 
@@ -14,7 +14,8 @@ Features 01-12 are authorized. Features 01-10 were released to main; Features 11
 - 09: public restaurants/menu with visibility and sale-window checks.
 - 10: company profile and owned driver management; see [DELIVERY.md](DELIVERY.md).
 - Features 11-12 add customer cart, informational totals, current-price checkout, own order queries/history and Pending cancellation; see [CART-ORDERS.md](CART-ORDERS.md).
-- 63 API routes, twenty table mappings, one history view, eight reversible migrations and matching Bruno folders.
+- Features 13-14 add restaurant acceptance/rejection with automatic company assignment, Admin monitoring/failure, and assigned-company driver/pickup/delivery; see [ORDER-DELIVERY.md](ORDER-DELIVERY.md).
+- 75 API routes, twenty table mappings, one history view, eight reversible migrations and matching Bruno folders.
 - Docker/Caddy deployment templates; persistent image storage is reserved, not served.
 
 ## Confirmed decisions
@@ -28,6 +29,8 @@ Features 01-12 are authorized. Features 01-10 were released to main; Features 11
 
 - Cart has no business caps; validate INTEGER range and money overflow. No quote tokens, price comparisons, checkout keys or request hashes. Use a saved address or a one-time delivery address.
 
+- Single-company operation: company service/account cannot be disabled through the APIs. Default-company assignment requires active service/account and verified email. Active owned drivers are required for assignment/pickup/delivery.
+
 ## Review and verification
 
 See [REVIEW.md](REVIEW.md) for findings, corrections and limits. PostgreSQL integration tests use only a dedicated local database ending in `_test`; they truncate it and roll back/reapply migrations. No application-database migration is applied by this review.
@@ -36,6 +39,6 @@ See [REVIEW.md](REVIEW.md) for findings, corrections and limits. PostgreSQL inte
 
 ## Pending
 
-Features 13-14, uploads, OpenAPI, health endpoints, CI/CD, backup automation and VPS deployment remain unimplemented. The default delivery company remains a Feature 14 decision. EGP and the initial general delivery fee of 30.00 are confirmed; quotes are informational only. Production domain, server sizing, backup retention/restore and client token storage remain open.
+Uploads, OpenAPI, health endpoints, CI/CD, backup automation, the future general-fee Admin API and VPS deployment remain unimplemented. DEFAULT_DELIVERY_COMPANY_ID must be configured to accept orders; it is optional at startup and is never auto-selected. EGP and the initial general delivery fee of 30.00 are confirmed; quotes are informational only. Production domain, server sizing, backup retention/restore and client token storage remain open.
 
-Verification: `npm run check` passed (25 tests, lint, formatting, typecheck, build, documentation parity and 63 Bruno requests). The full PostgreSQL/Mailpit suite passed 90 tests, including full migration rollback/reapply and entity/schema agreement. The expanded cart/checkout file separately passed all 13 tests, including quantities above 100, foreign-address ownership, inactive links, and history-preserving constraints. Application database migrations remain unapplied by this task.
+Verification: `npm run check` passed (26 tests, lint, formatting, typecheck, build, documentation parity and 75 Bruno requests). The full PostgreSQL/Mailpit suite passed 101 tests, including all migrations, schema agreement and order/delivery operations. The expanded order/delivery file separately passed all 12 tests, including stopping restaurant sales, inactive drivers, inactive company creation rollback, and concurrent pickup/assignment/delivery/failure. No new migrations are needed; application database migrations remain unapplied by this task.

@@ -1,0 +1,15 @@
+meta {
+  name: Accept order
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/restaurant/orders/{{order_id}}/accept
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

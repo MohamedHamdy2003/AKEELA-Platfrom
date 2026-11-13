@@ -69,3 +69,18 @@ test('database options prevent automatic schema changes and unsafe TLS', () => {
     undefined: 'throw',
   });
 });
+
+test('default delivery company is optional and validates BIGINT strings without precision loss', () => {
+  assert.equal(validateEnvironment(input).DEFAULT_DELIVERY_COMPANY_ID, null);
+  assert.equal(
+    validateEnvironment({
+      ...input,
+      DEFAULT_DELIVERY_COMPANY_ID: '9223372036854775807',
+    }).DEFAULT_DELIVERY_COMPANY_ID,
+    '9223372036854775807',
+  );
+  for (const value of ['0', '-1', '1.5', '9223372036854775808', 1])
+    assert.throws(() =>
+      validateEnvironment({ ...input, DEFAULT_DELIVERY_COMPANY_ID: value }),
+    );
+});

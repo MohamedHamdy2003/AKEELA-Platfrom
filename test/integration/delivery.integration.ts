@@ -114,8 +114,8 @@ test('company profile and drivers enforce role, ownership, validation and persis
     .patch(profile)
     .set('Authorization', auth(0))
     .send({ company_email: null, is_active: false })
-    .expect(200);
-  // An inactive service can still correct its details/reactivate; its login account remains active.
+    .expect(409);
+  // The current single-company service cannot be disabled through the API.
   await api()
     .patch(profile)
     .set('Authorization', auth(0))
