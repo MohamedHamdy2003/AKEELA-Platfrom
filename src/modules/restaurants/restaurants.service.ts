@@ -3,6 +3,10 @@ import { DataSource, EntityManager } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
 import { UsersService } from '../users/users.service';
 import { RestaurantProfile } from './entities/restaurant-profile.entity';
+import {
+  RestaurantDashboardResponse,
+  UpdateRestaurantProfileDto,
+} from './restaurants.dto';
 
 export interface RestaurantRegistration {
   rest_title: string;
@@ -115,6 +119,91 @@ export class RestaurantsService {
         .getRepository(RestaurantProfile)
         .update({ rest_id: restId }, { activation_status });
       return (await this.profileById(restId, manager))!;
+    });
+  }
+
+  async getProfile(
+    userId: string,
+    manager = this.dataSource.manager,
+  ): Promise<RestaurantProfile> {
+    const profile = await this.profile(userId, manager);
+    if (!profile) {
+      throw new ApiError(404, 'NOT_FOUND', 'Restaurant profile not found.');
+    }
+    return profile;
+  }
+
+  async getDashboard(userId: string): Promise<RestaurantDashboardResponse> {
+    const user = await this.users.byId(userId);
+    const profile = await this.profile(userId);
+    if (!profile) {
+      throw new ApiError(404, 'NOT_FOUND', 'Restaurant profile not found.');
+    }
+    const isUserActive = Boolean(user?.is_active);
+    const isEmailVerified = Boolean(user?.email_verified_at);
+    const canManage =
+      profile.activation_status === 'Active' && isUserActive && isEmailVerified;
+
+    let message: string;
+    if (profile.activation_status === 'Pending') {
+      message = 'Your restaurant is waiting for Admin activation.';
+    } else if (profile.activation_status === 'Suspended') {
+      message = 'Your restaurant is suspended by Admin.';
+    } else if (!canManage) {
+      message = 'Your account is not active or verified.';
+    } else {
+      message = 'Your restaurant is active and ready to manage.';
+    }
+
+    return {
+      rest_id: profile.rest_id.toString(),
+      activation_status: profile.activation_status,
+      can_manage: canManage,
+      message,
+    };
+  }
+
+  async updateProfile(
+    userId: string,
+    input: UpdateRestaurantProfileDto,
+  ): Promise<RestaurantProfile> {
+    return this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(RestaurantProfile);
+      const profile = await repo
+        .createQueryBuilder('r')
+        .where('r.user_id = :userId', { userId })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!profile) {
+        throw new ApiError(404, 'NOT_FOUND', 'Restaurant profile not found.');
+      }
+
+      const opens = input.opens_at ?? profile.opens_at;
+      const closes = input.closes_at ?? profile.closes_at;
+      if (opens === closes) {
+        throw new ApiError(
+          422,
+          'VALIDATION_ERROR',
+          'Opening and closing times must differ.',
+          { closes_at: ['Must differ from opens_at.'] },
+        );
+      }
+
+      if (input.rest_title !== undefined) profile.rest_title = input.rest_title;
+      if (input.rest_description !== undefined)
+        profile.rest_description = input.rest_description;
+      if (input.rest_image_url_mobile !== undefined)
+        profile.rest_image_url_mobile = input.rest_image_url_mobile;
+      if (input.rest_address !== undefined)
+        profile.rest_address = input.rest_address;
+      if (input.longitude !== undefined) profile.longitude = input.longitude;
+      if (input.latitude !== undefined) profile.latitude = input.latitude;
+      if (input.opens_at !== undefined) profile.opens_at = input.opens_at;
+      if (input.closes_at !== undefined) profile.closes_at = input.closes_at;
+      if (input.is_active !== undefined) profile.is_active = input.is_active;
+
+      return repo.save(profile);
     });
   }
 }

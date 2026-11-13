@@ -2,13 +2,14 @@
 
 ## Authorization and current scope
 
-The user approved the foundation, authorized Feature 01 (Authentication and My Profile), Feature 02 (Admin Accounts), and Feature 03 (Customer Addresses), local PostgreSQL preparation, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization.
+The user approved the foundation, authorized Feature 01 (Authentication and My Profile), Feature 02 (Admin Accounts), Feature 03 (Customer Addresses), and Feature 04 (Restaurant Profile), local PostgreSQL preparation, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization.
 
 ## Implemented
 
 - Twelve Feature 01 routes: customer/restaurant registration, email OTP verification/resend, email/password login, JWT refresh/logout, forgot/reset password, GET/PATCH me, and password change.
 - Six Feature 02 routes: list accounts with pagination/filtering (`GET /admin/users`), read account and profile (`GET /admin/users/{user_id}`), create Delivery_Company account and profile in one transaction (`POST /admin/users`), toggle account login activity with sole Admin guard (`PATCH /admin/users/{user_id}/activity`), list restaurants for review (`GET /admin/restaurants`), and activate/suspend/reactivate restaurant profile (`PATCH /admin/restaurants/{rest_id}/activation`).
 - Five Feature 03 routes: list saved addresses with pagination/ownership (`GET /customer/addresses`), save customer address with coordinates and default address management (`POST /customer/addresses`), update owned address (`PATCH /customer/addresses/{address_id}`), atomically make owned address default (`PUT /customer/addresses/{address_id}/default`), and remove owned saved address (`DELETE /customer/addresses/{address_id}`).
+- Three Feature 04 routes: read own restaurant profile (`GET /restaurant/profile`), read restaurant dashboard with activation status and management permission (`GET /restaurant/dashboard`), and update restaurant details and service activity (`PATCH /restaurant/profile`).
 - CLI command `npm run create:admin` to bootstrap the sole Admin account.
 - Eight identity/profile/auth/address table mappings and two reviewed reversible migrations (`CreateIdentity`, `CreateCustomerAddresses`). Local application database initialized; no fake users seeded there.
 - Separate owning-module services, user-first transaction locks, persistent OTP attempts/expiry/cooldown, hashed credentials/codes/tokens, and session revocation checked on protected requests.
@@ -18,7 +19,7 @@ The user approved the foundation, authorized Feature 01 (Authentication and My P
 
 ## Not implemented
 
-Features 04–14, including restaurant dashboard/profile APIs, menu management, public catalog, cart, orders, delivery operations, image upload/serving, seeds, OpenAPI, health endpoints, CI/CD, backup automation, or live VPS deployment. Pending restaurant status is available through GET /me; no frontend dashboard is built.
+Features 05–14, including menu categories, products, addons, offers, public catalog, cart, orders, delivery operations, image upload/serving, seeds, OpenAPI, health endpoints, CI/CD, backup automation, or live VPS deployment.
 
 ## Decisions confirmed by the user
 
@@ -28,6 +29,8 @@ Features 04–14, including restaurant dashboard/profile APIs, menu management, 
 - Passwords are 8–128 characters with at least one letter and one digit; refresh tokens use JSON for now.
 - Restaurant registration requires title/address/coordinates/opening hours as in the specification.
 - Customer saved addresses are limited to at most 2 per customer (409 Conflict if exceeded). In ordering/checkout, customers may choose one of their saved addresses or specify a one-time delivery address without saving it.
+- Restaurant owners can edit their restaurant profile details via `PATCH /restaurant/profile` while Pending or Suspended so they can correct mistakes or address information before or during Admin review. Operational business APIs (categories, products, addons, offers, orders) and shared profile edits (`PATCH /me`) remain blocked with `403 RESTAURANT_NOT_ACTIVE` until the restaurant is Active.
+- `GET /restaurant/dashboard` provides `can_manage` (true only when Active, account is active, and email is verified) along with tailored status messages for Pending, Suspended, and Active states.
 - Hostinger VPS hosts backend, database, and primary images through separate Docker containers, with Caddy as public HTTPS entry point.
 
 ## Verification

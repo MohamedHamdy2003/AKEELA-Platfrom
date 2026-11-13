@@ -88,8 +88,8 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Restaurant only; manage the restaurant linked to the signed-in account.
-- After email verification, Pending and Suspended owners can log in and read `/me`, `/restaurant/profile`, and `/restaurant/dashboard`. Dashboard shows the activation status and whether management is allowed.
-- Block all other restaurant business APIs until activation is Active, including catalog reads/writes and order handling. Return `403 RESTAURANT_NOT_ACTIVE`. Authentication, logout, and password flows remain available. Shared profile edits are blocked too while the restaurant is not Active.
+- After email verification, Pending and Suspended owners can log in, read `/me`, `/restaurant/profile`, and `/restaurant/dashboard`, and update their restaurant details via `PATCH /restaurant/profile` (to correct mistakes, opening hours, or pickup coordinates before/during review). Dashboard shows the activation status, whether management is allowed (`can_manage`), and an informative status message.
+- Block all operational restaurant business APIs until activation is Active, including catalog reads/writes and order handling. Return `403 RESTAURANT_NOT_ACTIVE`. Authentication, logout, and password flows remain available. Shared profile edits (`PATCH /me`) are blocked too while the restaurant is not Active.
 - Only Admin can change `activation_status`; restaurant profile updates cannot change it. Check the current database value on every business request, including existing JWT sessions.
 - Suspension immediately hides the restaurant and its menu and blocks new cart additions, quotes, checkout, and restaurant order handling. Existing orders stay saved; assigned delivery companies can finish delivery and Admin can handle eligible failures. No automatic cancellation or refund is assumed.
 - Allow updates to title, description, mobile image URL, pickup address, coordinates, opening hours, and `is_active`.

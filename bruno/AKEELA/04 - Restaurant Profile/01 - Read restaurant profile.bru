@@ -1,0 +1,24 @@
+meta {
+  name: Read restaurant profile
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/restaurant/profile
+  body: none
+  auth: inherit
+}
+
+tests {
+  test('Successful read restaurant profile', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data.rest_id).to.be.a('string');
+    expect(res.getBody().data.rest_title).to.be.a('string');
+  });
+}
+
+docs {
+  Read the authenticated restaurant's own profile, including activation status.
+}

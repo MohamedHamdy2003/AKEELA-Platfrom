@@ -1,0 +1,41 @@
+meta {
+  name: Update restaurant profile
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}/restaurant/profile
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "rest_title": "AKEELA Kitchen",
+    "rest_description": "Grilled meals",
+    "rest_image_url_mobile": "https://example.com/restaurant.jpg",
+    "rest_address": "12 Main Street, Ismailia",
+    "longitude": "32.2723000",
+    "latitude": "30.5965000",
+    "opens_at": "10:00:00",
+    "closes_at": "02:00:00",
+    "is_active": true
+  }
+}
+
+tests {
+  test('Successful update restaurant profile', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data.rest_title).to.equal('AKEELA Kitchen');
+  });
+}
+
+docs {
+  Update restaurant details and service activity.
+}

@@ -23,7 +23,7 @@
 1. Register with owner account data and restaurant details.
 2. Verify the owner's email using OTP, then log in.
 3. Open the dashboard with restaurant activation status `Pending`.
-4. Wait for Admin to activate the restaurant. Until then, only account, profile, and dashboard status can be viewed.
+4. Wait for Admin to activate the restaurant. Restaurant details, hours, and address can be updated to fix mistakes before/during review; catalog management and order handling await activation.
 5. After activation becomes `Active`, manage restaurant details, hours, categories, products, addons, and offers.
 6. Receive `Pending` orders and accept or reject them.
 7. Accepting an order changes it to `Accepted` and automatically assigns the configured delivery company.
