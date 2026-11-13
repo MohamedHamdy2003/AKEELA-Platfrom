@@ -108,7 +108,7 @@ before(async () => {
   db = app.get(DataSource);
   await db.runMigrations({ transaction: 'all' });
   await db.query(
-    'TRUNCATE auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
+    'TRUNCATE customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
   );
 });
 after(async () => {
@@ -785,6 +785,7 @@ test('Feature 01 — PostgreSQL, actual HTTP APIs, and local SMTP', async (t) =>
         0,
         'Entity metadata and reviewed migration must agree.',
       );
+      await db.undoLastMigration({ transaction: 'all' });
       await db.undoLastMigration({ transaction: 'all' });
       assert.equal(
         (await db.query("SELECT to_regclass('public.users') AS name"))[0].name,

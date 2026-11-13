@@ -1,0 +1,43 @@
+meta {
+  name: Save address
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/customer/addresses
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "address_title": "Home",
+    "address_line": "8 Main Street, floor 2",
+    "longitude": "32.2800000",
+    "latitude": "30.6000000",
+    "is_default": true
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201 && res.getBody()?.data?.address_id) {
+    bru.setVar('address_id', res.getBody().data.address_id);
+  }
+}
+
+tests {
+  test('Successful save address', function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data).to.be.an('object');
+  });
+}
+
+docs {
+  Save a new address for the authenticated customer. Validates coordinates and ensures at most one default address.
+}

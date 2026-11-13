@@ -1,0 +1,36 @@
+meta {
+  name: Update owned address
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}/customer/addresses/{{address_id}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "address_title": "Work",
+    "address_line": "9 Main Street",
+    "longitude": "32.2810000",
+    "latitude": "30.6010000"
+  }
+}
+
+tests {
+  test('Successful update address', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data.address_title).to.equal('Work');
+  });
+}
+
+docs {
+  Update an owned address for the authenticated customer. Validates coordinates and ownership.
+}

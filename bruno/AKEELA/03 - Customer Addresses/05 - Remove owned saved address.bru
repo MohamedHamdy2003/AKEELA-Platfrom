@@ -1,0 +1,23 @@
+meta {
+  name: Remove owned saved address
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}/customer/addresses/{{address_id}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test('Successful delete address', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().message).to.equal('Address deleted.');
+  });
+}
+
+docs {
+  Remove an owned saved address for the authenticated customer. Does not affect existing past orders.
+}

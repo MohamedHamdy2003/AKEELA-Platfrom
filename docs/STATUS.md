@@ -2,14 +2,15 @@
 
 ## Authorization and current scope
 
-The user approved the foundation, authorized Feature 01 (Authentication and My Profile) and Feature 02 (Admin Accounts), local PostgreSQL preparation, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization.
+The user approved the foundation, authorized Feature 01 (Authentication and My Profile), Feature 02 (Admin Accounts), and Feature 03 (Customer Addresses), local PostgreSQL preparation, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization.
 
 ## Implemented
 
 - Twelve Feature 01 routes: customer/restaurant registration, email OTP verification/resend, email/password login, JWT refresh/logout, forgot/reset password, GET/PATCH me, and password change.
 - Six Feature 02 routes: list accounts with pagination/filtering (`GET /admin/users`), read account and profile (`GET /admin/users/{user_id}`), create Delivery_Company account and profile in one transaction (`POST /admin/users`), toggle account login activity with sole Admin guard (`PATCH /admin/users/{user_id}/activity`), list restaurants for review (`GET /admin/restaurants`), and activate/suspend/reactivate restaurant profile (`PATCH /admin/restaurants/{rest_id}/activation`).
+- Five Feature 03 routes: list saved addresses with pagination/ownership (`GET /customer/addresses`), save customer address with coordinates and default address management (`POST /customer/addresses`), update owned address (`PATCH /customer/addresses/{address_id}`), atomically make owned address default (`PUT /customer/addresses/{address_id}/default`), and remove owned saved address (`DELETE /customer/addresses/{address_id}`).
 - CLI command `npm run create:admin` to bootstrap the sole Admin account.
-- Seven identity/profile/auth table mappings and one reviewed reversible migration. Local application database initialized; no fake users seeded there.
+- Eight identity/profile/auth/address table mappings and two reviewed reversible migrations (`CreateIdentity`, `CreateCustomerAddresses`). Local application database initialized; no fake users seeded there.
 - Separate owning-module services, user-first transaction locks, persistent OTP attempts/expiry/cooldown, hashed credentials/codes/tokens, and session revocation checked on protected requests.
 - String BIGINT IDs, explicit response/error envelopes, strict DTO allowlists, role-aware profile updates, and current restaurant activation checks.
 - Local PostgreSQL and Mailpit, environment validation, setup script generating independent ignored local secrets, and integration tests against actual PostgreSQL/SMTP.
@@ -17,7 +18,7 @@ The user approved the foundation, authorized Feature 01 (Authentication and My P
 
 ## Not implemented
 
-Features 03–14, including customer addresses, restaurant dashboard/profile APIs, menu management, public catalog, cart, orders, delivery operations, image upload/serving, seeds, OpenAPI, health endpoints, CI/CD, backup automation, or live VPS deployment. Pending restaurant status is available through GET /me; no frontend dashboard is built.
+Features 04–14, including restaurant dashboard/profile APIs, menu management, public catalog, cart, orders, delivery operations, image upload/serving, seeds, OpenAPI, health endpoints, CI/CD, backup automation, or live VPS deployment. Pending restaurant status is available through GET /me; no frontend dashboard is built.
 
 ## Decisions confirmed by the user
 

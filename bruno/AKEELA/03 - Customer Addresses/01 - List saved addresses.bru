@@ -1,0 +1,28 @@
+meta {
+  name: List saved addresses
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/customer/addresses?page=1&per_page=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  per_page: 20
+}
+
+tests {
+  test('Successful list addresses', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data).to.be.an('array');
+  });
+}
+
+docs {
+  List saved addresses for the authenticated customer with pagination.
+}
