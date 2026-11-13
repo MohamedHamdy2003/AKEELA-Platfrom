@@ -208,10 +208,9 @@ test('Feature 03 — Customer Addresses', async (t) => {
 
   let address1Id: string;
   let address2Id: string;
-  let address3Id: string;
 
   await t.test(
-    'creates addresses and handles default address swap',
+    'creates addresses, enforces 2-address cap, and handles default address swap',
     async () => {
       // 1. Create first address with is_default: false
       const res1 = await api()
@@ -231,7 +230,7 @@ test('Feature 03 — Customer Addresses', async (t) => {
       assert.equal(res1.body.data.is_default, false);
       address1Id = res1.body.data.address_id;
 
-      // 2. Create second address with is_default: true
+      // 2. Create second address with is_default: true (reaches the 2-address limit)
       const res2 = await api()
         .post('/api/v1/customer/addresses')
         .set('Authorization', bearer(customerAToken))
@@ -246,7 +245,7 @@ test('Feature 03 — Customer Addresses', async (t) => {
       assert.equal(res2.body.data.is_default, true);
       address2Id = res2.body.data.address_id;
 
-      // 3. Create third address with is_default: true (should swap default)
+      // 3. Attempting to create a third address must be rejected with 409 CONFLICT
       const res3 = await api()
         .post('/api/v1/customer/addresses')
         .set('Authorization', bearer(customerAToken))
@@ -257,17 +256,20 @@ test('Feature 03 — Customer Addresses', async (t) => {
           latitude: '30.6100000',
           is_default: true,
         });
-      assert.equal(res3.status, 201);
-      assert.equal(res3.body.data.is_default, true);
-      address3Id = res3.body.data.address_id;
+      assert.equal(res3.status, 409);
+      assert.equal(res3.body.error.code, 'CONFLICT');
+      assert.equal(
+        res3.body.message,
+        'Customers can save at most 2 addresses.',
+      );
 
-      // Verify in database that only address3 is default for Customer A
+      // Verify in database that only address2 is default for Customer A
       const defaults = await db.query(
         `SELECT address_id, is_default FROM customer_addresses WHERE user_id = $1 AND is_default = true`,
         [customerAId],
       );
       assert.equal(defaults.length, 1);
-      assert.equal(defaults[0].address_id, address3Id);
+      assert.equal(defaults[0].address_id, address2Id);
     },
   );
 
@@ -283,7 +285,7 @@ test('Feature 03 — Customer Addresses', async (t) => {
       assert.equal(putRes.body.data.address_id, address1Id);
       assert.equal(putRes.body.data.is_default, true);
 
-      // Verify address 3 is no longer default
+      // Verify address 2 is no longer default
       const checkDefaults = await db.query(
         `SELECT address_id FROM customer_addresses WHERE user_id = $1 AND is_default = true`,
         [customerAId],
@@ -311,13 +313,13 @@ test('Feature 03 — Customer Addresses', async (t) => {
       assert.equal(resB.body.data.user_id, customerBId);
       const addressBId = resB.body.data.address_id;
 
-      // Customer A lists addresses
+      // Customer A lists addresses (should have 2 addresses)
       const listA = await api()
         .get('/api/v1/customer/addresses?page=1&per_page=10')
         .set('Authorization', bearer(customerAToken));
       assert.equal(listA.status, 200);
-      assert.equal(listA.body.data.length, 3);
-      assert.equal(listA.body.meta.total, 3);
+      assert.equal(listA.body.data.length, 2);
+      assert.equal(listA.body.meta.total, 2);
       // First in list must be the default address (address1Id)
       assert.equal(listA.body.data[0].address_id, address1Id);
       assert.equal(listA.body.data[0].is_default, true);
@@ -392,10 +394,10 @@ test('Feature 03 — Customer Addresses', async (t) => {
   });
 
   await t.test(
-    'deletes an owned address and handles 404 on re-delete',
+    'deletes an owned address and allows creating a new address after deletion',
     async () => {
       const delRes = await api()
-        .delete(`/api/v1/customer/addresses/${address3Id}`)
+        .delete(`/api/v1/customer/addresses/${address2Id}`)
         .set('Authorization', bearer(customerAToken));
       assert.equal(delRes.status, 200);
       assert.equal(delRes.body.success, true);
@@ -405,16 +407,30 @@ test('Feature 03 — Customer Addresses', async (t) => {
       // Verify deleted in DB
       const checkDb = await db.query(
         `SELECT * FROM customer_addresses WHERE address_id = $1`,
-        [address3Id],
+        [address2Id],
       );
       assert.equal(checkDb.length, 0);
 
       // Deleting again returns 404
       const delAgain = await api()
-        .delete(`/api/v1/customer/addresses/${address3Id}`)
+        .delete(`/api/v1/customer/addresses/${address2Id}`)
         .set('Authorization', bearer(customerAToken));
       assert.equal(delAgain.status, 404);
       assert.equal(delAgain.body.error.code, 'NOT_FOUND');
+
+      // Now Customer A has 1 address, so creating a 2nd address succeeds
+      const newAddrRes = await api()
+        .post('/api/v1/customer/addresses')
+        .set('Authorization', bearer(customerAToken))
+        .send({
+          address_title: 'Parents House',
+          address_line: '22 Garden City',
+          longitude: '32.2900000',
+          latitude: '30.6100000',
+          is_default: false,
+        });
+      assert.equal(newAddrRes.status, 201);
+      assert.equal(newAddrRes.body.data.address_title, 'Parents House');
     },
   );
 

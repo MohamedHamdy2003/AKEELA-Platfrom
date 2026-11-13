@@ -137,6 +137,8 @@ Admin create-user body variants use the same account fields with one of these `r
 | PUT | `/customer/addresses/{address_id}/default` | Make an owned address the default. | No body | `200` · Address |
 | DELETE | `/customer/addresses/{address_id}` | Remove an owned saved address. | No body | `200` · Message |
 
+Customers may save at most 2 addresses. Attempting to create a third address returns `409` · `CONFLICT` (`Customers can save at most 2 addresses.`). At checkout, customers may select a saved address or specify a one-time delivery address and coordinates without saving it into customer addresses.
+
 ## 04. Restaurant Profile
 
 | Method | Route | Purpose | Request | Response data |

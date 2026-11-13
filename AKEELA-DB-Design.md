@@ -205,6 +205,7 @@ erDiagram
 ```
 
 - `user_id → Customer_Profiles.user_id`: only customers can own addresses.
+- Each customer may save at most 2 addresses.
 - `address_title` is a label such as Home; `address_line` stores the full address.
 - `CHECK (-180 <= longitude AND longitude <= 180)`.
 - `CHECK (-90 <= latitude AND latitude <= 90)`.

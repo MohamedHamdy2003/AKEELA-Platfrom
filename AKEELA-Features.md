@@ -71,8 +71,9 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Customer only; read and change only the customer's own addresses.
-- Validate full address and coordinates. Allow at most one default address.
-- Changing the default is one transaction. Address changes never change old orders.
+- Each customer may save at most 2 addresses. Allow at most one default address.
+- Validate full address and coordinates. Changing the default is one transaction. Address changes never change old orders.
+- During cart quote and order checkout, customers can select one of their saved addresses or provide a one-time delivery address and coordinates without saving it into customer addresses.
 
 | Method | Route | Purpose |
 |---|---|---|
@@ -217,7 +218,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 **Rules**
 
-- Customer only. Reject empty carts, invalid addresses, closed restaurants, restaurants without Active activation status, and unavailable choices.
+- Customer only. Reject empty carts, invalid addresses, closed restaurants, restaurants without Active activation status, and unavailable choices. Customers may choose a saved address or provide a one-time delivery address without saving it.
 - Require `checkout_key`. Reuse the same key for retries of the same attempt and return its existing order before checking the now-cleared cart.
 - Recheck prices against the reviewed quote. Return changed prices for review before creating an order; never trust client prices as the actual prices.
 - Create the order, item/addon snapshots, and total, then clear the cart in one transaction.

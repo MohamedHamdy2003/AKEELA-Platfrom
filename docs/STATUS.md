@@ -27,6 +27,7 @@ Features 04–14, including restaurant dashboard/profile APIs, menu management, 
 - Access JWT 15 minutes, refresh session 30 days, OTP six digits for ten minutes, five attempts, resend after 60 seconds. Lifetimes/limits are configurable.
 - Passwords are 8–128 characters with at least one letter and one digit; refresh tokens use JSON for now.
 - Restaurant registration requires title/address/coordinates/opening hours as in the specification.
+- Customer saved addresses are limited to at most 2 per customer (409 Conflict if exceeded). In ordering/checkout, customers may choose one of their saved addresses or specify a one-time delivery address without saving it.
 - Hostinger VPS hosts backend, database, and primary images through separate Docker containers, with Caddy as public HTTPS entry point.
 
 ## Verification

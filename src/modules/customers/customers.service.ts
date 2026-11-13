@@ -61,6 +61,16 @@ export class CustomersService {
   ): Promise<AddressResponse> {
     return this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(CustomerAddress);
+
+      const count = await repo.countBy({ user_id: userId });
+      if (count >= 2) {
+        throw new ApiError(
+          409,
+          'CONFLICT',
+          'Customers can save at most 2 addresses.',
+        );
+      }
+
       const isDefault = Boolean(dto.is_default);
 
       if (isDefault) {

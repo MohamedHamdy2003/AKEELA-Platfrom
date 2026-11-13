@@ -2,9 +2,13 @@
 
 Backend for a local restaurant ordering platform: customer ordering, restaurant management, and delivery company workflows.
 
-NestJS modular monolith with PostgreSQL and TypeORM. **Feature 01 implemented: Authentication and My Profile.** Customer/restaurant signup, email OTP, JWT sessions, password recovery, and shared profile APIs are available. Other business features and production deployment remain pending.
+NestJS modular monolith with PostgreSQL and TypeORM. **Features 01–03 implemented**:
 
-Start with [AGENTS.md](AGENTS.md) and the [documentation index](docs/README.md). The four root specifications remain canonical; approved auth decisions and string-ID examples are aligned with implementation.
+- **01. Authentication & My Profile** (12 routes): Customer & restaurant signup, email OTP verification/resend, login, JWT refresh/logout, password reset, profile reads/updates, and password changes.
+- **02. Admin — Accounts** (6 routes): List accounts with pagination/filtering, read account & profile, create delivery companies, enable/disable login activity with sole-Admin protection, review restaurants, and activate/suspend restaurants.
+- **03. Customer Addresses** (5 routes): List saved addresses (at most 2 saved per customer), save address with coordinates, update owned address, atomically swap default address, and delete owned address.
+
+Start with [AGENTS.md](AGENTS.md) and the [documentation index](docs/README.md). Canonical business specifications are in the root directory.
 
 ## Specifications
 
@@ -13,55 +17,124 @@ Start with [AGENTS.md](AGENTS.md) and the [documentation index](docs/README.md).
 - [Requests and responses](AKEELA-Responses-Requests.md)
 - [Role flows](AKEELA-Flows.md)
 
-## Test the APIs in Bruno
+## Local Setup Flow
 
-Open the collection in [bruno/AKEELA](bruno/AKEELA/README.md), following [BRUNO.md](docs/BRUNO.md). It contains the implemented APIs only, grouped by feature; Local and Production environments contain no credentials.
+Use Node.js 24 LTS and npm 11. Ensure Docker Desktop is installed and running.
 
-Set up real Gmail SMTP with [GMAIL.md](docs/GMAIL.md), then run `npm run smtp:check`. Actual Gmail credentials are supplied privately through environment settings, never through GitHub or Bruno.
-
-## Branches and contributions
-
-- `main`: release baseline; merge into it only when the project owner explicitly requests it after a complete flow is ready.
-- `dev`: integration branch for completed features.
-- `feature/<short-name>`: start from `dev`, implement one feature, run checks, then open a PR into `dev`.
-
-See the short [GitHub PR flow](docs/GITHUB-FLOW.md). The initial foundation is the shared baseline of `main` and `dev`; it does not mean business implementation has been approved.
-
-## Local setup
-
-Use Node.js 24 LTS and npm 11:
+### 1. Install dependencies
 
 ```sh
 npm ci
+```
+
+### 2. Generate local environment configuration
+
+```sh
 npm run setup:local
+```
+
+This generates a `.env` file populated with local development settings, random cryptographic secrets (`JWT_SECRET`, `OTP_SECRET`), and local PostgreSQL/Mailpit URLs.
+
+### 3. Configure the Admin account credentials
+
+In your local `.env` file, specify the bootstrap Admin account credentials:
+
+```env
+ADMIN_EMAIL=admin2003@akeela.com
+ADMIN_PASSWORD=admin2003
+ADMIN_FULL_NAME=eslam
+ADMIN_PHONE=+201001936962
+```
+
+> **Note**: The application has only one Admin account, bootstrapped via CLI. No second Admin can be created via the API.
+
+### 4. Start local Docker services
+
+```sh
 docker compose up -d postgres mailpit
+```
+
+- **PostgreSQL**: available on `localhost:15432` (`akeela` database, `akeela_auth_test` database for integration tests).
+- **Mailpit**: SMTP server on port `11025`, web UI at [http://localhost:18025](http://localhost:18025) to view OTP emails.
+
+### 5. Run database migrations
+
+```sh
 npm run migration:run
+```
+
+Applies all reviewed TypeORM migrations (`CreateIdentity`, `CreateCustomerAddresses`) to the local PostgreSQL database.
+
+### 6. Create the Admin account
+
+```sh
+npm run create:admin
+```
+
+Creates the sole Admin account and matching admin profile in PostgreSQL using the `ADMIN_*` credentials from `.env`. The Admin's email is automatically verified.
+
+### 7. Start the development server
+
+```sh
 npm run start:dev
 ```
 
-An existing PostgreSQL server may be used instead; set `DATABASE_URL` accordingly. No schema is created on application startup. The app needs PostgreSQL to boot; no database bypass exists in runtime configuration.
+The API starts on [http://localhost:3000/api/v1](http://localhost:3000/api/v1).
 
-The HTTP prefix is `/api/v1`. The 12 Feature 01 routes are implemented; other documented business APIs remain planned. See [Auth setup and tests](docs/AUTH.md). Mailpit at http://localhost:18025 captures local OTP mail.
+## Testing and API Exploration
 
-## Checks
+### Bruno Collection
+
+Open the collection in [bruno/AKEELA](bruno/AKEELA/README.md) following [BRUNO.md](docs/BRUNO.md). It contains the 23 implemented APIs across 3 feature folders:
+
+- `01 - Authentication and My Profile`
+- `02 - Admin - Accounts`
+- `03 - Customer Addresses`
+
+### Running Checks & Tests
+
+Run full codebase quality and consistency checks:
 
 ```sh
 npm run check
 ```
 
-This runs lint, formatting, TypeScript checks, foundation tests, build, and documentation consistency checks. Read [development instructions](docs/DEVELOPMENT.md) for commands, database limitations, and migration safety.
+This runs:
 
-## Repository map
+- ESLint checks (`npm run lint`)
+- Prettier code style check (`npm run format:check`)
+- TypeScript typecheck (`npm run typecheck`)
+- Unit and security tests (`npm run test`)
+- NestJS application build (`npm run build`)
+- Documentation route and contract parity check (`npm run docs:check`)
+- Bruno API collection parity check (`npm run bruno:check`)
 
-| Location           | Contents                                                         |
-| ------------------ | ---------------------------------------------------------------- |
-| `src/modules/`     | Auth/account/profile services; catalog/cart/order module shells  |
-| `src/config/`      | Validated environment configuration                              |
-| `src/database/`    | Shared TypeORM configuration, auth migration, and CLI DataSource |
-| `src/bootstrap.ts` | HTTP prefix, strict DTO validation, CORS, shutdown hooks         |
-| `test/`            | Unit/bootstrap checks and PostgreSQL/SMTP auth integration tests |
-| `docs/`            | Architecture, ownership, conventions, decisions, current status  |
-| `AKEELA-*.md`      | Four canonical business specifications                           |
-| `work/`            | Ignored scratch material; not a source of truth                  |
+Run end-to-end integration tests against actual PostgreSQL and SMTP:
 
-Feature 01 is authorized and implemented. Additional features and actual VPS deployment require further authorization. Deployment-ready Docker/Caddy templates are described in [DEPLOYMENT.md](docs/DEPLOYMENT.md).
+```sh
+npm run test:integration
+```
+
+All 36 integration tests run sequentially against the dedicated `akeela_auth_test` database, testing real transactions, constraints, tokens, and role boundaries.
+
+## Branches and Contributions
+
+- `main`: release baseline; updated after complete feature flows are verified.
+- `dev`: active integration branch.
+- `feature/<name>`: feature branches branched from `dev` and merged into `dev`.
+
+See [docs/GITHUB-FLOW.md](docs/GITHUB-FLOW.md) for details.
+
+## Repository Map
+
+| Location           | Contents                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| `src/modules/`     | Feature modules: auth, users, customers, restaurants, delivery, catalog, cart, orders |
+| `src/commands/`    | CLI commands (`create:admin`, `check-smtp`)                                           |
+| `src/config/`      | Validated environment configuration                                                   |
+| `src/database/`    | TypeORM migrations, entity mappings, and DataSource configuration                     |
+| `src/bootstrap.ts` | Global validation, CORS, error envelopes, lifecycle hooks                             |
+| `test/`            | Unit, security, and PostgreSQL/SMTP integration tests                                 |
+| `bruno/AKEELA/`    | Complete runnable API collection for Bruno                                            |
+| `docs/`            | Architecture, status, decisions, deployment, and guide documents                      |
+| `AKEELA-*.md`      | Four canonical business specifications                                                |
