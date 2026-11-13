@@ -2,7 +2,7 @@
 
 ## Authorization and current scope
 
-The user approved the foundation, authorized Feature 01 (Authentication and My Profile), Feature 02 (Admin Accounts), Feature 03 (Customer Addresses), and Feature 04 (Restaurant Profile), local PostgreSQL preparation, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization.
+The user approved the foundation, authorized Feature 01 (Authentication and My Profile), Feature 02 (Admin Accounts), Feature 03 (Customer Addresses), Feature 04 (Restaurant Profile), Feature 05 (Categories), and Feature 06 (Products), local PostgreSQL preparation, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization.
 
 ## Implemented
 
@@ -10,8 +10,10 @@ The user approved the foundation, authorized Feature 01 (Authentication and My P
 - Six Feature 02 routes: list accounts with pagination/filtering (`GET /admin/users`), read account and profile (`GET /admin/users/{user_id}`), create Delivery_Company account and profile in one transaction (`POST /admin/users`), toggle account login activity with sole Admin guard (`PATCH /admin/users/{user_id}/activity`), list restaurants for review (`GET /admin/restaurants`), and activate/suspend/reactivate restaurant profile (`PATCH /admin/restaurants/{rest_id}/activation`).
 - Five Feature 03 routes: list saved addresses with pagination/ownership (`GET /customer/addresses`), save customer address with coordinates and default address management (`POST /customer/addresses`), update owned address (`PATCH /customer/addresses/{address_id}`), atomically make owned address default (`PUT /customer/addresses/{address_id}/default`), and remove owned saved address (`DELETE /customer/addresses/{address_id}`).
 - Three Feature 04 routes: read own restaurant profile (`GET /restaurant/profile`), read restaurant dashboard with activation status and management permission (`GET /restaurant/dashboard`), and update restaurant details and service activity (`PATCH /restaurant/profile`).
+- Three Feature 05 routes: list owned categories with pagination (`GET /restaurant/categories`), create menu category with unique title check (`POST /restaurant/categories`), and update category title, display order, or activity (`PATCH /restaurant/categories/{cat_id}`).
+- Four Feature 06 routes: list owned products with pagination and category filtering (`GET /restaurant/products`), read product details for editing (`GET /restaurant/products/{prod_id}`), create product in owned category with price validation (`POST /restaurant/products`), and update product details, price, category, or activity (`PATCH /restaurant/products/{prod_id}`).
 - CLI command `npm run create:admin` to bootstrap the sole Admin account.
-- Eight identity/profile/auth/address table mappings and two reviewed reversible migrations (`CreateIdentity`, `CreateCustomerAddresses`). Local application database initialized; no fake users seeded there.
+- Ten identity/profile/auth/address/catalog table mappings and three reviewed reversible migrations (`CreateIdentity`, `CreateCustomerAddresses`, `CreateCategoriesAndProducts`). Local application database initialized; no fake users seeded there.
 - Separate owning-module services, user-first transaction locks, persistent OTP attempts/expiry/cooldown, hashed credentials/codes/tokens, and session revocation checked on protected requests.
 - String BIGINT IDs, explicit response/error envelopes, strict DTO allowlists, role-aware profile updates, and current restaurant activation checks.
 - Local PostgreSQL and Mailpit, environment validation, setup script generating independent ignored local secrets, and integration tests against actual PostgreSQL/SMTP.
@@ -19,7 +21,7 @@ The user approved the foundation, authorized Feature 01 (Authentication and My P
 
 ## Not implemented
 
-Features 05–14, including menu categories, products, addons, offers, public catalog, cart, orders, delivery operations, image upload/serving, seeds, OpenAPI, health endpoints, CI/CD, backup automation, or live VPS deployment.
+Features 07–14, including addons and product links, offers, public catalog, cart, orders, delivery operations, image upload/serving, seeds, OpenAPI, health endpoints, CI/CD, backup automation, or live VPS deployment.
 
 ## Decisions confirmed by the user
 

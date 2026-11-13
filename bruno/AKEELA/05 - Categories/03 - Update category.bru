@@ -1,0 +1,35 @@
+meta {
+  name: Update category
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}/restaurant/categories/{{cat_id}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "cat_title": "Sandwiches",
+    "display_order": 0,
+    "is_active": true
+  }
+}
+
+tests {
+  test('Successful update category', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data.cat_id).to.be.a('string');
+  });
+}
+
+docs {
+  Update category title, display order, or activity.
+}

@@ -1,0 +1,38 @@
+meta {
+  name: Update product
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}/restaurant/products/{{prod_id}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "cat_id": "100",
+    "prod_name": "Burger",
+    "prod_description": "Grilled beef burger",
+    "prod_image_url": "https://example.com/burger.jpg",
+    "price": "100.00",
+    "is_active": true
+  }
+}
+
+tests {
+  test('Successful update product', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data.prod_id).to.be.a('string');
+  });
+}
+
+docs {
+  Update product details, price, category, or activity.
+}

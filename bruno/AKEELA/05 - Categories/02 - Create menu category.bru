@@ -1,0 +1,36 @@
+meta {
+  name: Create menu category
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/restaurant/categories
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "cat_title": "Sandwiches",
+    "display_order": 0,
+    "is_active": true
+  }
+}
+
+tests {
+  test('Successful create category', function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data.cat_id).to.be.a('string');
+    expect(res.getBody().data.cat_title).to.equal('Sandwiches');
+  });
+}
+
+docs {
+  Create a menu category for the authenticated restaurant.
+}
