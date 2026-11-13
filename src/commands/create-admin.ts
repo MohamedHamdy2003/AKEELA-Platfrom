@@ -118,6 +118,7 @@ async function main(): Promise<void> {
         );
       }
 
+      const verified = process.env.ADMIN_VERIFIED !== 'false';
       const result = await manager
         .createQueryBuilder()
         .insert()
@@ -129,6 +130,7 @@ async function main(): Promise<void> {
           password_hash: passwordHash,
           role: 'Admin',
           is_active: true,
+          email_verified_at: verified ? new Date() : null,
         })
         .returning('user_id')
         .execute();
@@ -144,7 +146,7 @@ async function main(): Promise<void> {
     });
 
     console.log(
-      `Admin account created for ${email}. Send a verification OTP via POST /api/v1/auth/resend-verification and verify before the first login.`,
+      `Admin account created for ${email} with full access. You can log in immediately.`,
     );
   } catch (error) {
     console.error(
