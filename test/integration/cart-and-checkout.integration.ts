@@ -7,6 +7,12 @@ import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { config as loadEnv } from 'dotenv';
 import request from 'supertest';
+import sharp from 'sharp';
+import { mkdtemp, rm, readdir, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { ConfigService } from '@nestjs/config';
+let imageDir: string;
 import { configureApplication } from '../../src/bootstrap';
 
 loadEnv({ quiet: true });
@@ -26,6 +32,7 @@ if (
 
 Object.assign(process.env, {
   NODE_ENV: 'test',
+  DEFAULT_DELIVERY_COMPANY_ID: '',
   DATABASE_URL: testUrl,
   DATABASE_SSL: 'false',
   TRUST_PROXY: 'false',
@@ -73,7 +80,10 @@ before(async () => {
     imports: [AppModule],
   }).compile();
   app = module.createNestApplication();
-  configureApplication(app, []);
+  imageDir = await mkdtemp(join(tmpdir(), 'akeela-images-test-'));
+  app.get(ConfigService).set('IMAGE_STORAGE_PATH', imageDir);
+  app.get(ConfigService).set('PUBLIC_BASE_URL', 'http://localhost:3000');
+  configureApplication(app, [], false, imageDir);
   await app.init();
   db = app.get(DataSource);
   await db.runMigrations({ transaction: 'all' });
@@ -139,6 +149,7 @@ before(async () => {
 });
 after(async () => {
   if (app) await app.close();
+  if (imageDir) await rm(imageDir, { recursive: true, force: true });
 });
 test('Features 11 and 12: cart and checkout with actual PostgreSQL', async (t) => {
   await t.test('customer role, strict allowlists and empty cart', async () => {
@@ -552,6 +563,226 @@ test('Features 11 and 12: cart and checkout with actual PostgreSQL', async (t) =
         schema.upQueries.map((q) => q.query),
         [],
       );
+    },
+  );
+});
+
+test('Production regressions: overflow recovery, activation race, uploads and health', async (t) => {
+  await t.test(
+    'A repriced overflow cart remains readable and removable',
+    async () => {
+      await api()
+        .delete('/api/v1/customer/cart')
+        .set('Authorization', auth())
+        .expect(200);
+      await add(2, []).expect(201);
+      await api()
+        .post('/api/v1/customer/cart/items')
+        .set('Authorization', auth())
+        .send({ rest_id: restId, offer_id: offerId, quantity: 2 })
+        .expect(201);
+      try {
+        await db.query(
+          'UPDATE products SET price=9999999999.99 WHERE prod_id=$1',
+          [prodId],
+        );
+        await db.query(
+          'UPDATE offers SET initial_price=9999999999.99,real_price=9999999999.99 WHERE offer_id=$1',
+          [offerId],
+        );
+        const cart = await api()
+          .get('/api/v1/customer/cart')
+          .set('Authorization', auth())
+          .expect(200);
+        assert.equal(cart.body.data.subtotal, '39999999999.96');
+        await api()
+          .post('/api/v1/customer/orders')
+          .set('Authorization', auth())
+          .send({ delivery_address: address })
+          .expect(422);
+        await api()
+          .delete(
+            '/api/v1/customer/cart/items/' +
+              cart.body.data.items[0].cart_item_id,
+          )
+          .set('Authorization', auth())
+          .expect(200);
+        const remaining = await api()
+          .get('/api/v1/customer/cart')
+          .set('Authorization', auth())
+          .expect(200);
+        assert.equal(remaining.body.data.items.length, 1);
+      } finally {
+        await api()
+          .delete('/api/v1/customer/cart')
+          .set('Authorization', auth())
+          .expect(200);
+        await db.query('UPDATE products SET price=3.10 WHERE prod_id=$1', [
+          prodId,
+        ]);
+        await db.query(
+          'UPDATE offers SET real_price=10,initial_price=20 WHERE offer_id=$1',
+          [offerId],
+        );
+      }
+    },
+  );
+  await t.test(
+    'Suspension wins against a catalog write waiting on the profile lock',
+    async () => {
+      const runner = db.createQueryRunner();
+      await runner.connect();
+      await runner.startTransaction();
+      let pending: Promise<request.Response> | undefined;
+      try {
+        await runner.query(
+          'SELECT rest_id FROM restaurant_profiles WHERE rest_id=$1 FOR UPDATE',
+          [restId],
+        );
+        pending = api()
+          .post('/api/v1/restaurant/categories')
+          .set('Authorization', auth(2))
+          .send({ cat_title: 'Race blocked' })
+          .then((r) => r);
+        let waiting = false;
+        for (let attempt = 0; attempt < 100; attempt++) {
+          const rows = await db.query(
+            "SELECT pid FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND query ILIKE '%restaurant_profiles%'",
+          );
+          if (rows.length) {
+            waiting = true;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+        assert.equal(
+          waiting,
+          true,
+          'Catalog request must reach the held profile lock',
+        );
+        await runner.query(
+          "UPDATE restaurant_profiles SET activation_status='Suspended' WHERE rest_id=$1",
+          [restId],
+        );
+        await runner.commitTransaction();
+        assert.equal((await pending).status, 403);
+        assert.equal(
+          (
+            await db.query(
+              "SELECT count(*) FROM categories WHERE rest_id=$1 AND cat_title='Race blocked'",
+              [restId],
+            )
+          )[0].count,
+          '0',
+        );
+      } finally {
+        if (runner.isTransactionActive) await runner.rollbackTransaction();
+        await runner.release();
+        if (pending) await pending;
+        await db.query(
+          "UPDATE restaurant_profiles SET activation_status='Active' WHERE rest_id=$1",
+          [restId],
+        );
+      }
+    },
+  );
+  await t.test(
+    'Real images are re-encoded, owned, public and cleaned after a rejected write',
+    async () => {
+      const bytes = await sharp({
+        create: { width: 12, height: 8, channels: 3, background: 'red' },
+      })
+        .jpeg()
+        .withMetadata()
+        .toBuffer();
+      await api()
+        .put('/api/v1/customer/avatar')
+        .attach('file', bytes, 'test.jpg')
+        .expect(401);
+      await api()
+        .put('/api/v1/customer/avatar')
+        .set('Authorization', auth())
+        .attach('file', Buffer.from('<svg/>'), 'fake.jpg')
+        .expect(422);
+      await api()
+        .put('/api/v1/customer/avatar')
+        .set('Authorization', auth())
+        .attach('file', Buffer.alloc(5 * 1024 * 1024 + 1), 'large.jpg')
+        .expect(413);
+      const upload = await api()
+        .put('/api/v1/customer/avatar')
+        .set('Authorization', auth())
+        .attach('file', bytes, 'test.jpg')
+        .expect(200);
+      const url = upload.body.data.image_url;
+      assert.equal(new URL(url).origin, 'http://localhost:3000');
+      assert.match(new URL(url).pathname, /^\/images\/[a-f0-9-]+\.webp$/);
+      const [row] = await db.query(
+        'SELECT cus_avatar_url FROM customer_profiles WHERE user_id=$1',
+        [userIds[0]],
+      );
+      assert.equal(row.cus_avatar_url, url);
+      const metadata = await sharp(
+        await readFile(join(imageDir, url.split('/').pop())),
+      ).metadata();
+      assert.equal(metadata.format, 'webp');
+      assert.equal(metadata.exif, undefined);
+      await api()
+        .get(new URL(url).pathname)
+        .expect(200)
+        .expect('Content-Type', /image\/webp/);
+      await api().get('/images/.env').expect(404);
+      await api()
+        .put('/api/v1/restaurant/products/' + prodId + '/image')
+        .set('Authorization', auth())
+        .attach('file', bytes, 'test.jpg')
+        .expect(403);
+      const before = (await readdir(imageDir)).length;
+      await api()
+        .put('/api/v1/restaurant/products/9223372036854775807/image')
+        .set('Authorization', auth(2))
+        .attach('file', bytes, 'test.jpg')
+        .expect(404);
+      assert.equal((await readdir(imageDir)).length, before);
+      for (const route of [
+        'products/' + prodId,
+        'offers/' + offerId,
+        'profile',
+      ])
+        await api()
+          .put('/api/v1/restaurant/' + route + '/image')
+          .set('Authorization', auth(2))
+          .attach('file', bytes, 'test.jpg')
+          .expect(200);
+      for (const state of ['Pending', 'Suspended']) {
+        await db.query(
+          'UPDATE restaurant_profiles SET activation_status=$1 WHERE rest_id=$2',
+          [state, restId],
+        );
+        const count = (await readdir(imageDir)).length;
+        await api()
+          .put('/api/v1/restaurant/profile/image')
+          .set('Authorization', auth(2))
+          .attach('file', bytes, 'test.jpg')
+          .expect(403);
+        assert.equal((await readdir(imageDir)).length, count);
+      }
+      await db.query(
+        "UPDATE restaurant_profiles SET activation_status='Active' WHERE rest_id=$1",
+        [restId],
+      );
+    },
+  );
+  await t.test(
+    'Health is public and timestamps use Cairo offsets',
+    async () => {
+      for (const route of ['live', 'ready']) {
+        const result = await api()
+          .get('/api/v1/health/' + route)
+          .expect(200);
+        assert.equal(result.body.data.status, 'ok');
+        assert.match(result.body.data.checked_at, /\+(02|03):00$/);
+      }
     },
   );
 });

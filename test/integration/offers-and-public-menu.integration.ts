@@ -26,6 +26,7 @@ if (
 
 Object.assign(process.env, {
   NODE_ENV: 'test',
+  DEFAULT_DELIVERY_COMPANY_ID: '',
   DATABASE_URL: testUrl,
   DATABASE_SSL: 'false',
   TRUST_PROXY: 'false',
@@ -522,4 +523,28 @@ test('public menu hides inactive owners and inactive categories', async () => {
       (p: { rest_id: string }) => p.rest_id === restaurantAId,
     ),
   );
+});
+
+test('Offer dates reject impossible dates and missing offsets', async () => {
+  await db.query(
+    'UPDATE users SET is_active=true WHERE user_id=(SELECT user_id FROM restaurant_profiles WHERE rest_id=$1)',
+    [restaurantAId],
+  );
+  const body = {
+    offer_title: 'Invalid time',
+    initial_price: '20.00',
+    real_price: '10.00',
+    starts_at: '2026-01-01T00:00:00Z',
+    expires_at: '2026-02-30T00:00:00Z',
+  };
+  await api()
+    .post('/api/v1/restaurant/offers')
+    .set('Authorization', bearer(restaurantAToken))
+    .send(body)
+    .expect(422);
+  await api()
+    .post('/api/v1/restaurant/offers')
+    .set('Authorization', bearer(restaurantAToken))
+    .send({ ...body, expires_at: '2027-01-01T00:00:00' })
+    .expect(422);
 });

@@ -41,6 +41,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
           ? details.message
           : ({
               400: 'Invalid request body.',
+              413: 'Image must be 5MB or smaller.',
               401: 'Authentication is required.',
               403: 'Access is denied.',
               404: 'Record or route not found.',

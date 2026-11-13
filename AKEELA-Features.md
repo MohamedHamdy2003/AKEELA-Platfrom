@@ -2,10 +2,14 @@
 
 Build features in the order below. Routes use the `/api/v1` prefix, omitted from the tables.
 
+## Implementation Status
+
+Features 01-16 are implemented. Docker/Caddy and CI/CD are prepared; real Hostinger deployment is pending VPS/domain setup. Backups, OpenAPI, image cleanup and the future Admin delivery-fee API are not implemented.
+
 ## Common Rules
 
 - Roles: `Customer`, `Restaurant`, `Delivery_Company`, `Admin`.
-- Require an active, email-verified login except for public auth routes and public menu routes. Refresh uses a valid refresh token, not an access JWT.
+- Require an active, email-verified login except for public auth, public menu and health routes. Refresh uses a valid refresh token, not an access JWT.
 - Check role and record ownership on the server. Never trust an owner ID sent by the client.
 - `/customer/*` routes are for the signed-in Customer; get the customer ID from the verified JWT, not a route parameter. `/me` and `/me/password` are shared account routes for all roles.
 - Validate input. Use pagination for lists and one clear response/error format.
@@ -88,7 +92,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Restaurant only; manage the restaurant linked to the signed-in account.
-- After email verification, Pending and Suspended owners can log in, read `/me`, `/restaurant/profile`, and `/restaurant/dashboard`, and update their restaurant details via `PATCH /restaurant/profile` (to correct mistakes, opening hours, or pickup coordinates before/during review). Dashboard shows the activation status, whether management is allowed (`can_manage`), and an informative status message.
+- After email verification, Pending and Suspended owners may authenticate and read `/me`, `/restaurant/profile`, and `/restaurant/dashboard`. Block all edits, including restaurant profile and shared account edits, until Active. Password security flows remain available. Dashboard shows activation status and `can_manage`.
 - Block all operational restaurant business APIs until activation is Active, including catalog reads/writes and order handling. Return `403 RESTAURANT_NOT_ACTIVE`. Authentication, logout, and password flows remain available. Shared profile edits (`PATCH /me`) are blocked too while the restaurant is not Active.
 - Only Admin can change `activation_status`; restaurant profile updates cannot change it. Check the current database value on every business request, including existing JWT sessions.
 - Suspension immediately hides the restaurant and its menu and blocks new cart additions, quotes, checkout, and restaurant order handling. Existing orders stay saved; assigned delivery companies can finish delivery and Admin can handle eligible failures. No automatic cancellation or refund is assumed.
@@ -151,7 +155,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Restaurant only; manage only its own offers.
-- Validate prices and start/end times. Sell only active, unexpired offers within their sale window.
+- Validate prices and calendar dates. Require Z or an explicit offset in offer timestamps. Sell only active offers within their sale window.
 - Offers are separate sale items. They have no addons in this version.
 
 | Method | Route | Purpose |
@@ -278,8 +282,35 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 | POST | `/delivery-company/orders/{order_id}/pickup` | Mark an assigned Accepted order as Picked_Up. |
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. |
 
+## 15. Image Uploads
+
+**Rules**
+
+- Customer uploads an avatar; an Active restaurant owner uploads restaurant/product/offer images. Check resource ownership. Pending/Suspended owners cannot upload.
+- One multipart file field named `file`; JPEG/PNG/WebP up to 5MB. Validate bytes, reject animation, re-encode to WebP and remove metadata. Technical encoding/rate limits: `docs/IMAGES.md`.
+- Save files in persistent image storage and update the existing image URL field. Return an absolute public URL. No new image table.
+- Public files use `/images/<filename>` outside the API prefix. Keep old versions; cleanup is deferred.
+
+| Method | Route | Purpose |
+|---|---|---|
+| PUT | `/customer/avatar` | Upload the signed-in Customer avatar. |
+| PUT | `/restaurant/profile/image` | Upload the owner's restaurant mobile image. |
+| PUT | `/restaurant/products/{prod_id}/image` | Upload an owned product image. |
+| PUT | `/restaurant/offers/{offer_id}/image` | Upload an owned offer image. |
+
+## 16. Health Checks
+
+**Rules**
+
+- Public probes; return no secrets or infrastructure details. Readiness requires PostgreSQL and returns 503 when unavailable.
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/health/live` | Check that the API process responds. |
+| GET | `/health/ready` | Check API and database readiness. |
+
 ## Start Here
 
-- Implement Feature 01 first, then continue in order.
+- Features 01-16 below are implemented. Check `docs/STATUS.md` for verification and deployment state.
 - For each feature: build its routes, role/ownership checks, validation, and database rules; verify its main success and failure cases before moving on.
 - Quote responses are informational; checkout uses current server prices without tokens or price comparisons. Auth settings and setup are documented in `docs/AUTH.md`. Auth uses `Auth_Challenges` and `Auth_Sessions` from the database design; rate limits may also use a cache.

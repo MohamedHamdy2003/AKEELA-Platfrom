@@ -1,6 +1,6 @@
 # AKEELA — Requests and Responses
 
-API contract draft, in the same order as `AKEELA-Features.md`. All routes start with `/api/v1`.
+Implemented API contracts, in the same order as `AKEELA-Features.md`. All routes start with `/api/v1`.
 
 ## Format and Headers
 
@@ -15,7 +15,7 @@ API contract draft, in the same order as `AKEELA-Features.md`. All routes start 
 | Identifiers | BIGINT IDs are decimal strings, such as `"200"`; use UUID strings for sessions. |
 | Money | Decimal strings, such as `"100.00"`. |
 | Coordinates | Decimal strings, such as `"32.2723000"`. |
-| Timestamps | UTC ISO 8601; restaurant hours use local `HH:mm:ss`. |
+| Timestamps | Africa/Cairo ISO 8601 with +02:00/+03:00; input timestamps require Z or an explicit offset. Restaurant hours use local `HH:mm:ss`. |
 | Phone | API field `phone` maps to `Users.phone_number`. |
 | Response column | HTTP status plus the name of the `data` model shown below. |
 
@@ -153,7 +153,7 @@ Customers may save at most 2 addresses. Attempting to create a third address ret
 | GET | `/restaurant/dashboard` | Read account activation status and whether restaurant management is allowed. | No body | `200` · RestaurantDashboard |
 | PATCH | `/restaurant/profile` | Update restaurant details and service activity. | Body: `{"rest_title":"AKEELA Kitchen","rest_description":"Grilled meals","rest_image_url_mobile":"https://example.com/restaurant.jpg","rest_address":"12 Main Street, Ismailia","longitude":"32.2723000","latitude":"30.5965000","opens_at":"10:00:00","closes_at":"02:00:00","is_active":true}` | `200` · RestaurantProfile |
 
-`RestaurantDashboard` shows `Pending`, `Active`, or `Suspended`. `can_manage` is true only when activation is Active and the owner account is active and email-verified. A tailored status message is provided (`Your restaurant is waiting for Admin activation.`, `Your restaurant is suspended by Admin.`, or `Your restaurant is active and ready to manage.`). Owners can read account/profile/dashboard status and update restaurant details via `PATCH /restaurant/profile` while Pending or Suspended to fix mistakes before/during review, but receive `403 RESTAURANT_NOT_ACTIVE` for operational business APIs (catalog, orders) and shared profile edits (`PATCH /me`). Admin activation accepts `Active` or `Suspended`; public registration always returns `Pending`.
+`RestaurantDashboard` shows `Pending`, `Active`, or `Suspended`. `can_manage` is true only when activation is Active and the owner account is active and email-verified. A tailored status message is provided (`Your restaurant is waiting for Admin activation.`, `Your restaurant is suspended by Admin.`, or `Your restaurant is active and ready to manage.`). Owners can read account/profile/dashboard while Pending or Suspended. Restaurant profile/shared account edits, catalog and order operations return `403 RESTAURANT_NOT_ACTIVE` until Active. Admin activation accepts `Active` or `Suspended`; registration returns `Pending`.
 
 ## 05. Categories
 
@@ -189,8 +189,8 @@ Product-addon PUT returns `200` for both a new link and an update.
 | Method | Route | Purpose | Request | Response data |
 |---|---|---|---|---|
 | GET | `/restaurant/offers` | List owned offers, including inactive and expired ones. | Query: `page=1&per_page=20` | `200` · List<Offer> |
-| POST | `/restaurant/offers` | Create an offer. | Body: `{"offer_title":"Lunch Offer","offer_description":"Lunch meal","initial_price":"150.00","real_price":"130.00","offer_image_url":null,"is_active":true,"starts_at":"2026-11-12T00:00:00Z","expires_at":"2026-12-01T00:00:00Z"}` | `201` · Offer |
-| PATCH | `/restaurant/offers/{offer_id}` | Update offer details, prices, dates, or activity. | Body: `{"offer_title":"Lunch Offer","offer_description":"Lunch meal","initial_price":"150.00","real_price":"130.00","offer_image_url":null,"is_active":true,"starts_at":"2026-11-12T00:00:00Z","expires_at":"2026-12-01T00:00:00Z"}` | `200` · Offer |
+| POST | `/restaurant/offers` | Create an offer. | Body: `{"offer_title":"Lunch Offer","offer_description":"Lunch meal","initial_price":"150.00","real_price":"130.00","offer_image_url":null,"is_active":true,"starts_at":"2026-11-12T02:00:00.000+02:00","expires_at":"2026-12-01T02:00:00.000+02:00"}` | `201` · Offer |
+| PATCH | `/restaurant/offers/{offer_id}` | Update offer details, prices, dates, or activity. | Body: `{"offer_title":"Lunch Offer","offer_description":"Lunch meal","initial_price":"150.00","real_price":"130.00","offer_image_url":null,"is_active":true,"starts_at":"2026-11-12T02:00:00.000+02:00","expires_at":"2026-12-01T02:00:00.000+02:00"}` | `200` · Offer |
 
 ## 09. Public Restaurant Menu
 
@@ -306,16 +306,16 @@ The JSON blocks below are the `data` value inside the success envelope. Repeated
   "phone": "+201000000001",
   "role": "Customer",
   "is_active": true,
-  "email_verified_at": "2026-11-12T10:00:00Z",
+  "email_verified_at": "2026-11-12T12:00:00.000+02:00",
   "profile": {
     "user_id": "1",
     "profile_role": "Customer",
     "cus_avatar_url": null,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -336,11 +336,11 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
     "user_id": "1",
     "profile_role": "Customer",
     "cus_avatar_url": null,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -367,16 +367,16 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
     "phone": "+201000000001",
     "role": "Customer",
     "is_active": true,
-    "email_verified_at": "2026-11-12T10:00:00Z",
+    "email_verified_at": "2026-11-12T12:00:00.000+02:00",
     "profile": {
       "user_id": "1",
       "profile_role": "Customer",
       "cus_avatar_url": null,
-      "created_at": "2026-11-12T10:00:00Z",
-      "updated_at": "2026-11-12T10:00:00Z"
+      "created_at": "2026-11-12T12:00:00.000+02:00",
+      "updated_at": "2026-11-12T12:00:00.000+02:00"
     },
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
   "tokens": {
     "token_type": "Bearer",
@@ -399,8 +399,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "longitude": "32.2800000",
   "latitude": "30.6000000",
   "is_default": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -418,8 +418,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "opens_at": "10:00:00",
   "closes_at": "02:00:00",
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z",
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00",
   "activation_status": "Active"
 }
 ```
@@ -434,8 +434,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "company_email": "office@example.com",
   "company_address": "5 Main Street, Ismailia",
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -448,8 +448,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "cat_title": "Sandwiches",
   "display_order": 0,
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -465,8 +465,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "prod_image_url": "https://example.com/burger.jpg",
   "price": "100.00",
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -479,8 +479,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "addon_name": "Cheese",
   "addon_price": "10.00",
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -498,11 +498,11 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
     "addon_name": "Cheese",
     "addon_price": "10.00",
     "is_active": true,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -518,10 +518,10 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "real_price": "130.00",
   "offer_image_url": null,
   "is_active": true,
-  "starts_at": "2026-11-12T00:00:00Z",
-  "expires_at": "2026-12-01T00:00:00Z",
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "starts_at": "2026-11-12T02:00:00.000+02:00",
+  "expires_at": "2026-12-01T02:00:00.000+02:00",
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -535,8 +535,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "driver_phone": "+201000000030",
   "driver_email": null,
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -591,8 +591,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "initial_price": "150.00",
   "real_price": "130.00",
   "offer_image_url": null,
-  "starts_at": "2026-11-12T00:00:00Z",
-  "expires_at": "2026-12-01T00:00:00Z"
+  "starts_at": "2026-11-12T02:00:00.000+02:00",
+  "expires_at": "2026-12-01T02:00:00.000+02:00"
 }
 ```
 
@@ -627,7 +627,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "items_subtotal": "200.00",
   "addons_subtotal": "20.00",
   "subtotal": "220.00",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -681,7 +681,7 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
     "items_subtotal": "200.00",
     "addons_subtotal": "20.00",
     "subtotal": "220.00",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
   "delivery_fee": "30.00",
   "total_price": "250.00"
@@ -698,8 +698,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
   "company_id": null,
   "driver_id": null,
   "total_price": "250.00",
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -740,8 +740,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
       ]
     }
   ],
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -784,8 +784,8 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
       ]
     }
   ],
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z",
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00",
   "pickup": {
     "rest_title": "AKEELA Kitchen",
     "rest_address": "12 Main Street, Ismailia",
@@ -803,7 +803,7 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "status": "Accepted",
   "company_id": "20",
   "driver_id": null,
-  "updated_at": "2026-11-12T10:00:00Z"
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -849,14 +849,14 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
     "opens_at": "10:00:00",
     "closes_at": "02:00:00",
     "is_active": true,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z",
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00",
     "activation_status": "Pending",
     "user_id": "10",
     "profile_role": "Restaurant"
   },
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -883,8 +883,8 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
     "opens_at": "10:00:00",
     "closes_at": "02:00:00",
     "is_active": true,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z",
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00",
     "activation_status": "Pending",
     "user_id": "10",
     "profile_role": "Restaurant"
@@ -901,4 +901,34 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "can_manage": false,
   "message": "Your restaurant is waiting for Admin activation."
 }
+```
+
+## 15. Image Uploads
+
+| Method | Route | Purpose | Request | Response |
+|---|---|---|---|---|
+| PUT | `/customer/avatar` | Upload Customer avatar. | Multipart: `file` | `200` · ImageUpload |
+| PUT | `/restaurant/profile/image` | Upload restaurant image. | Multipart: `file` | `200` · ImageUpload |
+| PUT | `/restaurant/products/{prod_id}/image` | Upload product image. | Multipart: `file` | `200` · ImageUpload |
+| PUT | `/restaurant/offers/{offer_id}/image` | Upload offer image. | Multipart: `file` | `200` · ImageUpload |
+
+### ImageUpload
+
+`Content-Type: multipart/form-data`; choose one local image in the file field. Response data:
+
+```json
+{"image_url":"https://api.example.com/images/6c867039-79e4-48f2-a9cf-a1d7576955ab.webp"}
+```
+
+## 16. Health Checks
+
+| Method | Route | Purpose | Request | Response |
+|---|---|---|---|---|
+| GET | `/health/live` | Process liveness. | No body/auth | `200` · Health |
+| GET | `/health/ready` | Database readiness. | No body/auth | `200` · Health; `503 NOT_READY` when unavailable |
+
+### Health
+
+```json
+{"status":"ok","checked_at":"2026-11-13T12:00:00.000+02:00"}
 ```

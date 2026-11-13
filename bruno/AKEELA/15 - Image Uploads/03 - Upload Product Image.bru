@@ -1,0 +1,26 @@
+meta {
+  name: Upload Product Image
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{base_url}}/restaurant/products/{{prod_id}}/image
+  body: multipart-form
+  auth: inherit
+}
+
+body:multipart-form {
+  file: @file()
+}
+
+tests {
+  test('Successful response', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Choose one local JPEG/PNG/WebP file up to 5MB. Use the correct owner login; restaurant activation must be Active.
+}

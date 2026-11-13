@@ -32,6 +32,39 @@ export class RestaurantsService {
     private readonly users: UsersService,
   ) {}
 
+  async assertCatalogWritable(restId: string, manager: EntityManager) {
+    const candidate = await this.profileById(restId, manager);
+    const user = candidate
+      ? await this.users.byId(candidate.user_id, manager, true)
+      : null;
+    const profile = await this.profileById(restId, manager, true);
+    if (!user?.is_active || !user.email_verified_at)
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        'An active verified restaurant account is required.',
+      );
+    if (!profile || profile.activation_status !== 'Active')
+      throw new ApiError(
+        403,
+        'RESTAURANT_NOT_ACTIVE',
+        'Restaurant management is not active.',
+      );
+    return profile;
+  }
+
+  async setImage(
+    userId: string,
+    url: string,
+    manager: EntityManager,
+  ): Promise<void> {
+    const profile = await this.profile(userId, manager);
+    if (!profile) throw new ApiError(404, 'NOT_FOUND', 'Restaurant not found.');
+    await this.assertCatalogWritable(profile.rest_id, manager);
+    await manager
+      .getRepository(RestaurantProfile)
+      .update({ rest_id: profile.rest_id }, { rest_image_url_mobile: url });
+  }
   async saleStatus(restId: string, manager: EntityManager) {
     const profile = await this.profileById(restId, manager);
     const owner = profile
@@ -232,6 +265,13 @@ export class RestaurantsService {
     input: UpdateRestaurantProfileDto,
   ): Promise<RestaurantProfile> {
     return this.dataSource.transaction(async (manager) => {
+      const owner = await this.users.byId(userId, manager, true);
+      if (!owner?.is_active || !owner.email_verified_at)
+        throw new ApiError(
+          403,
+          'FORBIDDEN',
+          'An active verified account is required.',
+        );
       const repo = manager.getRepository(RestaurantProfile);
       const profile = await repo
         .createQueryBuilder('r')
@@ -243,6 +283,12 @@ export class RestaurantsService {
         throw new ApiError(404, 'NOT_FOUND', 'Restaurant profile not found.');
       }
 
+      if (profile.activation_status !== 'Active')
+        throw new ApiError(
+          403,
+          'RESTAURANT_NOT_ACTIVE',
+          'Restaurant management is not active.',
+        );
       const opens = input.opens_at ?? profile.opens_at;
       const closes = input.closes_at ?? profile.closes_at;
       if (opens === closes) {

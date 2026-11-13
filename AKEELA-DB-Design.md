@@ -692,9 +692,9 @@ erDiagram
 - Enforce status changes on the server. Normal flow: `Pending → Accepted → Picked_Up → Delivered`. Define who can reject, cancel, or fail an order and when. `Delivered`, `Rejected`, `Cancelled`, and `Failed` are final states.
 - Use `RESTRICT / NO ACTION` for changes to linked history. Do not cascade-delete orders or items, or clear item references. Disable records with `is_active` when needed.
 - Saved addresses may be deleted; orders keep their own address copies.
-- New sales require active accounts, restaurant service activity, and `activation_status = Active`. Setting restaurant `is_active=false` stops new sales but does not block handling existing orders while activation remains Active. Pending/Suspended owners may read status/profile/dashboard and correct their restaurant details; operational order/catalog APIs stay blocked. Company order operations require an active verified account and active service.
+- New sales require active accounts, restaurant service activity, and `activation_status = Active`. Setting restaurant `is_active=false` stops new sales but does not block handling existing orders while activation remains Active. Pending/Suspended owners may read status/profile/dashboard; all account/profile/catalog/image edits and restaurant order operations stay blocked until Active. Password security flows remain available. Company order operations require an active verified account and active service.
 - Normalize spaces in unique titles and choose a clear case-sensitivity rule.
-- Store timestamp values in UTC; restaurant opening hours remain local times. Set `created_at` and `updated_at` automatically.
+- Store timestamp instants in UTC; API timestamps use Africa/Cairo (+02:00/+03:00). Restaurant hours use Cairo local time. Offer inputs require explicit Z/offset. Set `created_at` and `updated_at` automatically.
 - Index FK columns and common searches. Reuse existing indexes where possible:
   - `Orders(customer_id, created_at, order_id)`
   - `Orders(rest_id, status, created_at)`
@@ -714,3 +714,9 @@ erDiagram
   - `Auth_Challenges(expires_at)`
   - `Customer_Addresses(user_id)`
   - `Offers(rest_id, is_active, starts_at, expires_at)`
+
+## Implementation Status
+
+- All listed tables and the history view are implemented: twenty entity tables, eight migrations.
+- Image uploads update existing URL fields; files live in a persistent VPS volume and are served publicly from `/images`. No binary image column or new table.
+- Features 01-16 are implemented. Hostinger deployment is prepared but not live; backups and a future Admin delivery-fee setting remain deferred.

@@ -1,3 +1,5 @@
+import { ImagesModule } from './modules/images/images.module';
+import { HealthModule } from './modules/health/health.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnvironment } from './config/environment';
@@ -28,6 +30,8 @@ import { OrdersModule } from './modules/orders/orders.module';
     DeliveryModule,
     CartModule,
     OrdersModule,
+    ImagesModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsDefined,
+  IsObject,
   IsEmail,
   IsLatitude,
   IsLongitude,
@@ -94,6 +95,7 @@ export class RestaurantProfileDto {
 }
 export class RestaurantRegisterDto extends RegisterDto {
   @IsDefined({ message: 'Restaurant details are required.' })
+  @IsObject({ message: 'Enter restaurant details as one object.' })
   @ValidateNested({ message: 'Enter restaurant details as an object.' })
   @Type(() => RestaurantProfileDto)
   profile!: RestaurantProfileDto;

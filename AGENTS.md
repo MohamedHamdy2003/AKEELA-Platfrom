@@ -17,14 +17,14 @@ Read this file before changing any code or documentation.
 
 - Documentation is the source of truth. Do not rely on earlier chats.
 - Follow the current user's explicit instructions. If specifications disagree or omit a business decision, record the issue and ask before implementing the affected behavior.
-- The user approved the foundation and authorized Features 01-14, their required schema/migrations and local test database, and deployment-ready templates. New features, future seeds, and actual VPS deployment still require authorization. Read docs/AUTH.md, docs/CART-ORDERS.md and docs/ORDER-DELIVERY.md for implemented decisions. Promotion of changes beyond the released Features 01-10 to main is not authorized.
+- Features 01-16 and production-readiness fixes are authorized. This release to main is explicitly authorized. Actual VPS provisioning/deployment requires server details and authorization; backup automation is deferred. Read docs/AUTH.md, docs/CART-ORDERS.md, docs/ORDER-DELIVERY.md, docs/IMAGES.md and docs/DEPLOYMENT.md for current decisions.
 - Preserve the four root specifications unless the requested change requires updating them. Do not silently rewrite them to match an implementation.
 - When a convention or architectural decision changes, update its documentation in the same change. Record progress and unresolved issues in `docs/STATUS.md`.
 
 ## Architecture boundaries
 
 - One NestJS application, one PostgreSQL database, TypeORM, feature modules.
-- Approved deployment target: one Hostinger VPS with separate Docker containers for Caddy, backend, and PostgreSQL; persistent image/database/Caddy storage and off-VPS backups. Follow `docs/DEPLOYMENT.md`. This does not authorize provisioning or deployment.
+- Approved deployment target: one Hostinger VPS with separate Docker containers for Caddy, backend, and PostgreSQL; persistent image/database/Caddy storage; backup automation is deferred by the owner. Follow `docs/DEPLOYMENT.md`. This does not authorize provisioning or deployment.
 - Controllers handle HTTP; services handle use cases; TypeORM repositories handle persistence within the owning module.
 - Import exported services through Nest module imports. Do not access another module's repository or internal files.
 - Keep cross-module transactions in the owning use-case service; pass the transaction EntityManager explicitly to participating services.

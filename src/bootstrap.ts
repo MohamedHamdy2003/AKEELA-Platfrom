@@ -1,3 +1,6 @@
+import { CairoTimeInterceptor } from './common/time';
+import { static as serveStatic } from 'express';
+import { resolve } from 'node:path';
 import { ValidationError } from 'class-validator';
 import { ApiError } from './common/http/api-error';
 import { ApiExceptionFilter } from './common/http/api-exception.filter';
@@ -7,8 +10,21 @@ export function configureApplication(
   app: INestApplication,
   allowedOrigins: string[],
   trustProxy = false,
+  imageStoragePath?: string,
 ): void {
   app.setGlobalPrefix('api/v1');
+  app.useGlobalInterceptors(new CairoTimeInterceptor());
+  if (imageStoragePath)
+    app.use(
+      '/images',
+      serveStatic(resolve(imageStoragePath), {
+        dotfiles: 'deny',
+        index: false,
+        redirect: false,
+        immutable: true,
+        maxAge: '1y',
+      }),
+    );
   app
     .getHttpAdapter()
     .getInstance()

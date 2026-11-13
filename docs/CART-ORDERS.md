@@ -11,7 +11,7 @@ Features 11 and 12 implement the ten customer routes from the root specification
 - Either address_id for an owned saved address or delivery_address with address_line/longitude/latitude is required for quote/checkout. New addresses are not saved in Customer_Addresses.
 - Quote returns current totals, not a token or price reservation. Checkout always calculates current prices and creates the order directly; it does not compare a previously shown total.
 - There are no checkout keys, request hashes or replay guarantees. Concurrent checkout of the same cart cannot create two orders: the first clears it and the next sees an empty cart. Rebuilding the cart and submitting again can create a new order.
-- No business caps on cart size, addon count or quantities. Quantities must fit PostgreSQL INTEGER and calculated amounts must fit numeric(12,2). Overflow rejects the transaction without changing the cart.
+- No business caps on cart size, addon count or quantities. Quantities must fit PostgreSQL INTEGER. Additions/edits and checkout totals must fit numeric(12,2); overflow rolls back those writes. If later catalog prices cause overflow, GET and deletion still work with decimal-string totals so the customer can recover.
 - Unavailable selections can be viewed/removed; additions, edits, quote and checkout validate restaurant/account/category/item/link activity. Checkout and quote require the restaurant to be open in Africa/Cairo.
 
 ## Transactions and ownership
