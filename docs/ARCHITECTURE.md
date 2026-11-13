@@ -2,9 +2,9 @@
 
 ## Scope and status
 
-One deployable NestJS application, one PostgreSQL database, and TypeORM. Feature 01 is implemented: Auth controllers/services, owning account/profile services, seven table mappings, and one reviewed migration. Catalog, Cart, and Orders remain empty. See [AUTH.md](AUTH.md).
+One deployable NestJS application, one PostgreSQL database, and TypeORM. Features 01-10 are implemented with fourteen table mappings and six reviewed migrations. Cart and Orders remain empty. See [AUTH.md](AUTH.md).
 
-The user approved the foundation and authorized Feature 01, local DB preparation, and deployment-ready templates. Other features and actual VPS deployment still require authorization.
+The user approved the foundation and authorized Features 01-10, local DB preparation, and deployment-ready templates. Other features and actual VPS deployment still require authorization.
 
 ## Runtime structure
 

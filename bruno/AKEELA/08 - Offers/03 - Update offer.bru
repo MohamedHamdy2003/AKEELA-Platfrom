@@ -1,0 +1,30 @@
+meta {
+  name: Update offer
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}/restaurant/offers/{{offer_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "offer_title": "Lunch Special Updated",
+    "real_price": "110.00",
+    "is_active": true
+  }
+}
+
+tests {
+  test('Successful update offer', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data.offer_title).to.equal('Lunch Special Updated');
+  });
+}
+
+docs {
+  Update offer details, prices, dates, or activity. PATCH; send only fields to change.
+}

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { ApiError, reply } from '../../common/http/api-error';
@@ -17,8 +18,10 @@ import { paginationMeta, resolvePagination } from '../users/admin.dto';
 import {
   CreateProductDto,
   ListProductsQuery,
+  SetProductAddonDto,
   UpdateProductDto,
   serializeProduct,
+  serializeProductAddon,
 } from './catalog.dto';
 import { CatalogService } from './catalog.service';
 
@@ -90,5 +93,38 @@ export class RestaurantProductsController {
       body,
     );
     return reply(serializeProduct(product), 'Product updated.');
+  }
+
+  @Get(':prod_id/addons')
+  async listProductAddons(
+    @CurrentActor() actor: AuthActor,
+    @Param('prod_id') prodId: string,
+  ) {
+    this.assertRestaurant(actor);
+    const profile = await this.catalog.assertActiveRestaurant(actor.userId);
+    const items = await this.catalog.listProductAddons(profile.rest_id, prodId);
+    return reply(
+      items.map(({ link, addon }) => serializeProductAddon(link, addon)),
+      'Records returned.',
+    );
+  }
+
+  @Put(':prod_id/addons/:addon_id')
+  @HttpCode(200)
+  async setProductAddon(
+    @CurrentActor() actor: AuthActor,
+    @Param('prod_id') prodId: string,
+    @Param('addon_id') addonId: string,
+    @Body() body: SetProductAddonDto,
+  ) {
+    this.assertRestaurant(actor);
+    const profile = await this.catalog.assertActiveRestaurant(actor.userId);
+    const { link, addon } = await this.catalog.setProductAddon(
+      profile.rest_id,
+      prodId,
+      addonId,
+      body,
+    );
+    return reply(serializeProductAddon(link, addon), 'Product addon updated.');
   }
 }

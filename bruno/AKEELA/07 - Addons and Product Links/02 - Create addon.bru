@@ -1,0 +1,36 @@
+meta {
+  name: Create addon
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/restaurant/addons
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "addon_name": "Cheese",
+    "addon_price": "10.00",
+    "is_active": true
+  }
+}
+
+tests {
+  test('Successful create addon', function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data.addon_id).to.be.a('string');
+    expect(res.getBody().data.addon_name).to.equal('Cheese');
+  });
+}
+
+docs {
+  Create an addon and its price for the authenticated restaurant.
+}

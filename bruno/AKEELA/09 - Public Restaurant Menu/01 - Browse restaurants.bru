@@ -1,0 +1,27 @@
+meta {
+  name: Browse restaurants
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/restaurants?page=1&per_page=20
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  per_page: 20
+}
+
+tests {
+  test('Successful browse restaurants', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data).to.be.an('array');
+  });
+}
+
+docs {
+  Browse active restaurants. No authentication required.
+}

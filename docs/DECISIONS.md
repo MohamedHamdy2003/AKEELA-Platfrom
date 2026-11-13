@@ -37,7 +37,10 @@ Official references used for foundation choices: [Nest modules](https://docs.nes
 
 ## Auth / testing update
 
-- New password inputs now require 8�128 characters, including a letter and a digit. Existing login/current-password checks remain compatible. Other approved token/OTP defaults are unchanged.
-- Gmail uses the existing real SMTP adapter with a Google App Password and TLS. The shared SMTP options also drive the connectivity checker. No credentials are committed; live Gmail verification awaits the owner.
-- Bruno requests live next to code, in numbered feature folders. A separate main-branch checkout is used for testing released APIs. Only implemented endpoints appear; secrets stay outside Git and tokens stay in runtime memory.
+- New password inputs now require 8-128 characters, including a letter and a digit. Existing login/current-password checks remain compatible. Other approved token/OTP defaults are unchanged.
+- Gmail uses the existing real SMTP adapter with a Google App Password and TLS. The shared SMTP options also drive the connectivity checker. No credentials are committed; local Gmail authentication was verified; inbox delivery remains unconfirmed.
+- Bruno requests live next to code, in numbered feature folders. Use the collection inside the same project checkout; it follows the current branch. Only implemented endpoints appear; secrets stay outside Git and tokens stay in runtime memory.
 - This Auth + Bruno release is approved for main by the owner; future releases retain the explicit approval requirement.
+
+- Owner confirmed one Admin created through CLI only; it cannot be disabled. Features 01-10 and this release to main are authorized.
+- Public restaurant opening status uses the single local market timezone Africa/Cairo explicitly; no per-restaurant timezone column.

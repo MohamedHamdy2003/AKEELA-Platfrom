@@ -1,0 +1,23 @@
+meta {
+  name: Get product details
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/restaurants/{{rest_id}}/products/{{prod_id}}
+  body: none
+  auth: none
+}
+
+tests {
+  test('Successful get product details', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data.prod_id).to.be.a('string');
+    expect(res.getBody().data.addons).to.be.an('array');
+  });
+}
+
+docs {
+  Read a product and its active allowed addons. No authentication required.
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Update driver
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{base_url}}/delivery-company/drivers/{{driver_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "driver_name": "Omar Hassan",
+    "is_active": false
+  }
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

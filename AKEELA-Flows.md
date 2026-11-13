@@ -53,16 +53,16 @@
 
 **Setup account → Verify email → Login → Review restaurants → Monitor platform**
 
-1. Create the first Admin through the setup command or seed.
-2. Verify the Admin email using OTP, then log in.
+1. Create the only Admin through the CLI setup command.
+2. Log in with the CLI-created Admin. If provisioned with ADMIN_VERIFIED=false, verify email using OTP first.
 3. Review self-registered restaurants with activation status `Pending`.
 4. Activate restaurants, suspend them, or reactivate them later.
-5. Create delivery company accounts and additional Admin accounts.
+5. Create delivery company accounts. Additional Admin accounts are not allowed.
 6. Enable or disable account login when needed.
 7. Monitor orders and mark eligible `Accepted` or `Picked_Up` orders as `Failed` when needed.
 
 - Admin does not create restaurant accounts or assign orders to delivery companies.
-- The last active Admin cannot be disabled.
+- The only Admin cannot be disabled.
 
 ## 5. Password Recovery — All Roles
 

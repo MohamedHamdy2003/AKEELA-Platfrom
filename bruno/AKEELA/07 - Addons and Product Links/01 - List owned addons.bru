@@ -1,0 +1,28 @@
+meta {
+  name: List owned addons
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/restaurant/addons?page=1&per_page=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  per_page: 20
+}
+
+tests {
+  test('Successful list addons', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data).to.be.an('array');
+  });
+}
+
+docs {
+  List owned addons for the authenticated restaurant.
+}

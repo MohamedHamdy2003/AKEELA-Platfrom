@@ -1,0 +1,27 @@
+meta {
+  name: Get restaurant categories
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/restaurants/{{rest_id}}/categories?page=1&per_page=20
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  per_page: 20
+}
+
+tests {
+  test('Successful get categories', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data).to.be.an('array');
+  });
+}
+
+docs {
+  Read active categories for a restaurant in display order. No authentication required.
+}
