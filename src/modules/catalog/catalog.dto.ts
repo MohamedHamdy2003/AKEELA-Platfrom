@@ -377,12 +377,18 @@ export class CreateOfferDto {
     { strict: true },
     { message: 'Enter starts_at as a UTC ISO 8601 timestamp.' },
   )
+  @Matches(/T.*(?:Z|[+-]\d{2}:\d{2})$/, {
+    message: 'Include Z or an explicit timezone offset in the start time.',
+  })
   starts_at!: string;
 
   @IsDateString(
-    {},
+    { strict: true },
     { message: 'Enter expires_at as a UTC ISO 8601 timestamp.' },
   )
+  @Matches(/T.*(?:Z|[+-]\d{2}:\d{2})$/, {
+    message: 'Include Z or an explicit timezone offset in the end time.',
+  })
   expires_at!: string;
 }
 
@@ -435,13 +441,19 @@ export class UpdateOfferDto {
     { strict: true },
     { message: 'Enter starts_at as a UTC ISO 8601 timestamp.' },
   )
+  @Matches(/T.*(?:Z|[+-]\d{2}:\d{2})$/, {
+    message: 'Include Z or an explicit timezone offset in the start time.',
+  })
   starts_at?: string;
 
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsDateString(
-    {},
+    { strict: true },
     { message: 'Enter expires_at as a UTC ISO 8601 timestamp.' },
   )
+  @Matches(/T.*(?:Z|[+-]\d{2}:\d{2})$/, {
+    message: 'Include Z or an explicit timezone offset in the end time.',
+  })
   expires_at?: string;
 }
 

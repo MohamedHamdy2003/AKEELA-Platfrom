@@ -17,6 +17,7 @@ test('environment defaults and explicit settings are parsed', () => {
   const explicit = validateEnvironment({
     ...input,
     NODE_ENV: 'production',
+    PUBLIC_BASE_URL: 'https://api.example.com',
     PORT: '4000',
     DATABASE_SSL: 'true',
     CORS_ORIGINS: 'https://example.com, http://localhost:5173',

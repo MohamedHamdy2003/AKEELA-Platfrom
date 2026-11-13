@@ -1,0 +1,22 @@
+meta {
+  name: Liveness
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/health/live
+  body: none
+  auth: none
+}
+
+tests {
+  test('Successful response', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}
+
+docs {
+  Public health probe; no authentication needed. Readiness returns 503 when database checks fail.
+}

@@ -13,8 +13,14 @@ async function bootstrap(): Promise<void> {
     app,
     config.get('CORS_ORIGINS', { infer: true }),
     config.get('TRUST_PROXY', { infer: true }),
+    config.get('IMAGE_STORAGE_PATH', { infer: true }),
   );
-  await app.listen(config.get('PORT', { infer: true }));
+  try {
+    await app.listen(config.get('PORT', { infer: true }));
+  } catch (error) {
+    await app.close();
+    throw error;
+  }
 }
 
 void bootstrap().catch(() => {

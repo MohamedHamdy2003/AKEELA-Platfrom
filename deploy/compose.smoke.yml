@@ -1,0 +1,60 @@
+# Isolated test deployment. Never use this file or these credentials in production.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: smoke
+      POSTGRES_PASSWORD: smoke-only-password
+      POSTGRES_DB: akeela_smoke_test
+    volumes: [database:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U smoke -d akeela_smoke_test']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  api:
+    image: ${SMOKE_IMAGE:-akeela-api:smoke}
+    environment:
+      NODE_ENV: production
+      TZ: Africa/Cairo
+      DATABASE_URL: postgresql://smoke:smoke-only-password@postgres:5432/akeela_smoke_test
+      JWT_SECRET: smoke-only-jwt-key-012345678901234567890
+      OTP_SECRET: smoke-only-otp-key-012345678901234567890
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      SMTP_REQUIRE_TLS: 'true'
+      SMTP_FROM: smoke@example.com
+      PUBLIC_BASE_URL: https://localhost
+      IMAGE_STORAGE_PATH: /app/storage/images
+      TRUST_PROXY: 'true'
+    volumes: [images:/app/storage/images]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/v1/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  caddy:
+    image: caddy:2
+    command: ['caddy', 'run', '--config', '/etc/caddy/Caddyfile']
+    ports: ['127.0.0.1::443', '127.0.0.1::80']
+    volumes:
+      - ./Caddyfile.smoke:/etc/caddy/Caddyfile:ro
+      - ./routes.caddy:/etc/caddy/routes.caddy:ro
+      - images:/srv/images:ro
+      - certificates:/data
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  database:
+  images:
+  certificates:

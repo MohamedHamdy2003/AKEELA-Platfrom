@@ -2,43 +2,38 @@
 
 ## Authorized scope
 
-Features 01-14 are authorized. Features 01-10 were released to main; later features target dev. Features 13-14 are implemented through feature/order-handling-and-delivery. This change has no authorization to promote to main or deploy a VPS.
+Features 01-14, production fixes, images, health, CI/CD and Hostinger preparation are authorized. The owner requested promotion of this complete change to main. The VPS has not been purchased; real provisioning, DNS, certificates and deployment remain pending. Backup automation is deferred by the owner.
 
 ## Implemented
 
-- 01: email/password signup, email OTP, JWT sessions, password recovery and shared profile.
-- 02: Admin account management, restaurant activation and CLI provisioning of the only Admin. API Admin creation and disabling this Admin are blocked.
-- 03: owned customer addresses, maximum two, atomic default selection.
-- 04: restaurant profile/dashboard; Pending/Suspended owners can correct restaurant details, while operations require Active activation.
-- 05-08: owned categories, products, addons/product links and offers.
-- 09: public restaurants/menu with visibility and sale-window checks.
-- 10: company profile and owned driver management; see [DELIVERY.md](DELIVERY.md).
-- Features 11-12 add customer cart, informational totals, current-price checkout, own order queries/history and Pending cancellation; see [CART-ORDERS.md](CART-ORDERS.md).
-- Features 13-14 add restaurant acceptance/rejection with automatic company assignment, Admin monitoring/failure, and assigned-company driver/pickup/delivery; see [ORDER-DELIVERY.md](ORDER-DELIVERY.md).
-- 75 API routes, twenty table mappings, one history view, eight reversible migrations and matching Bruno folders.
-- Docker/Caddy deployment templates; persistent image storage is reserved, not served.
+| Scope                                                                 | State                                                                                                  |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 01-04: Auth, Admin, customer addresses, restaurant profile/activation | Implemented                                                                                            |
+| 05-10: Catalog, addons, offers, public menu, company/drivers          | Implemented                                                                                            |
+| 11-14: Cart, checkout/history, restaurant order handling/delivery     | Implemented                                                                                            |
+| 15: Customer/restaurant/product/offer images and public URLs          | Implemented                                                                                            |
+| 16: Public liveness/readiness                                         | Implemented                                                                                            |
+| PostgreSQL                                                            | Twenty table mappings, one history view, eight reversible migrations; no schema change in this release |
+| API collection                                                        | 81 routes in specifications and matching Bruno folders                                                 |
+| Docker/Caddy                                                          | Persistent images/database/certificates, private API/database; local TLS smoke verified                |
+| CI/CD                                                                 | PR checks, main GHCR publication, optional pinned-SSH deployment; deployment disabled until configured |
 
-## Confirmed decisions
+## Current rules
 
-- BIGINT IDs are decimal strings. Money remains decimal strings; comparisons use integer cents.
-- Passwords: 8-128 characters, including a letter and digit. Configurable defaults: access JWT 15 minutes, refresh 30 days, six-digit OTP 10 minutes/five attempts/60-second resend cooldown.
-- One Admin, created by CLI only. Trusted CLI provisions verified email by default; ADMIN_VERIFIED=false uses normal OTP verification.
-- Local Gmail connection, TLS and authentication passed. Inbox delivery is not confirmed; automated tests use Mailpit only.
-- Single local market: Africa/Cairo. No per-restaurant timezone column.
-- Bruno collection stays inside the same project checkout and follows its branch.
-
-- Cart has no business caps; validate INTEGER range and money overflow. No quote tokens, price comparisons, checkout keys or request hashes. Use a saved address or a one-time delivery address.
-
-- Single-company operation: company service/account cannot be disabled through the APIs. Default-company assignment requires active service/account and verified email. Active owned drivers are required for assignment/pickup/delivery.
-
-## Review and verification
-
-See [REVIEW.md](REVIEW.md) for findings, corrections and limits. PostgreSQL integration tests use only a dedicated local database ending in `_test`; they truncate it and roll back/reapply migrations. No application-database migration is applied by this review.
-
-`npm ci` encountered a Windows EPERM directory lock. `npm install --ignore-scripts --no-audit --no-fund` restored dependencies without changing package.json or its lockfile.
+- IDs/money are decimal strings. Passwords: 8-128 characters, a letter and digit. Auth settings: [AUTH.md](AUTH.md).
+- One CLI-created Admin and one always-active company. DEFAULT_DELIVERY_COMPANY_ID is optional at startup but required to accept orders.
+- EGP, initial delivery fee 30.00. No quote tokens, price comparisons, checkout keys/hashes or cart business caps. Checkout uses current prices.
+- Pending/Suspended restaurants may authenticate and read account/profile/dashboard, but cannot modify account/profile/catalog/images or handle orders. Password security operations remain available. Service is_active=false stops new sales only while activation stays Active.
+- Catalog writes recheck activation under transaction locks. Nested profile arrays are rejected before business work. Offer timestamps require explicit Z/offset and valid calendar dates.
+- PostgreSQL stores UTC instants; API timestamps use Africa/Cairo and its current offset. Restaurant hours are Cairo times. Over-limit repriced carts remain readable/removable; checkout/additions/edits enforce numeric storage limits.
+- Gmail authentication was verified earlier. Tests use Mailpit; production inbox delivery needs server verification.
 
 ## Pending
 
-Uploads, OpenAPI, health endpoints, CI/CD, backup automation, the future general-fee Admin API and VPS deployment remain unimplemented. DEFAULT_DELIVERY_COMPANY_ID must be configured to accept orders; it is optional at startup and is never auto-selected. EGP and the initial general delivery fee of 30.00 are confirmed; quotes are informational only. Production domain, server sizing, backup retention/restore and client token storage remain open.
+- Buy/provision VPS, choose domain, configure DNS/private environment/SSH secrets and DEPLOY_ENABLED, then verify real HTTPS/Gmail.
+- Backup/restore automation explicitly deferred. OpenAPI, future delivery-fee Admin API, image cleanup, load testing and client token storage remain unimplemented.
+- No application-database migrations/seeds run in this task. Tests truncate only the dedicated local `_test` database.
 
-Verification: `npm run check` passed (26 tests, lint, formatting, typecheck, build, documentation parity and 75 Bruno requests). The full PostgreSQL/Mailpit suite passed 101 tests, including all migrations, schema agreement and order/delivery operations. The expanded order/delivery file separately passed all 12 tests, including stopping restaurant sales, inactive drivers, inactive company creation rollback, and concurrent pickup/assignment/delivery/failure. No new migrations are needed; application database migrations remain unapplied by this task.
+## Verification
+
+Docker smoke passed trusted local TLS, HTTP redirect, reverse proxy readiness, WebP serving and image persistence after API recreation. `npm run check` passed (27 unit tests, lint, formatting, types, build, docs and 81 Bruno requests). The full PostgreSQL/Mailpit suite passed 111 tests; the final changed cart/image/profile cases passed another targeted run of 28 tests. Runtime audit reports zero vulnerabilities. Workflow validation (actionlint), Bash syntax and production Caddy validation passed. See [REVIEW.md](REVIEW.md).

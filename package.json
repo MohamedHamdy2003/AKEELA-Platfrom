@@ -2,7 +2,7 @@
   "name": "akeela-api",
   "version": "0.1.0",
   "private": true,
-  "description": "AKEELA modular monolith \u00e2\u20ac\u201d restaurant ordering API",
+  "description": "AKEELA modular monolith â€” restaurant ordering API",
   "engines": {
     "node": ">=24.11.0 <25",
     "npm": ">=11 <12"
@@ -31,7 +31,8 @@
     "create:admin:prod": "node dist/commands/create-admin.js",
     "smtp:check": "ts-node src/commands/check-smtp.ts",
     "smtp:check:prod": "node dist/commands/check-smtp.js",
-    "bruno:check": "node scripts/check-bruno.mjs"
+    "bruno:check": "node scripts/check-bruno.mjs",
+    "smoke:production": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@nestjs/common": "12.5.0",
@@ -47,6 +48,7 @@
     "pg": "8.23.1",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
+    "sharp": "0.35.5",
     "typeorm": "1.1.3"
   },
   "devDependencies": {
@@ -54,6 +56,7 @@
     "@nestjs/cli": "12.0.12",
     "@nestjs/testing": "12.5.0",
     "@types/express": "5.0.6",
+    "@types/multer": "2.3.0",
     "@types/node": "24.19.2",
     "@types/nodemailer": "8.0.2",
     "@types/pg": "8.23.1",

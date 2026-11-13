@@ -27,6 +27,7 @@ if (
 
 Object.assign(process.env, {
   NODE_ENV: 'test',
+  DEFAULT_DELIVERY_COMPANY_ID: '',
   DATABASE_URL: testUrl,
   DATABASE_SSL: 'false',
   TRUST_PROXY: 'false',
@@ -266,8 +267,23 @@ test('Feature 04 - Restaurant Profile Integration Tests', async (t) => {
   });
 
   await t.test(
-    'PATCH /restaurant/profile allows updating while Pending',
+    'Pending blocks edits; Active allows profile updates',
     async () => {
+      await api()
+        .patch('/api/v1/restaurant/profile')
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ rest_title: 'Blocked' })
+        .expect(403);
+      await api()
+        .patch('/api/v1/me')
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ full_name: 'Blocked' })
+        .expect(403);
+      await api()
+        .patch('/api/v1/admin/restaurants/' + restaurantAId + '/activation')
+        .set('Authorization', bearer(adminToken))
+        .send({ activation_status: 'Active' })
+        .expect(200);
       const res = await api()
         .patch('/api/v1/restaurant/profile')
         .set('Authorization', bearer(restaurantAToken))
@@ -296,7 +312,7 @@ test('Feature 04 - Restaurant Profile Integration Tests', async (t) => {
       assert.equal(res.body.data.opens_at, '11:00:00');
       assert.equal(res.body.data.closes_at, '01:00:00');
       assert.equal(res.body.data.is_active, false);
-      assert.equal(res.body.data.activation_status, 'Pending'); // Unchanged
+      assert.equal(res.body.data.activation_status, 'Active');
 
       // Verify persistence via GET
       const verify = await api()
@@ -404,16 +420,16 @@ test('Feature 04 - Restaurant Profile Integration Tests', async (t) => {
         'Your restaurant is suspended by Admin.',
       );
 
-      // Profile can still be updated while Suspended (e.g. fixing info)
+      // Suspended owners may read their data, but cannot edit.
       const patchRes = await api()
         .patch('/api/v1/restaurant/profile')
         .set('Authorization', bearer(restaurantAToken))
         .send({ rest_description: 'Fixing description while suspended' });
-      assert.equal(patchRes.status, 200);
-      assert.equal(
-        patchRes.body.data.rest_description,
-        'Fixing description while suspended',
-      );
+      assert.equal(patchRes.status, 403);
+      await api()
+        .get('/api/v1/restaurant/profile')
+        .set('Authorization', bearer(restaurantAToken))
+        .expect(200);
     },
   );
 
@@ -463,6 +479,11 @@ test('Feature 04 - Restaurant Profile Integration Tests', async (t) => {
     assert.equal(profB.body.data.rest_id, restaurantBId);
     assert.equal(profB.body.data.rest_title, 'Original Kitchen B');
 
+    await api()
+      .patch('/api/v1/admin/restaurants/' + restaurantBId + '/activation')
+      .set('Authorization', bearer(adminToken))
+      .send({ activation_status: 'Active' })
+      .expect(200);
     // Restaurant B updates its profile
     const patchB = await api()
       .patch('/api/v1/restaurant/profile')

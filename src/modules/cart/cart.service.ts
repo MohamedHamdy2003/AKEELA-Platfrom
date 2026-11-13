@@ -15,6 +15,9 @@ import {
   AddonChoiceDto,
 } from './cart.dto';
 import { CartView, CartItemView, GENERAL_DELIVERY_FEE } from './cart.types';
+function displayAmount(cents: bigint): string {
+  return `${cents / 100n}.${(cents % 100n).toString().padStart(2, '0')}`;
+}
 export function amount(cents: bigint): string {
   if (cents < 0n || cents > 999999999999n)
     throw new ApiError(
@@ -108,7 +111,7 @@ export class CartService {
           addon_name: addon.name,
           quantity: choice.quantity,
           unit_price: addon.price,
-          subtotal: amount(sum),
+          subtotal: displayAmount(sum),
         };
       });
       itemsTotal += subtotal;
@@ -120,9 +123,9 @@ export class CartService {
         item_name: sale.item?.name ?? '',
         quantity: row.quantity,
         unit_price: price,
-        subtotal: amount(subtotal),
+        subtotal: displayAmount(subtotal),
         addons,
-        line_total: amount(subtotal + lineAddons),
+        line_total: displayAmount(subtotal + lineAddons),
         is_available:
           status.is_available &&
           Boolean(sale.item?.is_available) &&
@@ -133,9 +136,9 @@ export class CartService {
       cart_id: cart.cart_id,
       rest_id: cart.rest_id,
       items,
-      items_subtotal: amount(itemsTotal),
-      addons_subtotal: amount(addonsTotal),
-      subtotal: amount(itemsTotal + addonsTotal),
+      items_subtotal: displayAmount(itemsTotal),
+      addons_subtotal: displayAmount(addonsTotal),
+      subtotal: displayAmount(itemsTotal + addonsTotal),
       updated_at: cart.updated_at.toISOString(),
     };
   }
@@ -285,7 +288,9 @@ export class CartService {
         await this.saveAddons(item, addons, m);
       }
       await this.touch(cart, m);
-      return this.snapshot(userId, m);
+      const view = await this.snapshot(userId, m);
+      amount(moneyCents(view.subtotal));
+      return view;
     });
   }
   async update(userId: string, itemId: string, input: UpdateCartItemDto) {
@@ -331,7 +336,9 @@ export class CartService {
       await m.getRepository(CartItem).save(row);
       await this.saveAddons(row, addons, m);
       await this.touch(cart, m);
-      return this.snapshot(userId, m);
+      const view = await this.snapshot(userId, m);
+      amount(moneyCents(view.subtotal));
+      return view;
     });
   }
   async remove(userId: string, itemId: string) {

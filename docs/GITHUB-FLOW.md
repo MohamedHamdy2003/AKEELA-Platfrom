@@ -29,4 +29,4 @@ git switch -c feature/email-auth
 
 Only after the owner explicitly requests it: verify the full flow on `dev`, open a PR with **base `main` and head `dev`**, then merge after review. Use a merge commit for release PRs so shared branch history is preserved. Keep `dev` aligned with `main` afterward.
 
-Do not commit features directly to `dev` or `main`, force-push shared branches, or merge unfinished work. The one-time initial foundation creates both branches from the same snapshot. No deployment or branch-protection policy is configured by this document.
+Do not commit features directly to `dev` or `main`, force-push shared branches, or merge unfinished work. The one-time initial foundation creates both branches from the same snapshot. CI checks PRs/dev. Main release runs CI, publishes GHCR and optionally deploys only when configured; see [DEPLOYMENT.md](DEPLOYMENT.md). Branch protection is not configured automatically. Owner-approved main promotion does not authorize arbitrary future releases.

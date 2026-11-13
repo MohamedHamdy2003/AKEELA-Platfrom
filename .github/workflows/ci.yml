@@ -1,0 +1,41 @@
+name: CI
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev]
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: akeela_ci_test
+        ports: ['15432:5432']
+        options: >-
+          --health-cmd "pg_isready -U test -d akeela_ci_test"
+          --health-interval 5s --health-timeout 3s --health-retries 15
+      mailpit:
+        image: axllent/mailpit:latest
+        ports: ['11025:1025', '18025:8025']
+    env:
+      TEST_DATABASE_URL: postgresql://test:ci-only-password@localhost:15432/akeela_ci_test
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test:integration
+      - run: npm audit --omit=dev --audit-level=moderate
+      - run: bash -n deploy/bootstrap-vps.sh deploy/release.sh
+      - run: npm run smoke:production

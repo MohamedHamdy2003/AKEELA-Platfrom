@@ -1,4 +1,4 @@
-# Features 01-10 Review
+# Code and Production Review
 
 Scope: source, API contracts, authorization, migrations, decimal handling, public visibility, concurrency, and PostgreSQL integration tests. Review is not a guarantee that software has no defects.
 
@@ -18,8 +18,18 @@ Scope: source, API contracts, authorization, migrations, decimal handling, publi
 
 ## Limits
 
-Features 11-14, VPS deployment, image uploads, backups, and load testing are outside this change. SMTP integration tests use Mailpit. Gmail connection/authentication was verified separately; that does not prove inbox delivery.
+Features 01-16 are implemented and reviewed. Actual VPS deployment, backups and load testing remain pending. SMTP integration tests use Mailpit. Gmail connection/authentication was verified separately; that does not prove inbox delivery.
 
 Public restaurant listing currently obtains eligible owner IDs through Users before querying Restaurants. This preserves ownership boundaries; revisit query performance if the restaurant count grows substantially.
 
 PostgreSQL input-format/range errors return a safe 422 instead of an internal error, without exposing SQL or input values.
+
+## Production fixes
+
+- UTC storage with explicit Africa/Cairo API offsets and timezone-aware offer input; reject impossible calendar dates.
+- Pending/Suspended profile edits blocked. Catalog writes lock/recheck activation so a concurrent suspension wins before mutation.
+- Nested registration/Admin profile arrays produce 422 before persistence.
+- Overflow caused by later catalog price increases no longer traps cart reads/removals. Checkout and additions/edits still reject storage overflow.
+- Real byte-validated uploads, metadata removal, safe UUID filenames and domain ownership checks; no schema change.
+- Caddy TLS/proxy/images/persistence verified with isolated Docker smoke. Production liveness/readiness and time-bounded database probes added.
+- CI/CD and immutable releases prepared. Live ACME/SSH/Hostinger setup awaits real infrastructure. Image cleanup and backup automation are not implemented.

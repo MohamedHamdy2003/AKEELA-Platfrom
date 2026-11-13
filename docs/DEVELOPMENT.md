@@ -73,7 +73,7 @@ Development commands use TypeScript and dev dependencies. Production uses `npm r
 
 ## Future feature workflow
 
-1. Obtain authorization for the feature; Feature 01 is already authorized.
+1. Obtain authorization for the feature; Features 01-16 are already implemented.
 2. Read AGENTS and relevant docs; resolve only decisions that block that feature.
 3. Add minimal DTO/service/controller/entity files within the owning module.
 4. Implement database constraints and tested transaction boundaries when schema work is authorized.

@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDefined,
+  IsObject,
   IsEmail,
   IsIn,
   IsInt,
@@ -166,6 +167,7 @@ export class AdminCreateUserDto {
   @IsDefined({
     message: 'profile is required when creating a Delivery_Company account.',
   })
+  @IsObject({ message: 'Enter profile details as one object.' })
   @ValidateNested({ message: 'Enter profile details as an object.' })
   @Type(() => AdminCreateDeliveryProfileDto)
   profile?: AdminCreateDeliveryProfileDto;

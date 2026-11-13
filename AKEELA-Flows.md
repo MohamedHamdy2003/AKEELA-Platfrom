@@ -23,7 +23,7 @@
 1. Register with owner account data and restaurant details.
 2. Verify the owner's email using OTP, then log in.
 3. Open the dashboard with restaurant activation status `Pending`.
-4. Wait for Admin to activate the restaurant. Restaurant details, hours, and address can be updated to fix mistakes before/during review; catalog management and order handling await activation.
+4. Wait for Admin activation. Read account/profile/dashboard while Pending or Suspended; all edits, image uploads and restaurant order handling stay blocked until Active. Authentication and password security flows remain available.
 5. After activation becomes `Active`, manage restaurant details, hours, categories, products, addons, and offers.
 6. Receive `Pending` orders and accept or reject them.
 7. Accepting an order changes it to `Accepted` and automatically assigns the configured delivery company.
@@ -86,3 +86,8 @@
 | Admin marks an Accepted or Picked_Up order as failed | Admin | `Failed` |
 
 `Delivered`, `Rejected`, `Cancelled`, and `Failed` are final states and appear in customer order history.
+
+## Images and Deployment Status
+
+- Customer: upload an avatar. Active restaurant owner: upload restaurant, product and offer images. The API saves a public image URL.
+- Features 01-16 are implemented. Docker/Caddy and CI/CD are prepared; live Hostinger setup awaits the VPS/domain. Backup automation and the future Admin delivery-fee API remain deferred.
