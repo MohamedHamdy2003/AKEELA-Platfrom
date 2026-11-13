@@ -14,6 +14,35 @@ import { ApiError } from '../../common/http/api-error';
 export class CustomersService {
   constructor(private readonly dataSource: DataSource) {}
 
+  async lockForCart(userId: string, manager: EntityManager): Promise<void> {
+    const customer = await manager
+      .getRepository(CustomerProfile)
+      .createQueryBuilder('c')
+      .where('c.user_id = :userId', { userId })
+      .setLock('pessimistic_write')
+      .getOne();
+    if (!customer)
+      throw new ApiError(403, 'FORBIDDEN', 'Customer access required.');
+  }
+
+  async deliveryAddress(
+    userId: string,
+    addressId: string,
+    manager: EntityManager,
+  ) {
+    const address = await manager.getRepository(CustomerAddress).findOneBy({
+      user_id: userId,
+      address_id: addressId,
+    });
+    if (!address)
+      throw new ApiError(404, 'NOT_FOUND', 'Delivery address not found.');
+    return {
+      address_line: address.address_line,
+      longitude: address.longitude,
+      latitude: address.latitude,
+    };
+  }
+
   async create(userId: string, manager: EntityManager) {
     return manager
       .getRepository(CustomerProfile)

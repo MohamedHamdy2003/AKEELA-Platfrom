@@ -1,0 +1,15 @@
+meta {
+  name: Remove item
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{base_url}}/customer/cart/items/{{cart_item_id}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

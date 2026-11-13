@@ -17,7 +17,7 @@ Read this file before changing any code or documentation.
 
 - Documentation is the source of truth. Do not rely on earlier chats.
 - Follow the current user's explicit instructions. If specifications disagree or omit a business decision, record the issue and ask before implementing the affected behavior.
-- The user approved the foundation and authorized Features 01�10 (including their review and corrections), its required schema/migrations and local test database, and deployment-ready templates. Other business features, seeds, and actual VPS provisioning/deployment still require authorization. Read `docs/AUTH.md` for implemented decisions and scope.
+- The user approved the foundation and authorized Features 01-12, their required schema/migrations and local test database, and deployment-ready templates. Features 13-14, future seeds, and actual VPS deployment still require authorization. Read docs/AUTH.md and docs/CART-ORDERS.md for implemented decisions. Promotion of this cart/checkout change to main is not authorized.
 - Preserve the four root specifications unless the requested change requires updating them. Do not silently rewrite them to match an implementation.
 - When a convention or architectural decision changes, update its documentation in the same change. Record progress and unresolved issues in `docs/STATUS.md`.
 

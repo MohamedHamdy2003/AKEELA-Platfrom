@@ -2,9 +2,9 @@
 
 ## Scope and status
 
-One deployable NestJS application, one PostgreSQL database, and TypeORM. Features 01-10 are implemented with fourteen table mappings and six reviewed migrations. Cart and Orders remain empty. See [AUTH.md](AUTH.md).
+One deployable NestJS application, one PostgreSQL database, and TypeORM. Features 01-12 include twenty table mappings, one history view and eight reviewed migrations. Cart and customer order APIs are implemented; restaurant order handling and delivery actions remain planned. See [AUTH.md](AUTH.md).
 
-The user approved the foundation and authorized Features 01-10, local DB preparation, and deployment-ready templates. Other features and actual VPS deployment still require authorization.
+The user approved the foundation and authorized Features 01-12, local DB preparation, and deployment-ready templates. Other features and actual VPS deployment still require authorization.
 
 ## Runtime structure
 
@@ -100,3 +100,5 @@ Cart writes lock the parent cart row. Order transitions lock/check the order row
 - Feature 01 controllers return explicit success envelopes. A shared filter normalizes errors and validation failures. JWT guards check live sessions/accounts, and SMTP sends codes after commit. No health endpoint, Swagger document, or seeds exist.
 
 Module boundaries follow [Nest module encapsulation](https://docs.nestjs.com/modules). Database changes use [TypeORM migrations](https://typeorm.io/docs/migrations/why/) rather than automatic synchronization.
+
+Cart and checkout use SERIALIZABLE transactions with bounded retries; see [CART-ORDERS.md](CART-ORDERS.md) for lock order and the confirmed current-price checkout behavior.

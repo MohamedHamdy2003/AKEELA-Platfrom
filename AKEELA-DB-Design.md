@@ -10,7 +10,7 @@
 - Each restaurant or company account manages one restaurant or company.
 - Drivers belong to companies and have no login accounts in this version.
 - Keep BIGINT identifiers as decimal strings in APIs and application data; do not cast them to JavaScript numbers.
-- Use one app-wide currency and `DECIMAL(12,2)` for money.
+- Use EGP as the app-wide currency and `DECIMAL(12,2)` for money. The initial general delivery fee is EGP 30.00; an Admin fee-management endpoint is planned for a later feature.
 - Use `Picked_Up` for the pickup status.
 - Each customer may keep one cart for one restaurant. Cart checkout creates a separate order with saved names and prices.
 
@@ -313,7 +313,6 @@ erDiagram
 │ Orders                                                                   │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ order_id            BIGINT          PK                                   │
-│ checkout_key        VARCHAR(64)     NULL                                 │
 │ customer_id         BIGINT          FK → Customer_Profiles.user_id       │
 │ rest_id             BIGINT          FK → Restaurant_Profiles             │
 │ company_id          BIGINT          NULL, FK → Delivery_Company_Profiles │
@@ -332,7 +331,6 @@ erDiagram
 
 - `status IN ('Pending', 'Accepted', 'Picked_Up', 'Delivered', 'Rejected', 'Cancelled', 'Failed')`.
 - `UNIQUE (rest_id, order_id)`.
-- `checkout_key` identifies a checkout attempt. Enforce uniqueness on `(customer_id, checkout_key)` for non-NULL keys using an index supported by the database.
 - `FK (company_id, driver_id) → Delivery_Drivers (company_id, driver_id)`.
 - `CHECK (driver_id IS NULL OR company_id IS NOT NULL)`.
 - Pending orders start with `company_id` and `driver_id` NULL. Restaurant acceptance automatically sets Accepted and assigns the configured default delivery company in one transaction.
@@ -378,7 +376,7 @@ CHECK (
 ```
 
 - `CHECK (quantity > 0 AND unit_price >= 0)`.
-- Generate `subtotal = unit_price * quantity` in the database. Set quantity limits to prevent numeric overflow and check the order total.
+- Generate `subtotal = unit_price * quantity` in the database. Validate positive whole-number quantities within PostgreSQL INTEGER range and reject numeric overflow in line/order totals; no additional business quantity cap.
 - The server copies `Products.prod_name` or `Offers.offer_title` into `item_name`, and the current sale price into `unit_price` when creating the order.
 - Composite FKs keep all items in the same restaurant as the order.
 
@@ -448,7 +446,7 @@ CHECK (
 - `FK (rest_id, prod_id, addon_id) → Product_Addons (rest_id, prod_id, addon_id)`.
 - All FK columns here are required. The addon must match the ordered product and restaurant. Offer items cannot have addons in this version.
 - `CHECK (quantity > 0 AND unit_price >= 0)`.
-- Generate `subtotal = unit_price * quantity`. Apply quantity limits and check money totals for overflow.
+- Generate `subtotal = unit_price * quantity`. Check INTEGER quantity range and money totals for overflow; no additional business quantity cap.
 - `quantity` is the total number of addon units for this order item, not the amount per product. Two burgers with one cheese each use addon quantity `2`.
 - Use separate order items when copies of a product have different addon choices.
 - The server checks that the customer owns the order and that the addon and product link are active. Copy the current addon name and price into this row during checkout.
@@ -508,7 +506,7 @@ WHERE status IN ('Delivered', 'Rejected', 'Cancelled', 'Failed');
 - `UNIQUE (rest_id, cart_id)`.
 - Create the cart when the first item is added. It may later be empty.
 - Only the signed-in customer may read or change their cart. Guest carts are outside this version.
-- To add items from another restaurant, ask the customer to confirm clearing the current cart first. Clear its items before changing `rest_id`, in one transaction.
+- To add items from another restaurant, require an explicit DELETE cart first. Delete its items/addons in the same transaction, then allow a new cart for the other restaurant. Never clear choices silently.
 - The cart stores choices, not final prices. Read current prices from the catalog; calculate totals on the server.
 
 ### 3.18 Cart_Items
@@ -579,13 +577,12 @@ CHECK (
 
 - Reject checkout for an empty cart. Check the signed-in customer's ownership, account activity, selected address ownership, and restaurant opening hours.
 - Lock the cart row during checkout to prevent concurrent checkout attempts. Cart changes must also lock the parent cart row within their transaction, including item and addon changes.
-- Recheck availability, active product-addon links, offer dates, current prices, quantity limits, and money limits using consistent reads or locks.
-- Show the latest total, including delivery fee, before confirmation. If prices or choices change before submission, return the updated cart for customer review instead of silently placing a changed order.
+- Recheck availability, active product-addon links, offer dates, current prices, valid quantities, and money limits using consistent reads or locks.
+- The quote endpoint shows the current total including delivery fee for information only. At checkout, calculate current server prices and create the order directly without comparing an earlier total. No quote tokens, checkout keys, or request hashes are used.
 - Create `Orders`, `Order_Items`, and `Order_Item_Addons` in one transaction. Copy current names, prices, quantities, and the selected address into their order fields.
 - Calculate item totals and addon totals separately, then add the delivery fee. Do not double-count items when joining addon rows.
 - Delete the cart and its rows only after the order is created successfully, within the same transaction. Roll back all changes on failure.
 - The order must not depend on cart rows after checkout. Deleting a cart must never delete an order or its history.
-- For safe retries, add the optional checkout key below to `Orders`. Require it for cart checkout, reuse it for the same attempt, and return the existing order on retry. A unique key prevents duplicate orders even if the first response is lost.
 - Use `ON DELETE CASCADE` only from `Carts` to `Cart_Items`, and from `Cart_Items` to `Cart_Item_Addons`. Keep catalog references restricted; disable catalog records instead of deleting linked choices.
 
 ### 3.21 Auth_Challenges

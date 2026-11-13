@@ -32,6 +32,23 @@ export class RestaurantsService {
     private readonly users: UsersService,
   ) {}
 
+  async saleStatus(restId: string, manager: EntityManager) {
+    const profile = await this.profileById(restId, manager);
+    const owner = profile
+      ? await this.users.byId(profile.user_id, manager)
+      : null;
+    return {
+      profile,
+      is_available: Boolean(
+        profile &&
+        profile.activation_status === 'Active' &&
+        profile.is_active &&
+        owner?.is_active &&
+        owner.email_verified_at,
+      ),
+    };
+  }
+
   async listPublic(pagination: { skip: number; take: number }) {
     const ids = await this.users.activeVerifiedRestaurantIds();
     if (!ids.length) return { items: [], total: 0 };

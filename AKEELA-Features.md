@@ -199,6 +199,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Customer only; additions and edits require an Active restaurant activation status. Existing unavailable selections may still be viewed or removed. One cart for one restaurant. Confirm clearing it before switching restaurants.
+- Do not add business caps on cart rows, addon count, or quantities. Validate PostgreSQL integer range and money overflow.
 - Each item is one product or one offer. Keep separate rows for different addon choices.
 - Addon quantity means total addon units for the item, not quantity per product.
 - Set the full desired addon selection when updating an item; validate all links and quantities together.
@@ -219,15 +220,15 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Customer only. Reject empty carts, invalid addresses, closed restaurants, restaurants without Active activation status, and unavailable choices. Customers may choose a saved address or provide a one-time delivery address without saving it.
-- Require `checkout_key`. Reuse the same key for retries of the same attempt and return its existing order before checking the now-cleared cart.
-- Recheck prices against the reviewed quote. Return changed prices for review before creating an order; never trust client prices as the actual prices.
+- Do not accept checkout keys or store checkout request hashes. Successful checkout clears the cart atomically; no idempotent replay guarantee is provided.
+- Calculate the current prices and EGP 30.00 general delivery fee at checkout and create the order directly. No quote token or previously reviewed total is required or compared. The quote endpoint is informational and does not reserve prices. Never trust client prices.
 - Create the order, item/addon snapshots, and total, then clear the cart in one transaction.
 - Customers may access only their own orders. History shows final states; active orders show the other states.
 - Allow customer cancellation only while `Pending`; lock/check the current state so it cannot race with acceptance.
 
 | Method | Route | Purpose |
 |---|---|---|
-| POST | `/customer/orders` | Checkout the cart using the address, reviewed prices, optional notes, and checkout key. |
+| POST | `/customer/orders` | Checkout the cart using the address, current server prices, and optional notes. |
 | GET | `/customer/orders` | List own orders; filter by active/history or status. |
 | GET | `/customer/orders/{order_id}` | Read an owned order with saved items, addons, address, total, and current status. |
 | POST | `/customer/orders/{order_id}/cancel` | Cancel an owned Pending order. |
@@ -279,4 +280,4 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 - Implement Feature 01 first, then continue in order.
 - For each feature: build its routes, role/ownership checks, validation, and database rules; verify its main success and failure cases before moving on.
-- Choose quote validation storage during implementation. Auth settings and setup are documented in `docs/AUTH.md`. Auth uses `Auth_Challenges` and `Auth_Sessions` from the database design; rate limits may also use a cache.
+- Quote responses are informational; checkout uses current server prices without tokens or price comparisons. Auth settings and setup are documented in `docs/AUTH.md`. Auth uses `Auth_Challenges` and `Auth_Sessions` from the database design; rate limits may also use a cache.
