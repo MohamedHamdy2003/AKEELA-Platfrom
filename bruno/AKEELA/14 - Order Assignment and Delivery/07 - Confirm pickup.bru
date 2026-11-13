@@ -1,0 +1,15 @@
+meta {
+  name: Confirm pickup
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/delivery-company/orders/{{order_id}}/pickup
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

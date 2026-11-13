@@ -1,11 +1,15 @@
+import { isAbsolute, resolve } from 'node:path';
 import { AuthEnvironment, validateAuthEnvironment } from './auth.environment';
 
 export interface Environment extends AuthEnvironment {
   NODE_ENV: 'development' | 'test' | 'production';
   PORT: number;
+  PUBLIC_BASE_URL: string;
+  IMAGE_STORAGE_PATH: string;
   DATABASE_URL: string;
   DATABASE_SSL: boolean;
   CORS_ORIGINS: string[];
+  DEFAULT_DELIVERY_COMPANY_ID: string | null;
 }
 
 export function validateEnvironment(
@@ -72,12 +76,49 @@ export function validateEnvironment(
     }
   }
 
+  const publicBase =
+    input.PUBLIC_BASE_URL ??
+    (mode === 'production' ? '' : `http://localhost:${port}`);
+  if (typeof publicBase !== 'string')
+    throw new Error('PUBLIC_BASE_URL must be an origin URL.');
+  try {
+    const parsed = new URL(publicBase);
+    if (
+      parsed.origin !== publicBase ||
+      parsed.username ||
+      parsed.password ||
+      !['http:', 'https:'].includes(parsed.protocol) ||
+      (mode === 'production' && parsed.protocol !== 'https:')
+    )
+      throw new Error();
+  } catch {
+    throw new Error(
+      'PUBLIC_BASE_URL must be an HTTP origin (HTTPS is required in production).',
+    );
+  }
+  const imagePath = input.IMAGE_STORAGE_PATH ?? resolve('storage/images');
+  if (typeof imagePath !== 'string' || !isAbsolute(imagePath))
+    throw new Error('IMAGE_STORAGE_PATH must be an absolute directory.');
+  const companyId = input.DEFAULT_DELIVERY_COMPANY_ID ?? '';
+  if (
+    typeof companyId !== 'string' ||
+    (companyId !== '' &&
+      (!/^[1-9]\d{0,18}$/.test(companyId) ||
+        BigInt(companyId) > 9223372036854775807n))
+  ) {
+    throw new Error(
+      'DEFAULT_DELIVERY_COMPANY_ID must be a positive BIGINT ID or empty.',
+    );
+  }
   return {
     ...validateAuthEnvironment(input),
     NODE_ENV: mode,
+    PUBLIC_BASE_URL: publicBase,
+    IMAGE_STORAGE_PATH: imagePath,
     PORT: port,
     DATABASE_URL: databaseUrl,
     DATABASE_SSL: ssl === 'true',
     CORS_ORIGINS: origins,
+    DEFAULT_DELIVERY_COMPANY_ID: companyId || null,
   };
 }

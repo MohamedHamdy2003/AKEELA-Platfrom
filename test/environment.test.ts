@@ -17,6 +17,7 @@ test('environment defaults and explicit settings are parsed', () => {
   const explicit = validateEnvironment({
     ...input,
     NODE_ENV: 'production',
+    PUBLIC_BASE_URL: 'https://api.example.com',
     PORT: '4000',
     DATABASE_SSL: 'true',
     CORS_ORIGINS: 'https://example.com, http://localhost:5173',
@@ -68,4 +69,19 @@ test('database options prevent automatic schema changes and unsafe TLS', () => {
     null: 'throw',
     undefined: 'throw',
   });
+});
+
+test('default delivery company is optional and validates BIGINT strings without precision loss', () => {
+  assert.equal(validateEnvironment(input).DEFAULT_DELIVERY_COMPANY_ID, null);
+  assert.equal(
+    validateEnvironment({
+      ...input,
+      DEFAULT_DELIVERY_COMPANY_ID: '9223372036854775807',
+    }).DEFAULT_DELIVERY_COMPANY_ID,
+    '9223372036854775807',
+  );
+  for (const value of ['0', '-1', '1.5', '9223372036854775808', 1])
+    assert.throws(() =>
+      validateEnvironment({ ...input, DEFAULT_DELIVERY_COMPANY_ID: value }),
+    );
 });

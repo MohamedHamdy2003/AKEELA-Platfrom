@@ -1,6 +1,6 @@
 # Bruno API Collection
 
-The Git-managed collection lives at `bruno/AKEELA`. It contains the 12 implemented Feature 01 requests under `01 - Authentication and My Profile`. New implemented features get the same numbered folder names as the API specifications; do not add runnable placeholders for unimplemented endpoints.
+The Git-managed collection lives at `bruno/AKEELA`. It contains 81 implemented requests across folders 01-16. New implemented features get the same numbered folder names as the API specifications; do not add runnable placeholders for unimplemented endpoints.
 
 ## Open the project collection
 
@@ -34,3 +34,15 @@ Tokens are held in memory and cleared after successful logout or password reset/
 - Test the current feature using this same project collection; its requests follow the checked-out branch.
 
 References: [Bruno Git collaboration](https://docs.usebruno.com/git-integration/overview), [private dotenv files](https://docs.usebruno.com/secrets-management/dotenv-file), [runtime variables](https://docs.usebruno.com/variables/runtime-variables).
+
+## Cart and customer orders
+
+Folders 11 and 12 contain the ten implemented cart/order requests. Use Customer login. Set runtime rest_id/prod_id from the public menu. Add item stores cart_item_id and Checkout stores order_id in runtime variables only. Quote is informational; checkout uses current prices plus EGP 30.00 without a quote token or checkout key. The templates show a one-time address; replace it with address_id to use a saved address. Run requests individually, not the whole folder as a single scenario.
+
+## Restaurant orders and delivery
+
+Folders 13 and 14 contain the final twelve routes. Set DEFAULT_DELIVERY_COMPANY_ID in the backend environment to the real company profile ID and restart the backend before acceptance. Use the restaurant login for folder 13, Admin for the first three requests of folder 14, and the assigned company for its remaining requests. Reuse runtime order_id from checkout and driver_id from company driver creation. Actions are state-specific; run them individually.
+
+## Images and health
+
+Folder 15 uses multipart uploads. Choose a local JPEG/PNG/WebP in its `file` field (replace the empty picker); do not set a Content-Type boundary manually. Use Customer login for avatar and Active owner login for restaurant/product/offer images. Product/offer IDs are runtime variables. Folder 16 health requests need no authentication.

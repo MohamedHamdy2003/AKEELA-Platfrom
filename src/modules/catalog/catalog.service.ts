@@ -1,6 +1,6 @@
 import { moneyCents, moneyAmount } from '../../common/money';
 import { Injectable } from '@nestjs/common';
-import { DataSource, In } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
 import { RestaurantProfile } from '../restaurants/entities/restaurant-profile.entity';
 import { RestaurantsService } from '../restaurants/restaurants.service';
@@ -27,6 +27,93 @@ export class CatalogService {
     private readonly dataSource: DataSource,
     private readonly restaurants: RestaurantsService,
   ) {}
+
+  async setImage(
+    userId: string,
+    kind: 'product' | 'offer',
+    id: string,
+    url: string,
+    manager: EntityManager,
+  ): Promise<void> {
+    const profile = await this.restaurants.profile(userId, manager);
+    if (!profile) throw new ApiError(404, 'NOT_FOUND', 'Restaurant not found.');
+    await this.restaurants.assertCatalogWritable(profile.rest_id, manager);
+    if (kind === 'product') {
+      const repo = manager.getRepository(Product);
+      const item = await repo.findOneBy({
+        rest_id: profile.rest_id,
+        prod_id: id,
+      });
+      if (!item) throw new ApiError(404, 'NOT_FOUND', 'Product not found.');
+      await repo.update({ prod_id: id }, { prod_image_url: url });
+    } else {
+      const repo = manager.getRepository(Offer);
+      const item = await repo.findOneBy({
+        rest_id: profile.rest_id,
+        offer_id: id,
+      });
+      if (!item) throw new ApiError(404, 'NOT_FOUND', 'Offer not found.');
+      await repo.update({ offer_id: id }, { offer_image_url: url });
+    }
+  }
+  async saleSelection(
+    restId: string,
+    prodId: string | null,
+    offerId: string | null,
+    addonIds: string[],
+    manager: EntityManager,
+  ) {
+    const product = prodId
+      ? await manager
+          .getRepository(Product)
+          .findOneBy({ rest_id: restId, prod_id: prodId })
+      : null;
+    const offer = offerId
+      ? await manager
+          .getRepository(Offer)
+          .findOneBy({ rest_id: restId, offer_id: offerId })
+      : null;
+    const category = product
+      ? await manager
+          .getRepository(Category)
+          .findOneBy({ rest_id: restId, cat_id: product.cat_id })
+      : null;
+    const now = Date.now();
+    const item = product
+      ? {
+          name: product.prod_name,
+          price: product.price,
+          is_available: product.is_active && Boolean(category?.is_active),
+        }
+      : offer
+        ? {
+            name: offer.offer_title,
+            price: offer.real_price,
+            is_available:
+              offer.is_active &&
+              offer.starts_at.getTime() <= now &&
+              offer.expires_at.getTime() > now,
+          }
+        : null;
+    const addons = [];
+    for (const addonId of addonIds) {
+      const addon = await manager
+        .getRepository(Addon)
+        .findOneBy({ rest_id: restId, addon_id: addonId });
+      const link = prodId
+        ? await manager
+            .getRepository(ProductAddon)
+            .findOneBy({ rest_id: restId, prod_id: prodId, addon_id: addonId })
+        : null;
+      addons.push({
+        addon_id: addonId,
+        name: addon?.addon_name ?? '',
+        price: addon?.addon_price ?? '0.00',
+        is_available: Boolean(addon?.is_active && link?.is_active),
+      });
+    }
+    return { item, addons };
+  }
 
   async assertActiveRestaurant(userId: string): Promise<RestaurantProfile> {
     const profile = await this.restaurants.profile(userId);
@@ -64,7 +151,7 @@ export class CatalogService {
     dto: CreateCategoryDto,
   ): Promise<Category> {
     return this.dataSource.transaction(async (manager) => {
-      await this.restaurants.profileById(restId, manager, true);
+      await this.restaurants.assertCatalogWritable(restId, manager);
       const repo = manager.getRepository(Category);
       const existing = await repo
         .createQueryBuilder('c')
@@ -102,7 +189,7 @@ export class CatalogService {
     dto: UpdateCategoryDto,
   ): Promise<Category> {
     return this.dataSource.transaction(async (manager) => {
-      await this.restaurants.profileById(restId, manager, true);
+      await this.restaurants.assertCatalogWritable(restId, manager);
       const repo = manager.getRepository(Category);
       const category = await repo
         .createQueryBuilder('c')
@@ -193,6 +280,7 @@ export class CatalogService {
 
   async createProduct(restId: string, dto: CreateProductDto): Promise<Product> {
     return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
       const catRepo = manager.getRepository(Category);
       const cat = await catRepo.findOneBy({
         rest_id: restId,
@@ -223,6 +311,7 @@ export class CatalogService {
     dto: UpdateProductDto,
   ): Promise<Product> {
     return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
       const prodRepo = manager.getRepository(Product);
       const product = await prodRepo
         .createQueryBuilder('p')
@@ -293,6 +382,7 @@ export class CatalogService {
 
   async createAddon(restId: string, dto: CreateAddonDto): Promise<Addon> {
     return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
       const repo = manager.getRepository(Addon);
       const addon = repo.create({
         rest_id: restId,
@@ -311,6 +401,7 @@ export class CatalogService {
     dto: UpdateAddonDto,
   ): Promise<Addon> {
     return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
       const repo = manager.getRepository(Addon);
       const addon = await repo
         .createQueryBuilder('a')
@@ -382,6 +473,7 @@ export class CatalogService {
     dto: SetProductAddonDto,
   ): Promise<{ link: ProductAddon; addon: Addon }> {
     return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
       const prod = await manager
         .getRepository(Product)
         .createQueryBuilder('p')
@@ -447,6 +539,7 @@ export class CatalogService {
 
   async createOffer(restId: string, dto: CreateOfferDto): Promise<Offer> {
     return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
       const initialPrice = dto.initial_price;
       const realPrice = dto.real_price;
       const startsAt = new Date(dto.starts_at);
@@ -496,6 +589,7 @@ export class CatalogService {
     dto: UpdateOfferDto,
   ): Promise<Offer> {
     return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
       const repo = manager.getRepository(Offer);
       const offer = await repo
         .createQueryBuilder('o')

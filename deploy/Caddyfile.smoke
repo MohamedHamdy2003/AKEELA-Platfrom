@@ -1,0 +1,4 @@
+https://localhost {
+	tls internal
+	import /etc/caddy/routes.caddy
+}

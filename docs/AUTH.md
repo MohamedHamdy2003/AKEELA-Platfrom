@@ -1,6 +1,6 @@
 # Feature 01 — Authentication and My Profile
 
-Implemented scope: the 12 routes in Feature 01 of the root API documents. Features 02-10 are also implemented; see STATUS.md. Cart, orders, and image upload remain unimplemented.
+Implemented scope: the 12 routes in Feature 01 of the root API documents. Features 01-16 are implemented; see STATUS.md for current scope.
 
 ## Approved decisions
 
@@ -15,7 +15,7 @@ Implemented scope: the 12 routes in Feature 01 of the root API documents. Featur
 | Refresh session   | 30-day absolute expiry; opaque random token, SHA-256 hash only in DB; rotate once under lock                |
 | OTP               | 6 random digits, purpose/user-bound keyed hash; 600 seconds, 5 attempts, 60-second resend cooldown          |
 | Rate limits       | 60 requests/IP and 10/account per 900 seconds on auth routes; configurable, bounded in-memory counters      |
-| Images            | Customer avatar and restaurant mobile-image URLs only; no file upload or static storage route               |
+| Images            | Image URL fields plus Feature 15 uploads; see IMAGES.md                                                     |
 
 Lifetimes and request/OTP limits are environment settings. Password length and six-digit OTP format are part of the API contract. Refresh tokens are currently JSON request/response values, not cookies. Browser storage/CSRF design must be revisited before changing that transport.
 
@@ -33,7 +33,7 @@ If registration email delivery fails, the account stays saved and the 201 respon
 
 Logout revokes the current session immediately, including existing access JWTs. Refresh uses the remaining absolute session lifetime. Concurrent use of one refresh token has one winner; the other request receives 401. Password change also invalidates pending password-reset challenges.
 
-Pending/Suspended restaurant owners with verified email and active accounts may log in and GET `/me`. PATCH `/me` is denied unless activation is Active, checked from PostgreSQL even for old sessions. Other restaurant dashboard/profile/activation routes belong to later features.
+Pending/Suspended restaurant owners with verified email and active accounts may log in and GET `/me`. PATCH `/me` is denied unless activation is Active, checked from PostgreSQL even for old sessions. Restaurant profile/dashboard routes are implemented; Pending/Suspended owners may read but cannot edit profiles.
 
 ## Local setup
 
@@ -57,18 +57,18 @@ docker compose exec -T postgres createdb -U akeela akeela_auth_test
 npm run test:integration
 ```
 
-Create the test database once; `createdb` reports an error if it already exists. `TEST_DATABASE_URL` must name a dedicated local database ending in `_test`. Integration tests truncate/recreate only that database's auth tables, verify rollback/reapply, and use actual SMTP delivery to local Mailpit. They override SMTP to localhost and never send through production SMTP. Do not run concurrent integration suites against the same database.
+Create the test database once; `createdb` reports an error if it already exists. `TEST_DATABASE_URL` must name a dedicated local database ending in `_test`. Integration tests truncate only that database's application tables, verify rollback/reapply, and use actual SMTP delivery to local Mailpit. They override SMTP to localhost and never send through production SMTP. Do not run concurrent integration suites against the same database.
 
 Tests cover validation, roles/profiles, duplicate rollback, OTP expiry/attempts/reuse, concurrent verification/refresh, JWT checks, logout, password change/reset, account/restaurant activation checks, BIGINT precision, database constraints, SMTP failure, and migration reversibility.
 
 ## Deployment readiness
 
 - Dockerfile builds a compiled, non-root runtime with production dependencies only. No secrets or image files are baked into it.
-- Production Compose connects API and PostgreSQL privately, exposes only Caddy HTTP/HTTPS, and persists PostgreSQL/images/Caddy state. Image storage is reserved but not publicly served.
+- Production Compose connects API and PostgreSQL privately, exposes only Caddy HTTP/HTTPS, and persists PostgreSQL/images/Caddy state. Feature 15 uploads are served publicly through Caddy; see IMAGES.md.
 - `TRUST_PROXY=true` trusts exactly one Caddy hop; keep the API unpublished so clients cannot bypass the proxy or spoof rate-limit IPs.
 - Production SMTP requires TLS. JWT and OTP keys must be different random secrets of at least 32 characters. No built-in production fallback secrets exist.
 - `npm run migration:run:prod` runs compiled migrations explicitly. Application startup never runs them.
-- These templates have not been deployed to a VPS; domain, actual SMTP settings, backups, server sizing, and release authorization are still required. See [DEPLOYMENT.md](DEPLOYMENT.md).
+- These templates have not been deployed to a VPS; domain, real SMTP delivery and server sizing still need verification; backups are deferred. This main release is authorized. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Current handoff
 

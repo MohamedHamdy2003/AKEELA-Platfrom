@@ -27,6 +27,7 @@ if (
   );
 Object.assign(process.env, {
   NODE_ENV: 'test',
+  DEFAULT_DELIVERY_COMPANY_ID: '',
   DATABASE_URL: testUrl,
   DATABASE_SSL: 'false',
   TRUST_PROXY: 'false',
@@ -108,7 +109,7 @@ before(async () => {
   db = app.get(DataSource);
   await db.runMigrations({ transaction: 'all' });
   await db.query(
-    'TRUNCATE delivery_drivers, offers, product_addons, addons, products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
+    'TRUNCATE order_item_addons, order_items, orders, cart_item_addons, cart_items, carts, delivery_drivers, offers, product_addons, addons, products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
   );
 });
 after(async () => {
@@ -610,7 +611,7 @@ test('Feature 01 — PostgreSQL, actual HTTP APIs, and local SMTP', async (t) =>
           userId,
         ]),
       );
-      const unknown = await api().get('/api/v1/customer/orders');
+      const unknown = await api().get('/api/v1/unknown-resource');
       assert.equal(unknown.status, 404);
       assert.equal(unknown.body.error.code, 'NOT_FOUND');
     },

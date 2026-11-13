@@ -2,10 +2,14 @@
 
 Build features in the order below. Routes use the `/api/v1` prefix, omitted from the tables.
 
+## Implementation Status
+
+Features 01-16 are implemented. Docker/Caddy and CI/CD are prepared; real Hostinger deployment is pending VPS/domain setup. Backups, OpenAPI, image cleanup and the future Admin delivery-fee API are not implemented.
+
 ## Common Rules
 
 - Roles: `Customer`, `Restaurant`, `Delivery_Company`, `Admin`.
-- Require an active, email-verified login except for public auth routes and public menu routes. Refresh uses a valid refresh token, not an access JWT.
+- Require an active, email-verified login except for public auth, public menu and health routes. Refresh uses a valid refresh token, not an access JWT.
 - Check role and record ownership on the server. Never trust an owner ID sent by the client.
 - `/customer/*` routes are for the signed-in Customer; get the customer ID from the verified JWT, not a route parameter. `/me` and `/me/password` are shared account routes for all roles.
 - Validate input. Use pagination for lists and one clear response/error format.
@@ -52,7 +56,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 - Admin only. Create the only Admin through the CLI, not public registration.
 - Create each account and matching profile in one transaction. Email is required for all roles; restaurant and company accounts verify email before login. The trusted Admin CLI provisions a verified account by default; ADMIN_VERIFIED=false requires normal OTP verification.
-- Do not allow direct role changes. Keep existing orders when disabling an account.
+- Do not allow direct role changes. Keep existing orders when disabling an account. In the current single-company version, Delivery_Company accounts cannot be disabled.
 - Allow exactly one Admin, created through the CLI only. Do not disable it or create Admin accounts through the API.
 - Restaurants register themselves. Admin reviews Pending restaurants and may set their activation status to Active or Suspended; a Suspended restaurant may be reactivated.
 - Activation is separate from email verification and account login activity. Activation never bypasses those checks.
@@ -88,7 +92,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Restaurant only; manage the restaurant linked to the signed-in account.
-- After email verification, Pending and Suspended owners can log in, read `/me`, `/restaurant/profile`, and `/restaurant/dashboard`, and update their restaurant details via `PATCH /restaurant/profile` (to correct mistakes, opening hours, or pickup coordinates before/during review). Dashboard shows the activation status, whether management is allowed (`can_manage`), and an informative status message.
+- After email verification, Pending and Suspended owners may authenticate and read `/me`, `/restaurant/profile`, and `/restaurant/dashboard`. Block all edits, including restaurant profile and shared account edits, until Active. Password security flows remain available. Dashboard shows activation status and `can_manage`.
 - Block all operational restaurant business APIs until activation is Active, including catalog reads/writes and order handling. Return `403 RESTAURANT_NOT_ACTIVE`. Authentication, logout, and password flows remain available. Shared profile edits (`PATCH /me`) are blocked too while the restaurant is not Active.
 - Only Admin can change `activation_status`; restaurant profile updates cannot change it. Check the current database value on every business request, including existing JWT sessions.
 - Suspension immediately hides the restaurant and its menu and blocks new cart additions, quotes, checkout, and restaurant order handling. Existing orders stay saved; assigned delivery companies can finish delivery and Admin can handle eligible failures. No automatic cancellation or refund is assumed.
@@ -151,7 +155,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Restaurant only; manage only its own offers.
-- Validate prices and start/end times. Sell only active, unexpired offers within their sale window.
+- Validate prices and calendar dates. Require Z or an explicit offset in offer timestamps. Sell only active offers within their sale window.
 - Offers are separate sale items. They have no addons in this version.
 
 | Method | Route | Purpose |
@@ -183,7 +187,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Delivery_Company only; manage its own profile and drivers.
-- Drivers have no login accounts. Use `is_active` to disable drivers.
+- Drivers have no login accounts. Use `is_active` to disable drivers. Delivery company service must remain active in this single-company version; reject creation or updates with `is_active=false`.
 - Do not move a driver record linked to past orders to another company.
 
 | Method | Route | Purpose |
@@ -199,6 +203,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Customer only; additions and edits require an Active restaurant activation status. Existing unavailable selections may still be viewed or removed. One cart for one restaurant. Confirm clearing it before switching restaurants.
+- Do not add business caps on cart rows, addon count, or quantities. Validate PostgreSQL integer range and money overflow.
 - Each item is one product or one offer. Keep separate rows for different addon choices.
 - Addon quantity means total addon units for the item, not quantity per product.
 - Set the full desired addon selection when updating an item; validate all links and quantities together.
@@ -219,15 +224,15 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - Customer only. Reject empty carts, invalid addresses, closed restaurants, restaurants without Active activation status, and unavailable choices. Customers may choose a saved address or provide a one-time delivery address without saving it.
-- Require `checkout_key`. Reuse the same key for retries of the same attempt and return its existing order before checking the now-cleared cart.
-- Recheck prices against the reviewed quote. Return changed prices for review before creating an order; never trust client prices as the actual prices.
+- Do not accept checkout keys or store checkout request hashes. Successful checkout clears the cart atomically; no idempotent replay guarantee is provided.
+- Calculate the current prices and EGP 30.00 general delivery fee at checkout and create the order directly. No quote token or previously reviewed total is required or compared. The quote endpoint is informational and does not reserve prices. Never trust client prices.
 - Create the order, item/addon snapshots, and total, then clear the cart in one transaction.
 - Customers may access only their own orders. History shows final states; active orders show the other states.
 - Allow customer cancellation only while `Pending`; lock/check the current state so it cannot race with acceptance.
 
 | Method | Route | Purpose |
 |---|---|---|
-| POST | `/customer/orders` | Checkout the cart using the address, reviewed prices, optional notes, and checkout key. |
+| POST | `/customer/orders` | Checkout the cart using the address, current server prices, and optional notes. |
 | GET | `/customer/orders` | List own orders; filter by active/history or status. |
 | GET | `/customer/orders/{order_id}` | Read an owned order with saved items, addons, address, total, and current status. |
 | POST | `/customer/orders/{order_id}/cancel` | Cancel an owned Pending order. |
@@ -239,6 +244,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 - Restaurant only; access orders for its own restaurant.
 - Accept or reject only `Pending` orders. Acceptance also assigns the delivery company automatically in the same transaction; apply Feature 14 rules.
 - All status changes must check the current state inside a transaction.
+- Restaurant `is_active=false` stops new sales but does not block reading or handling existing orders when activation remains Active. Pending/Suspended activation still blocks restaurant order APIs.
 - Do not edit customer choices or saved prices after checkout.
 
 | Method | Route | Purpose |
@@ -253,11 +259,12 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 **Rules**
 
 - When the restaurant accepts a Pending order, the server automatically assigns the delivery company. Admin does not assign companies.
-- For this version, use one configured `default_delivery_company_id` from app settings. Do not hard-code an ID or choose the first company in the database.
-- Check that the configured company and its account exist and are active. If not, reject acceptance and keep the order Pending; return a clear error.
+- For this version, use one configured `DEFAULT_DELIVERY_COMPANY_ID` from environment settings (the company profile ID, not its user ID). Do not hard-code an ID or choose the first company in the database.
+- Check that the configured company and its account exist, are active, and the account email is verified. If not, reject acceptance and keep the order Pending; return a clear error.
 - Lock the order, change its status to Accepted, and save `company_id` in one transaction. Leave `driver_id` NULL until the assigned company selects an active driver.
 - Retrying acceptance of an already Accepted order returns its current result without changing the company. Reject acceptance from any other state.
 - When more companies are added, replace the company-selection rule with routing rules. Keep the same accept API and preserve the company already saved on existing orders.
+- Driver assignment, pickup, and delivery require an active owned driver. If a driver is disabled, reactivate it or select another driver while the order is still Accepted.
 - Driver and company must match. Only the assigned company may report pickup or delivery; drivers have no login.
 - `Accepted → Picked_Up` requires a company and driver. `Picked_Up → Delivered` completes delivery.
 - Admin may mark an Accepted or Picked_Up order as Failed. Final states cannot be changed.
@@ -275,8 +282,35 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 | POST | `/delivery-company/orders/{order_id}/pickup` | Mark an assigned Accepted order as Picked_Up. |
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. |
 
+## 15. Image Uploads
+
+**Rules**
+
+- Customer uploads an avatar; an Active restaurant owner uploads restaurant/product/offer images. Check resource ownership. Pending/Suspended owners cannot upload.
+- One multipart file field named `file`; JPEG/PNG/WebP up to 5MB. Validate bytes, reject animation, re-encode to WebP and remove metadata. Technical encoding/rate limits: `docs/IMAGES.md`.
+- Save files in persistent image storage and update the existing image URL field. Return an absolute public URL. No new image table.
+- Public files use `/images/<filename>` outside the API prefix. Keep old versions; cleanup is deferred.
+
+| Method | Route | Purpose |
+|---|---|---|
+| PUT | `/customer/avatar` | Upload the signed-in Customer avatar. |
+| PUT | `/restaurant/profile/image` | Upload the owner's restaurant mobile image. |
+| PUT | `/restaurant/products/{prod_id}/image` | Upload an owned product image. |
+| PUT | `/restaurant/offers/{offer_id}/image` | Upload an owned offer image. |
+
+## 16. Health Checks
+
+**Rules**
+
+- Public probes; return no secrets or infrastructure details. Readiness requires PostgreSQL and returns 503 when unavailable.
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/health/live` | Check that the API process responds. |
+| GET | `/health/ready` | Check API and database readiness. |
+
 ## Start Here
 
-- Implement Feature 01 first, then continue in order.
+- Features 01-16 below are implemented. Check `docs/STATUS.md` for verification and deployment state.
 - For each feature: build its routes, role/ownership checks, validation, and database rules; verify its main success and failure cases before moving on.
-- Choose quote validation storage during implementation. Auth settings and setup are documented in `docs/AUTH.md`. Auth uses `Auth_Challenges` and `Auth_Sessions` from the database design; rate limits may also use a cache.
+- Quote responses are informational; checkout uses current server prices without tokens or price comparisons. Auth settings and setup are documented in `docs/AUTH.md`. Auth uses `Auth_Challenges` and `Auth_Sessions` from the database design; rate limits may also use a cache.

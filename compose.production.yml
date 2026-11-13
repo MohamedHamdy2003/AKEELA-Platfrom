@@ -1,16 +1,20 @@
 # Template only. Requires server-side secrets and an actual domain before deployment.
 services:
   api:
-    image: akeela-api:${IMAGE_TAG:-local}
+    image: ${API_IMAGE:-akeela-api:local}
     build: .
     restart: unless-stopped
     init: true
     environment:
       NODE_ENV: production
       PORT: '3000'
+      TZ: Africa/Cairo
+      PUBLIC_BASE_URL: https://${APP_DOMAIN:?Set APP_DOMAIN}
+      IMAGE_STORAGE_PATH: /app/storage/images
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL with postgres as the database hostname}
       DATABASE_SSL: ${DATABASE_SSL:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      DEFAULT_DELIVERY_COMPANY_ID: ${DEFAULT_DELIVERY_COMPANY_ID:-}
       TRUST_PROXY: 'true'
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
       OTP_SECRET: ${OTP_SECRET:?Set OTP_SECRET}
@@ -37,6 +41,19 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/v1/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    stop_grace_period: 30s
     logging:
       driver: json-file
       options:
@@ -69,10 +86,14 @@ services:
       - '443:443/udp'
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/routes.caddy:/etc/caddy/routes.caddy:ro
+      - images:/srv/images:ro
       - caddy_data:/data
       - caddy_config:/config
     networks: [edge]
-    depends_on: [api]
+    depends_on:
+      api:
+        condition: service_healthy
 networks:
   edge:
   database:

@@ -1,6 +1,6 @@
 # AKEELA — Requests and Responses
 
-API contract draft, in the same order as `AKEELA-Features.md`. All routes start with `/api/v1`.
+Implemented API contracts, in the same order as `AKEELA-Features.md`. All routes start with `/api/v1`.
 
 ## Format and Headers
 
@@ -15,7 +15,7 @@ API contract draft, in the same order as `AKEELA-Features.md`. All routes start 
 | Identifiers | BIGINT IDs are decimal strings, such as `"200"`; use UUID strings for sessions. |
 | Money | Decimal strings, such as `"100.00"`. |
 | Coordinates | Decimal strings, such as `"32.2723000"`. |
-| Timestamps | UTC ISO 8601; restaurant hours use local `HH:mm:ss`. |
+| Timestamps | Africa/Cairo ISO 8601 with +02:00/+03:00; input timestamps require Z or an explicit offset. Restaurant hours use local `HH:mm:ss`. |
 | Phone | API field `phone` maps to `Users.phone_number`. |
 | Response column | HTTP status plus the name of the `data` model shown below. |
 
@@ -67,11 +67,17 @@ API contract draft, in the same order as `AKEELA-Features.md`. All routes start 
 | 400 | `OTP_INVALID_OR_EXPIRED` | Code is wrong, used, expired, or locked after too many attempts. |
 | 401 | `UNAUTHENTICATED` | Missing, invalid, expired, or revoked credentials. |
 | 403 | `EMAIL_NOT_VERIFIED` / `FORBIDDEN` | Unverified email, inactive account, or missing role access. |
+| 403 | `DELIVERY_COMPANY_INACTIVE` | Company service is inactive. |
 | 403 | `RESTAURANT_NOT_ACTIVE` | Restaurant activation is Pending or Suspended; management is blocked. |
 | 404 | `NOT_FOUND` | Missing or inaccessible record. |
 | 409 | `CONFLICT` | Duplicate email/phone/title or invalid order state. |
 | 409 | `CART_RESTAURANT_CONFLICT` | Cart belongs to another restaurant. |
-| 409 | `QUOTE_CHANGED` | Cart choices or reviewed prices changed; request a fresh quote. |
+| 409 | `CART_CONFLICT` | Concurrent cart changes could not be completed; refresh and retry. |
+| 409 | `EMPTY_CART` | Add items before quote or checkout. |
+| 409 | `UNAVAILABLE` | A restaurant, item, category, addon, or link is unavailable. |
+| 409 | `RESTAURANT_CLOSED` | The restaurant is closed at the current local time. |
+| 409 | `ORDER_CONFLICT` | Concurrent order changes could not finish; refresh and retry. |
+| 409 | `DRIVER_REQUIRED` / `DRIVER_UNAVAILABLE` | Assign or reactivate an owned driver before proceeding. |
 | 409 | `DELIVERY_COMPANY_UNAVAILABLE` | Automatic assignment failed; order remains Pending. |
 | 422 | `VALIDATION_ERROR` | Invalid request fields. |
 | 429 | `RATE_LIMITED` | Too many attempts; response includes a `Retry-After` header. |
@@ -147,7 +153,7 @@ Customers may save at most 2 addresses. Attempting to create a third address ret
 | GET | `/restaurant/dashboard` | Read account activation status and whether restaurant management is allowed. | No body | `200` · RestaurantDashboard |
 | PATCH | `/restaurant/profile` | Update restaurant details and service activity. | Body: `{"rest_title":"AKEELA Kitchen","rest_description":"Grilled meals","rest_image_url_mobile":"https://example.com/restaurant.jpg","rest_address":"12 Main Street, Ismailia","longitude":"32.2723000","latitude":"30.5965000","opens_at":"10:00:00","closes_at":"02:00:00","is_active":true}` | `200` · RestaurantProfile |
 
-`RestaurantDashboard` shows `Pending`, `Active`, or `Suspended`. `can_manage` is true only when activation is Active and the owner account is active and email-verified. A tailored status message is provided (`Your restaurant is waiting for Admin activation.`, `Your restaurant is suspended by Admin.`, or `Your restaurant is active and ready to manage.`). Owners can read account/profile/dashboard status and update restaurant details via `PATCH /restaurant/profile` while Pending or Suspended to fix mistakes before/during review, but receive `403 RESTAURANT_NOT_ACTIVE` for operational business APIs (catalog, orders) and shared profile edits (`PATCH /me`). Admin activation accepts `Active` or `Suspended`; public registration always returns `Pending`.
+`RestaurantDashboard` shows `Pending`, `Active`, or `Suspended`. `can_manage` is true only when activation is Active and the owner account is active and email-verified. A tailored status message is provided (`Your restaurant is waiting for Admin activation.`, `Your restaurant is suspended by Admin.`, or `Your restaurant is active and ready to manage.`). Owners can read account/profile/dashboard while Pending or Suspended. Restaurant profile/shared account edits, catalog and order operations return `403 RESTAURANT_NOT_ACTIVE` until Active. Admin activation accepts `Active` or `Suspended`; registration returns `Pending`.
 
 ## 05. Categories
 
@@ -183,8 +189,8 @@ Product-addon PUT returns `200` for both a new link and an update.
 | Method | Route | Purpose | Request | Response data |
 |---|---|---|---|---|
 | GET | `/restaurant/offers` | List owned offers, including inactive and expired ones. | Query: `page=1&per_page=20` | `200` · List<Offer> |
-| POST | `/restaurant/offers` | Create an offer. | Body: `{"offer_title":"Lunch Offer","offer_description":"Lunch meal","initial_price":"150.00","real_price":"130.00","offer_image_url":null,"is_active":true,"starts_at":"2026-11-12T00:00:00Z","expires_at":"2026-12-01T00:00:00Z"}` | `201` · Offer |
-| PATCH | `/restaurant/offers/{offer_id}` | Update offer details, prices, dates, or activity. | Body: `{"offer_title":"Lunch Offer","offer_description":"Lunch meal","initial_price":"150.00","real_price":"130.00","offer_image_url":null,"is_active":true,"starts_at":"2026-11-12T00:00:00Z","expires_at":"2026-12-01T00:00:00Z"}` | `200` · Offer |
+| POST | `/restaurant/offers` | Create an offer. | Body: `{"offer_title":"Lunch Offer","offer_description":"Lunch meal","initial_price":"150.00","real_price":"130.00","offer_image_url":null,"is_active":true,"starts_at":"2026-11-12T02:00:00.000+02:00","expires_at":"2026-12-01T02:00:00.000+02:00"}` | `201` · Offer |
+| PATCH | `/restaurant/offers/{offer_id}` | Update offer details, prices, dates, or activity. | Body: `{"offer_title":"Lunch Offer","offer_description":"Lunch meal","initial_price":"150.00","real_price":"130.00","offer_image_url":null,"is_active":true,"starts_at":"2026-11-12T02:00:00.000+02:00","expires_at":"2026-12-01T02:00:00.000+02:00"}` | `200` · Offer |
 
 ## 09. Public Restaurant Menu
 
@@ -207,6 +213,8 @@ Product-addon PUT returns `200` for both a new link and an update.
 | GET | `/delivery-company/drivers` | List the company's drivers. | Query: `page=1&per_page=20&is_active=true` | `200` · List<Driver> |
 | POST | `/delivery-company/drivers` | Add a driver to the company. | Body: `{"driver_name":"Omar Hassan","driver_phone":"+201000000030","driver_email":null,"is_active":true}` | `201` · Driver |
 | PATCH | `/delivery-company/drivers/{driver_id}` | Update driver details or activity. | Body: `{"driver_name":"Omar Hassan","is_active":false}` | `200` · Driver |
+
+In the single-company version, company creation/profile updates with `is_active=false` and disabling Delivery_Company login accounts return `409 CONFLICT`. Driver activity remains editable.
 
 ## 11. Customer Cart
 
@@ -231,18 +239,22 @@ Offer item body example:
 }
 ```
 
+Adding matching product/addon choices combines quantities only when the per-product addon ratio matches; different ratios remain separate rows. Switching restaurants returns `409 CART_RESTAURANT_CONFLICT`; explicitly clear the cart first. There are no business limits on cart size or quantity beyond storage type ranges and money overflow checks.
+
 For PATCH, `addons` is the full replacement selection when supplied; `[]` clears it. An omitted selection stays unchanged; when quantity changes, send the intended total addon quantities too. DELETE cart returns `EmptyCart`; deleting its last item may return a cart with no items. `is_available` in cart responses is calculated, not a new database field.
+
+Quote and checkout accept exactly one of `address_id` (an owned saved address) or `delivery_address` (a one-time address with `address_line`, `longitude`, and `latitude`). One-time addresses are saved only as order snapshots, not in Customer_Addresses. Currency is EGP and the initial general delivery fee is `"30.00"`.
 
 ## 12. Checkout and Customer Orders
 
 | Method | Route | Purpose | Request | Response data |
 |---|---|---|---|---|
-| POST | `/customer/orders` | Checkout the cart using the address, reviewed prices, optional notes, and checkout key. | Body: `{"address_id":"50","quote_token":"<opaque-signed-quote>","notes":"Call on arrival","checkout_key":"7c453937-243e-4e4c-bc6c-5d4a8a18e303"}` | `201` · Order |
+| POST | `/customer/orders` | Checkout the cart using the address, current server prices, and optional notes. | Body: `{"address_id":"50","notes":"Call on arrival"}` | `201` · Order |
 | GET | `/customer/orders` | List own orders; filter by active/history or status. | Query: `page=1&per_page=20&scope=history&status=Delivered` | `200` · List<OrderSummary> |
 | GET | `/customer/orders/{order_id}` | Read an owned order with saved items, addons, address, total, and current status. | No body | `200` · Order |
 | POST | `/customer/orders/{order_id}/cancel` | Cancel an owned Pending order. | No body | `200` · OrderState |
 
-`quote_token` is a proposed signed quote format: it binds the customer, cart choices, current prices, address, fee, and expiry without adding a database column. The server compares it with current data at checkout. A successful retry with the same checkout key returns `200` and the existing `Order`, even if the cart is now empty. A different request using that key returns `409`. List query parameters are optional; `scope` is `active` or `history`.
+Checkout calculates current server prices and creates a Pending order directly. No quote token, reviewed-total comparison, checkout key, or request hash is accepted. The quote endpoint is informational, with no expiry or price reservation. List query parameters are optional; `scope` is `active` or `history`. Notes may contain up to 10,000 characters.
 
 ## 13. Restaurant Order Handling
 
@@ -265,6 +277,8 @@ For PATCH, `addons` is the full replacement selection when supplied; `[]` clears
 | PUT | `/delivery-company/orders/{order_id}/driver` | Assign or change an owned active driver before pickup. | Body: `{"driver_id":"30"}` | `200` · OrderState |
 | POST | `/delivery-company/orders/{order_id}/pickup` | Mark an assigned Accepted order as Picked_Up. | No body | `200` · OrderState |
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. | No body | `200` · OrderState |
+
+List date filters use valid `YYYY-MM-DD` dates in Africa/Cairo. Both bounds include their whole local day; `date_from` must not follow `date_to`. Delivery pickup details use the current restaurant address/coordinates; the customer delivery address and prices remain order snapshots. Only acceptance retries from Accepted are idempotent; other invalid/final-state transitions return `409 CONFLICT`.
 
 Order action response values:
 
@@ -292,16 +306,16 @@ The JSON blocks below are the `data` value inside the success envelope. Repeated
   "phone": "+201000000001",
   "role": "Customer",
   "is_active": true,
-  "email_verified_at": "2026-11-12T10:00:00Z",
+  "email_verified_at": "2026-11-12T12:00:00.000+02:00",
   "profile": {
     "user_id": "1",
     "profile_role": "Customer",
     "cus_avatar_url": null,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -322,11 +336,11 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
     "user_id": "1",
     "profile_role": "Customer",
     "cus_avatar_url": null,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -353,16 +367,16 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
     "phone": "+201000000001",
     "role": "Customer",
     "is_active": true,
-    "email_verified_at": "2026-11-12T10:00:00Z",
+    "email_verified_at": "2026-11-12T12:00:00.000+02:00",
     "profile": {
       "user_id": "1",
       "profile_role": "Customer",
       "cus_avatar_url": null,
-      "created_at": "2026-11-12T10:00:00Z",
-      "updated_at": "2026-11-12T10:00:00Z"
+      "created_at": "2026-11-12T12:00:00.000+02:00",
+      "updated_at": "2026-11-12T12:00:00.000+02:00"
     },
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
   "tokens": {
     "token_type": "Bearer",
@@ -385,8 +399,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "longitude": "32.2800000",
   "latitude": "30.6000000",
   "is_default": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -404,8 +418,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "opens_at": "10:00:00",
   "closes_at": "02:00:00",
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z",
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00",
   "activation_status": "Active"
 }
 ```
@@ -420,8 +434,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "company_email": "office@example.com",
   "company_address": "5 Main Street, Ismailia",
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -434,8 +448,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "cat_title": "Sandwiches",
   "display_order": 0,
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -451,8 +465,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "prod_image_url": "https://example.com/burger.jpg",
   "price": "100.00",
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -465,8 +479,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "addon_name": "Cheese",
   "addon_price": "10.00",
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -484,11 +498,11 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
     "addon_name": "Cheese",
     "addon_price": "10.00",
     "is_active": true,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -504,10 +518,10 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "real_price": "130.00",
   "offer_image_url": null,
   "is_active": true,
-  "starts_at": "2026-11-12T00:00:00Z",
-  "expires_at": "2026-12-01T00:00:00Z",
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "starts_at": "2026-11-12T02:00:00.000+02:00",
+  "expires_at": "2026-12-01T02:00:00.000+02:00",
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -521,8 +535,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "driver_phone": "+201000000030",
   "driver_email": null,
   "is_active": true,
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -577,8 +591,8 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "initial_price": "150.00",
   "real_price": "130.00",
   "offer_image_url": null,
-  "starts_at": "2026-11-12T00:00:00Z",
-  "expires_at": "2026-12-01T00:00:00Z"
+  "starts_at": "2026-11-12T02:00:00.000+02:00",
+  "expires_at": "2026-12-01T02:00:00.000+02:00"
 }
 ```
 
@@ -613,7 +627,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "items_subtotal": "200.00",
   "addons_subtotal": "20.00",
   "subtotal": "220.00",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -637,9 +651,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
 
 ```json
 {
-  "quote_token": "<opaque-signed-quote>",
-  "expires_at": "2026-11-12T10:05:00Z",
   "address_id": "50",
+  "delivery_address": {"address_line":"8 Main Street, floor 2","longitude":"32.2800000","latitude":"30.6000000"},
   "cart": {
     "cart_id": "70",
     "rest_id": "10",
@@ -668,10 +681,10 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
     "items_subtotal": "200.00",
     "addons_subtotal": "20.00",
     "subtotal": "220.00",
-    "updated_at": "2026-11-12T10:00:00Z"
+    "updated_at": "2026-11-12T12:00:00.000+02:00"
   },
-  "delivery_fee": "20.00",
-  "total_price": "240.00"
+  "delivery_fee": "30.00",
+  "total_price": "250.00"
 }
 ```
 
@@ -684,9 +697,9 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
   "status": "Pending",
   "company_id": null,
   "driver_id": null,
-  "total_price": "240.00",
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "total_price": "250.00",
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -703,8 +716,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
   "customer_address": "8 Main Street, floor 2",
   "delivery_longitude": "32.2800000",
   "delivery_latitude": "30.6000000",
-  "delivery_fee": "20.00",
-  "total_price": "240.00",
+  "delivery_fee": "30.00",
+  "total_price": "250.00",
   "notes": "Call on arrival",
   "items": [
     {
@@ -727,8 +740,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
       ]
     }
   ],
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -747,8 +760,8 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "customer_address": "8 Main Street, floor 2",
   "delivery_longitude": "32.2800000",
   "delivery_latitude": "30.6000000",
-  "delivery_fee": "20.00",
-  "total_price": "240.00",
+  "delivery_fee": "30.00",
+  "total_price": "250.00",
   "notes": "Call on arrival",
   "items": [
     {
@@ -771,8 +784,8 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
       ]
     }
   ],
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z",
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00",
   "pickup": {
     "rest_title": "AKEELA Kitchen",
     "rest_address": "12 Main Street, Ismailia",
@@ -790,7 +803,7 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "status": "Accepted",
   "company_id": "20",
   "driver_id": null,
-  "updated_at": "2026-11-12T10:00:00Z"
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -836,14 +849,14 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
     "opens_at": "10:00:00",
     "closes_at": "02:00:00",
     "is_active": true,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z",
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00",
     "activation_status": "Pending",
     "user_id": "10",
     "profile_role": "Restaurant"
   },
-  "created_at": "2026-11-12T10:00:00Z",
-  "updated_at": "2026-11-12T10:00:00Z"
+  "created_at": "2026-11-12T12:00:00.000+02:00",
+  "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
 ```
 
@@ -870,8 +883,8 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
     "opens_at": "10:00:00",
     "closes_at": "02:00:00",
     "is_active": true,
-    "created_at": "2026-11-12T10:00:00Z",
-    "updated_at": "2026-11-12T10:00:00Z",
+    "created_at": "2026-11-12T12:00:00.000+02:00",
+    "updated_at": "2026-11-12T12:00:00.000+02:00",
     "activation_status": "Pending",
     "user_id": "10",
     "profile_role": "Restaurant"
@@ -888,4 +901,34 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "can_manage": false,
   "message": "Your restaurant is waiting for Admin activation."
 }
+```
+
+## 15. Image Uploads
+
+| Method | Route | Purpose | Request | Response |
+|---|---|---|---|---|
+| PUT | `/customer/avatar` | Upload Customer avatar. | Multipart: `file` | `200` · ImageUpload |
+| PUT | `/restaurant/profile/image` | Upload restaurant image. | Multipart: `file` | `200` · ImageUpload |
+| PUT | `/restaurant/products/{prod_id}/image` | Upload product image. | Multipart: `file` | `200` · ImageUpload |
+| PUT | `/restaurant/offers/{offer_id}/image` | Upload offer image. | Multipart: `file` | `200` · ImageUpload |
+
+### ImageUpload
+
+`Content-Type: multipart/form-data`; choose one local image in the file field. Response data:
+
+```json
+{"image_url":"https://api.example.com/images/6c867039-79e4-48f2-a9cf-a1d7576955ab.webp"}
+```
+
+## 16. Health Checks
+
+| Method | Route | Purpose | Request | Response |
+|---|---|---|---|---|
+| GET | `/health/live` | Process liveness. | No body/auth | `200` · Health |
+| GET | `/health/ready` | Database readiness. | No body/auth | `200` · Health; `503 NOT_READY` when unavailable |
+
+### Health
+
+```json
+{"status":"ok","checked_at":"2026-11-13T12:00:00.000+02:00"}
 ```

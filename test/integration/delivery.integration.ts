@@ -26,6 +26,7 @@ if (
 
 Object.assign(process.env, {
   NODE_ENV: 'test',
+  DEFAULT_DELIVERY_COMPANY_ID: '',
   DATABASE_URL: testUrl,
   DATABASE_SSL: 'false',
   TRUST_PROXY: 'false',
@@ -59,7 +60,7 @@ before(async () => {
   db = app.get(DataSource);
   await db.runMigrations({ transaction: 'all' });
   await db.query(
-    'TRUNCATE delivery_drivers, offers, product_addons, addons, products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
+    'TRUNCATE order_item_addons, order_items, orders, cart_item_addons, cart_items, carts, delivery_drivers, offers, product_addons, addons, products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
   );
   const hash = await app.get(AuthCryptoService).hashPassword('TestPassword123');
   for (const index of [1, 2, 3]) {
@@ -114,8 +115,8 @@ test('company profile and drivers enforce role, ownership, validation and persis
     .patch(profile)
     .set('Authorization', auth(0))
     .send({ company_email: null, is_active: false })
-    .expect(200);
-  // An inactive service can still correct its details/reactivate; its login account remains active.
+    .expect(409);
+  // The current single-company service cannot be disabled through the API.
   await api()
     .patch(profile)
     .set('Authorization', auth(0))

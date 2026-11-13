@@ -1,6 +1,6 @@
 # Module Ownership
 
-Features 01-10 are implemented across Auth, Users, Customers, Restaurants, Catalog, and Delivery. Cart and Orders remain planned. Fourteen table mappings exist.
+Features 01-16 are implemented, including restaurant, customer, Admin and delivery-company order operations. Twenty table mappings and the Orders_History view exist. Orders owns every order read and transition; Delivery and Restaurants expose transaction-aware validation only.
 
 | Module        | Responsibilities                                                                                    | Owned logical tables / view                                 | Feature sections                                       |
 | ------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ |
@@ -12,6 +12,8 @@ Features 01-10 are implemented across Auth, Users, Customers, Restaurants, Catal
 | `delivery`    | Company profiles, drivers, active-company selection lookup                                          | Delivery_Company_Profiles, Delivery_Drivers                 | 10; lookup portions of 14                              |
 | `cart`        | Customer cart, item/addon choices, current quote                                                    | Carts, Cart_Items, Cart_Item_Addons                         | 11                                                     |
 | `orders`      | Checkout, snapshots, order queries/history, transitions, delivery assignment                        | Orders, Order_Items, Order_Item_Addons, Orders_History view | 12–14                                                  |
+| `images`      | Upload validation, encoding, persistent files and URL assignment through domain services            | None                                                        | 15                                                     |
+| `health`      | Public process/database probes                                                                      | None                                                        | 16                                                     |
 
 ## Route ownership
 
@@ -23,7 +25,7 @@ Features 01-10 are implemented across Auth, Users, Customers, Restaurants, Catal
 - Public restaurant details belong to Restaurants; public menu routes belong to Catalog.
 - Controllers with the same URL prefix may live in different modules. Every method/path pair must still be unique.
 
-## Planned dependency direction
+## Dependency direction
 
 | Caller      | Permitted collaborators when needed                    |
 | ----------- | ------------------------------------------------------ |
@@ -35,6 +37,8 @@ Features 01-10 are implemented across Auth, Users, Customers, Restaurants, Catal
 | Auth        | Users, Customers, Restaurants, Delivery                |
 | Cart        | Customers, Restaurants, Catalog                        |
 | Orders      | Users, Customers, Restaurants, Catalog, Cart, Delivery |
+
+Images may call Users, Customers, Restaurants and Catalog; Health uses the shared DataSource without table ownership.
 
 These are permitted directions, not imports to add in advance. Technical config/database dependencies are shared. Auth registers AccessGuard once as APP_GUARD. Routes are protected by default; public auth endpoints opt out with the common PublicRoute decorator, and logout explicitly remains protected. CurrentActor is a common HTTP decorator exposing only user/session IDs, never credentials. Other modules do not import Auth to authenticate requests, avoiding reverse dependencies. Business role, ownership, and activation checks remain in owning services.
 

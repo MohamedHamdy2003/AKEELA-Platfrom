@@ -26,6 +26,7 @@ if (
   );
 Object.assign(process.env, {
   NODE_ENV: 'test',
+  DEFAULT_DELIVERY_COMPANY_ID: '',
   DATABASE_URL: testUrl,
   DATABASE_SSL: 'false',
   TRUST_PROXY: 'false',
@@ -87,7 +88,7 @@ before(async () => {
   crypto = app.get(AuthCryptoService);
   await db.runMigrations({ transaction: 'all' });
   await db.query(
-    'TRUNCATE delivery_drivers, offers, product_addons, addons, products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
+    'TRUNCATE order_item_addons, order_items, orders, cart_item_addons, cart_items, carts, delivery_drivers, offers, product_addons, addons, products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
   );
 
   // 1. Seed the Admin user directly in DB (simulating the CLI command)
@@ -361,4 +362,36 @@ test('Feature 02 — Admin Accounts, Roles, Activation & Boundaries', async (t) 
       assert.equal(notFound.status, 404);
     },
   );
+  await t.test('Reject nested arrays before account creation', async () => {
+    await api()
+      .post('/api/v1/admin/users')
+      .set('Authorization', bearer(adminToken))
+      .send({
+        full_name: 'Invalid',
+        email: 'invalid-array@example.com',
+        phone: '+201234567890',
+        password: commonPassword,
+        role: 'Delivery_Company',
+        profile: [],
+      })
+      .expect(422);
+    await api()
+      .post('/api/v1/auth/register/restaurant')
+      .send({
+        full_name: 'Invalid',
+        email: 'invalid-rest-array@example.com',
+        phone: '+201234567891',
+        password: commonPassword,
+        profile: [],
+      })
+      .expect(422);
+    assert.equal(
+      (
+        await db.query(
+          "SELECT count(*) FROM users WHERE email LIKE 'invalid-%-array@example.com'",
+        )
+      )[0].count,
+      '0',
+    );
+  });
 });

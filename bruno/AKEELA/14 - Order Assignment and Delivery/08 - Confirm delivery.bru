@@ -1,0 +1,15 @@
+meta {
+  name: Confirm delivery
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/delivery-company/orders/{{order_id}}/deliver
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

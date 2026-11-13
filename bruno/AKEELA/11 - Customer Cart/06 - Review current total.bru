@@ -1,0 +1,25 @@
+meta {
+  name: Review current total
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/customer/cart/quote
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "delivery_address": {
+      "address_line": "12 Main Street",
+      "longitude": "32.2800000",
+      "latitude": "30.6000000"
+    }
+  }
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

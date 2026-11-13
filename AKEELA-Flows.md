@@ -9,7 +9,7 @@
 3. Save a delivery address and browse restaurants, products, and offers.
 4. Add products or offers to the cart; choose allowed product addons.
 5. Review quantities, current prices, delivery address, and delivery fee.
-6. Confirm checkout. The cart becomes a `Pending` order and is cleared.
+6. Confirm checkout. The server uses current prices plus EGP 30.00 delivery fee; the cart becomes a `Pending` order and is cleared. No earlier price is reserved.
 7. Follow the order status until delivery, then view it in order history.
 
 - The cart holds items from one restaurant at a time.
@@ -23,7 +23,7 @@
 1. Register with owner account data and restaurant details.
 2. Verify the owner's email using OTP, then log in.
 3. Open the dashboard with restaurant activation status `Pending`.
-4. Wait for Admin to activate the restaurant. Restaurant details, hours, and address can be updated to fix mistakes before/during review; catalog management and order handling await activation.
+4. Wait for Admin activation. Read account/profile/dashboard while Pending or Suspended; all edits, image uploads and restaurant order handling stay blocked until Active. Authentication and password security flows remain available.
 5. After activation becomes `Active`, manage restaurant details, hours, categories, products, addons, and offers.
 6. Receive `Pending` orders and accept or reject them.
 7. Accepting an order changes it to `Accepted` and automatically assigns the configured delivery company.
@@ -45,7 +45,7 @@
 6. After pickup, mark the order as `Picked_Up`.
 7. After delivery, mark it as `Delivered`.
 
-- The company sees only orders assigned to it.
+- The company sees only orders assigned to it. Its service and login account cannot be disabled in the current single-company version.
 - Drivers have no login accounts in this version; the company updates delivery status.
 - The driver can be changed before pickup.
 
@@ -86,3 +86,8 @@
 | Admin marks an Accepted or Picked_Up order as failed | Admin | `Failed` |
 
 `Delivered`, `Rejected`, `Cancelled`, and `Failed` are final states and appear in customer order history.
+
+## Images and Deployment Status
+
+- Customer: upload an avatar. Active restaurant owner: upload restaurant, product and offer images. The API saves a public image URL.
+- Features 01-16 are implemented. Docker/Caddy and CI/CD are prepared; live Hostinger setup awaits the VPS/domain. Backup automation and the future Admin delivery-fee API remain deferred.

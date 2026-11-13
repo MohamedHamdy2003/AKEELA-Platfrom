@@ -2,9 +2,9 @@
 
 ## Scope and status
 
-One deployable NestJS application, one PostgreSQL database, and TypeORM. Features 01-10 are implemented with fourteen table mappings and six reviewed migrations. Cart and Orders remain empty. See [AUTH.md](AUTH.md).
+One deployable NestJS application, one PostgreSQL database, and TypeORM. Features 01-14 include twenty table mappings, one history view and eight reviewed migrations. Features 01-16 are implemented, including image uploads and health checks. See [AUTH.md](AUTH.md).
 
-The user approved the foundation and authorized Features 01-10, local DB preparation, and deployment-ready templates. Other features and actual VPS deployment still require authorization.
+The user approved the foundation and authorized Features 01-16, local tests, CI/CD and deployment preparation. Other features and actual VPS deployment still require authorization.
 
 ## Runtime structure
 
@@ -29,11 +29,11 @@ flowchart TD
     ORDERS --> DB
 ```
 
-The diagram shows planned ownership, not implemented persistence. All modules share the same database and connection pool; no per-module databases or network calls between modules.
+The diagram shows implemented business ownership. Images coordinates uploads through domain services; Health uses the shared DataSource. All modules share the same database and connection pool; no per-module databases or network calls between modules.
 
 ## Approved deployment target
 
-Host the single NestJS backend, PostgreSQL, and primary image files on one Hostinger VPS. Run Caddy, NestJS, and PostgreSQL in separate Docker containers. Caddy is the public HTTPS entry point; PostgreSQL stays private. Persist database data, images, and Caddy state, with off-VPS backups. Dockerfile, production Compose, and Caddy templates now exist, but actual server provisioning/deployment is not performed or authorized. See [DEPLOYMENT.md](DEPLOYMENT.md).
+Host the single NestJS backend, PostgreSQL, and primary image files on one Hostinger VPS. Run Caddy, NestJS, and PostgreSQL in separate Docker containers. Caddy is the public HTTPS entry point; PostgreSQL stays private. Persist database data, images, and Caddy state, with backup automation deferred. Dockerfile, production Compose, and Caddy templates now exist, but actual server provisioning/deployment is not performed or authorized. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Code organization
 
@@ -47,11 +47,11 @@ src/
     database.module.ts       # Nest TypeORM connection
     database.options.ts      # shared application/CLI options
     data-source.ts           # CLI DataSource; not a second runtime connection
-    migrations/              # reviewed Feature 01 identity migration
+    migrations/              # eight reviewed migrations
   modules/
     auth/ users/ customers/ restaurants/
-    catalog/ delivery/ cart/ orders/
-test/                        # foundation tests; later integration/e2e tests
+    catalog/ delivery/ cart/ orders/ images/ health/
+test/                        # unit and PostgreSQL integration tests
 ```
 
 As a feature is authorized, add only the files it needs:
@@ -77,7 +77,7 @@ Do not create empty DTO/entity/service layers now. Add `common/` or a mail adapt
 - Do not add `forwardRef` to hide a circular dependency. Move the orchestration to the higher-level use case or clarify ownership.
 - No event bus, queues, CQRS, microservices, or generic base services are required for this foundation.
 
-## Transactions and concurrency — future implementation
+## Transactions and concurrency
 
 The owning use-case service opens a TypeORM transaction. When it needs another module to participate, pass the transaction `EntityManager` explicitly to that module's exported service. Every query in that use case must use repositories obtained from that manager; ordinary injected repositories do not automatically join the transaction.
 
@@ -87,7 +87,7 @@ Examples already required by the specifications:
 - Orders orchestrates checkout across cart, catalog, addresses, and order snapshots.
 - Orders orchestrates acceptance + automatic company assignment atomically; Restaurants does not call Orders to accept an order.
 
-Cart writes lock the parent cart row. Order transitions lock/check the order row. Lock order and idempotency behavior must be specified and tested with PostgreSQL when these features are built. Do not hold database locks open while sending email or calling external services.
+Cart writes lock the parent cart row. Order transitions lock/check the order row. Catalog writes lock the owning user then restaurant and recheck activation; Admin suspension locks the same profile. PostgreSQL tests cover these races. Do not hold database locks open while sending email or calling external services.
 
 ## Runtime foundation
 
@@ -100,3 +100,9 @@ Cart writes lock the parent cart row. Order transitions lock/check the order row
 - Feature 01 controllers return explicit success envelopes. A shared filter normalizes errors and validation failures. JWT guards check live sessions/accounts, and SMTP sends codes after commit. No health endpoint, Swagger document, or seeds exist.
 
 Module boundaries follow [Nest module encapsulation](https://docs.nestjs.com/modules). Database changes use [TypeORM migrations](https://typeorm.io/docs/migrations/why/) rather than automatic synchronization.
+
+Cart and checkout use SERIALIZABLE transactions with bounded retries; see [CART-ORDERS.md](CART-ORDERS.md) for lock order and the confirmed current-price checkout behavior.
+
+Operational order controllers remain in Orders. Delivery exports company/driver validation, and Restaurants exports current activation checks. See [ORDER-DELIVERY.md](ORDER-DELIVERY.md) for state transactions and configuration.
+
+Images uses Sharp for byte validation/re-encoding and local persistent files. It writes no foreign tables directly: exported domain setters participate in its transaction. Health exposes public process/database probes. Global HTTP serialization emits Africa/Cairo offsets while PostgreSQL keeps UTC instants. CI/CD and single-host release details are in [DEPLOYMENT.md](DEPLOYMENT.md).

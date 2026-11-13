@@ -15,11 +15,11 @@ Read `../AGENTS.md` first. Documentation, not previous conversations, defines th
 
 Git operations: read [GITHUB-FLOW.md](GITHUB-FLOW.md) for feature branches, PR targets, and owner-approved releases.
 
-Deployment and image-storage work: read [DEPLOYMENT.md](DEPLOYMENT.md) for the approved Hostinger VPS, Docker, Caddy, persistence, and backup plan.
+Deployment and image-storage work: read [DEPLOYMENT.md](DEPLOYMENT.md) for the approved Hostinger VPS, Docker, Caddy, persistence and CI/CD; backups are deferred. Image work also requires [IMAGES.md](IMAGES.md).
 
 API testing: [BRUNO.md](BRUNO.md) explains the collection inside this repository and private test values. Email setup: [GMAIL.md](GMAIL.md) explains Gmail App Passwords and the real SMTP connectivity check.
 
-Feature 10: [DELIVERY.md](DELIVERY.md). Review findings: [REVIEW.md](REVIEW.md).
+Features 13-14: [ORDER-DELIVERY.md](ORDER-DELIVERY.md). Features 11-12: [CART-ORDERS.md](CART-ORDERS.md). Feature 10: [DELIVERY.md](DELIVERY.md). Review findings: [REVIEW.md](REVIEW.md).
 
 ## Canonical business specifications
 

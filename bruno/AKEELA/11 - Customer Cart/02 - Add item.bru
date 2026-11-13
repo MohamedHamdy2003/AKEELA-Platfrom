@@ -1,0 +1,28 @@
+meta {
+  name: Add item
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/customer/cart/items
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "rest_id": "{{rest_id}}",
+    "prod_id": "{{prod_id}}",
+    "quantity": 1,
+    "addons": []
+  }
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(201); });
+}
+
+script:post-response {
+  if (res.getStatus() === 201) { const items = res.getBody().data.items; if (items.length) bru.setVar("cart_item_id", items[items.length - 1].cart_item_id); }
+}

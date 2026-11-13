@@ -51,6 +51,7 @@ for (const folder of folders) {
     if (value.tests) new Script(value.tests);
     const isPublic =
       route.startsWith('/restaurants') ||
+      route.startsWith('/health/') ||
       (route.startsWith('/auth/') && route !== '/auth/logout');
     assert.equal(value.http.auth, isPublic ? 'none' : 'inherit');
   }
