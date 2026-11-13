@@ -1,0 +1,27 @@
+meta {
+  name: Browse restaurant offers
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/restaurants/{{rest_id}}/offers?page=1&per_page=20
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  per_page: 20
+}
+
+tests {
+  test('Successful browse offers', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data).to.be.an('array');
+  });
+}
+
+docs {
+  Browse active offers within their sale window for a restaurant. No authentication required.
+}

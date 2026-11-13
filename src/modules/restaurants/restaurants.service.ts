@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
 import { UsersService } from '../users/users.service';
 import { RestaurantProfile } from './entities/restaurant-profile.entity';
@@ -31,6 +31,37 @@ export class RestaurantsService {
     private readonly dataSource: DataSource,
     private readonly users: UsersService,
   ) {}
+
+  async listPublic(pagination: { skip: number; take: number }) {
+    const ids = await this.users.activeVerifiedRestaurantIds();
+    if (!ids.length) return { items: [], total: 0 };
+    const [items, total] = await this.dataSource
+      .getRepository(RestaurantProfile)
+      .findAndCount({
+        where: {
+          user_id: In(ids),
+          activation_status: 'Active',
+          is_active: true,
+        },
+        order: { created_at: 'DESC', rest_id: 'DESC' },
+        ...pagination,
+      });
+    return { items, total };
+  }
+
+  async getPublic(restId: string): Promise<RestaurantProfile> {
+    const profile = await this.profileById(restId);
+    const owner = profile ? await this.users.byId(profile.user_id) : null;
+    if (
+      !profile ||
+      profile.activation_status !== 'Active' ||
+      !profile.is_active ||
+      !owner?.is_active ||
+      !owner.email_verified_at
+    )
+      throw new ApiError(404, 'NOT_FOUND', 'Restaurant not found.');
+    return profile;
+  }
 
   async create(
     userId: string,

@@ -1,0 +1,23 @@
+meta {
+  name: List product addon links
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/restaurant/products/{{prod_id}}/addons
+  body: none
+  auth: inherit
+}
+
+tests {
+  test('Successful list product addon links', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data).to.be.an('array');
+  });
+}
+
+docs {
+  List the product's addon links, including inactive links.
+}

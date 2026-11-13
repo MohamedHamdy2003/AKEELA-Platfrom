@@ -49,6 +49,15 @@ export class ApiExceptionFilter implements ExceptionFilter {
       fields = details.fields;
     } else if (
       error instanceof QueryFailedError &&
+      ['22P02', '22003', '22007', '22008'].includes(
+        (error.driverError as { code?: string }).code ?? '',
+      )
+    ) {
+      status = 422;
+      code = 'VALIDATION_ERROR';
+      message = 'Check the numbers, record IDs, and dates in your request.';
+    } else if (
+      error instanceof QueryFailedError &&
       (error.driverError as { code?: string }).code === '23505'
     ) {
       status = 409;

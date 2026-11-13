@@ -87,7 +87,7 @@ before(async () => {
   crypto = app.get(AuthCryptoService);
   await db.runMigrations({ transaction: 'all' });
   await db.query(
-    'TRUNCATE products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
+    'TRUNCATE delivery_drivers, offers, product_addons, addons, products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
   );
 
   // 1. Seed the Admin user directly in DB (simulating the CLI command)

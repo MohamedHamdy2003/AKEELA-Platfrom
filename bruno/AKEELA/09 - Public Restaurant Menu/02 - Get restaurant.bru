@@ -1,0 +1,23 @@
+meta {
+  name: Get restaurant
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/restaurants/{{rest_id}}
+  body: none
+  auth: none
+}
+
+tests {
+  test('Successful get restaurant', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data.rest_id).to.be.a('string');
+    expect(res.getBody().data).to.have.property('is_open');
+  });
+}
+
+docs {
+  Read public restaurant details and opening hours. No authentication required.
+}

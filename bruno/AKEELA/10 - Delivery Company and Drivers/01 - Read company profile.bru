@@ -1,0 +1,15 @@
+meta {
+  name: Read company profile
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/delivery-company/profile
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

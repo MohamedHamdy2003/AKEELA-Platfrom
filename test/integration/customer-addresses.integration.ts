@@ -89,7 +89,7 @@ before(async () => {
 
   await db.runMigrations({ transaction: 'all' });
   await db.query(
-    'TRUNCATE products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
+    'TRUNCATE delivery_drivers, offers, product_addons, addons, products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
   );
 
   // 1. Seed Admin
@@ -489,4 +489,31 @@ test('Feature 03 — Customer Addresses', async (t) => {
       );
     },
   );
+});
+
+test('concurrent address creation respects the two-address limit', async () => {
+  await db.query('DELETE FROM customer_addresses WHERE user_id=$1', [
+    customerAId,
+  ]);
+  const results = await Promise.all(
+    [1, 2, 3].map((index) =>
+      api()
+        .post('/api/v1/customer/addresses')
+        .set('Authorization', bearer(customerAToken))
+        .send({
+          address_title: 'Home ' + index,
+          address_line: 'Main Street',
+          longitude: '32.28',
+          latitude: '30.60',
+          is_default: true,
+        }),
+    ),
+  );
+  assert.deepEqual(results.map((r) => r.status).sort(), [201, 201, 409]);
+  const [count] = await db.query(
+    'SELECT count(*) AS total, count(*) FILTER(WHERE is_default) AS defaults FROM customer_addresses WHERE user_id=$1',
+    [customerAId],
+  );
+  assert.equal(count.total, '2');
+  assert.equal(count.defaults, '1');
 });

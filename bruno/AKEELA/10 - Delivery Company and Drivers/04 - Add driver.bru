@@ -1,0 +1,28 @@
+meta {
+  name: Add driver
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/delivery-company/drivers
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "driver_name": "Omar Hassan",
+    "driver_phone": "+201000000030",
+    "driver_email": null,
+    "is_active": true
+  }
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(201); });
+}
+
+script:post-response {
+  if (res.getStatus() === 201) bru.setVar("driver_id", res.getBody().data.driver_id);
+}

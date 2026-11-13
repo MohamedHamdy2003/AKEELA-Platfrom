@@ -94,6 +94,7 @@ async function main(): Promise<void> {
 
   try {
     await ds.transaction(async (manager) => {
+      await manager.query('SELECT pg_advisory_xact_lock(1794520000)');
       const existing = await manager
         .createQueryBuilder()
         .select('u.user_id')
