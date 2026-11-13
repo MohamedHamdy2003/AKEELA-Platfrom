@@ -1,0 +1,30 @@
+meta {
+  name: Checkout
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/customer/orders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "delivery_address": {
+      "address_line": "12 Main Street",
+      "longitude": "32.2800000",
+      "latitude": "30.6000000"
+    },
+    "notes": null
+  }
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(201); });
+}
+
+script:post-response {
+  if (res.getStatus() === 201) bru.setVar("order_id", res.getBody().data.order_id);
+}

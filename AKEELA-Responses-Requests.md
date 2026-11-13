@@ -71,7 +71,10 @@ API contract draft, in the same order as `AKEELA-Features.md`. All routes start 
 | 404 | `NOT_FOUND` | Missing or inaccessible record. |
 | 409 | `CONFLICT` | Duplicate email/phone/title or invalid order state. |
 | 409 | `CART_RESTAURANT_CONFLICT` | Cart belongs to another restaurant. |
-| 409 | `QUOTE_CHANGED` | Cart choices or reviewed prices changed; request a fresh quote. |
+| 409 | `CART_CONFLICT` | Concurrent cart changes could not be completed; refresh and retry. |
+| 409 | `EMPTY_CART` | Add items before quote or checkout. |
+| 409 | `UNAVAILABLE` | A restaurant, item, category, addon, or link is unavailable. |
+| 409 | `RESTAURANT_CLOSED` | The restaurant is closed at the current local time. |
 | 409 | `DELIVERY_COMPANY_UNAVAILABLE` | Automatic assignment failed; order remains Pending. |
 | 422 | `VALIDATION_ERROR` | Invalid request fields. |
 | 429 | `RATE_LIMITED` | Too many attempts; response includes a `Retry-After` header. |
@@ -231,18 +234,22 @@ Offer item body example:
 }
 ```
 
+Adding matching product/addon choices combines quantities only when the per-product addon ratio matches; different ratios remain separate rows. Switching restaurants returns `409 CART_RESTAURANT_CONFLICT`; explicitly clear the cart first. There are no business limits on cart size or quantity beyond storage type ranges and money overflow checks.
+
 For PATCH, `addons` is the full replacement selection when supplied; `[]` clears it. An omitted selection stays unchanged; when quantity changes, send the intended total addon quantities too. DELETE cart returns `EmptyCart`; deleting its last item may return a cart with no items. `is_available` in cart responses is calculated, not a new database field.
+
+Quote and checkout accept exactly one of `address_id` (an owned saved address) or `delivery_address` (a one-time address with `address_line`, `longitude`, and `latitude`). One-time addresses are saved only as order snapshots, not in Customer_Addresses. Currency is EGP and the initial general delivery fee is `"30.00"`.
 
 ## 12. Checkout and Customer Orders
 
 | Method | Route | Purpose | Request | Response data |
 |---|---|---|---|---|
-| POST | `/customer/orders` | Checkout the cart using the address, reviewed prices, optional notes, and checkout key. | Body: `{"address_id":"50","quote_token":"<opaque-signed-quote>","notes":"Call on arrival","checkout_key":"7c453937-243e-4e4c-bc6c-5d4a8a18e303"}` | `201` · Order |
+| POST | `/customer/orders` | Checkout the cart using the address, current server prices, and optional notes. | Body: `{"address_id":"50","notes":"Call on arrival"}` | `201` · Order |
 | GET | `/customer/orders` | List own orders; filter by active/history or status. | Query: `page=1&per_page=20&scope=history&status=Delivered` | `200` · List<OrderSummary> |
 | GET | `/customer/orders/{order_id}` | Read an owned order with saved items, addons, address, total, and current status. | No body | `200` · Order |
 | POST | `/customer/orders/{order_id}/cancel` | Cancel an owned Pending order. | No body | `200` · OrderState |
 
-`quote_token` is a proposed signed quote format: it binds the customer, cart choices, current prices, address, fee, and expiry without adding a database column. The server compares it with current data at checkout. A successful retry with the same checkout key returns `200` and the existing `Order`, even if the cart is now empty. A different request using that key returns `409`. List query parameters are optional; `scope` is `active` or `history`.
+Checkout calculates current server prices and creates a Pending order directly. No quote token, reviewed-total comparison, checkout key, or request hash is accepted. The quote endpoint is informational, with no expiry or price reservation. List query parameters are optional; `scope` is `active` or `history`. Notes may contain up to 10,000 characters.
 
 ## 13. Restaurant Order Handling
 
@@ -637,9 +644,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
 
 ```json
 {
-  "quote_token": "<opaque-signed-quote>",
-  "expires_at": "2026-11-12T10:05:00Z",
   "address_id": "50",
+  "delivery_address": {"address_line":"8 Main Street, floor 2","longitude":"32.2800000","latitude":"30.6000000"},
   "cart": {
     "cart_id": "70",
     "rest_id": "10",
@@ -670,8 +676,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
     "subtotal": "220.00",
     "updated_at": "2026-11-12T10:00:00Z"
   },
-  "delivery_fee": "20.00",
-  "total_price": "240.00"
+  "delivery_fee": "30.00",
+  "total_price": "250.00"
 }
 ```
 
@@ -684,7 +690,7 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
   "status": "Pending",
   "company_id": null,
   "driver_id": null,
-  "total_price": "240.00",
+  "total_price": "250.00",
   "created_at": "2026-11-12T10:00:00Z",
   "updated_at": "2026-11-12T10:00:00Z"
 }
@@ -703,8 +709,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
   "customer_address": "8 Main Street, floor 2",
   "delivery_longitude": "32.2800000",
   "delivery_latitude": "30.6000000",
-  "delivery_fee": "20.00",
-  "total_price": "240.00",
+  "delivery_fee": "30.00",
+  "total_price": "250.00",
   "notes": "Call on arrival",
   "items": [
     {
@@ -747,8 +753,8 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "customer_address": "8 Main Street, floor 2",
   "delivery_longitude": "32.2800000",
   "delivery_latitude": "30.6000000",
-  "delivery_fee": "20.00",
-  "total_price": "240.00",
+  "delivery_fee": "30.00",
+  "total_price": "250.00",
   "notes": "Call on arrival",
   "items": [
     {

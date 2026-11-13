@@ -28,8 +28,8 @@ Status: foundation approved and Feature 01 authorized/implemented. Other busines
 - Feature 01 mappings, initial migration, and 12 endpoints are implemented. Other schema changes, endpoints, and seeds remain deferred.
 - Response/error mapping is implemented; OpenAPI generation remains deferred.
 - Confirmed auth choices: decimal-string IDs, SMTP with local Mailpit, HS256 JWT/live DB sessions, JSON refresh tokens, 15-minute/30-day token lifetimes, six-digit/10-minute OTP with five attempts and 60-second cooldown, and 8–128 character passwords with at least one letter and one digit. See `AUTH.md`. Production SMTP credentials, browser token storage, and future shared rate-limit storage remain deployment/client decisions.
-- Quote format: signed opaque token is proposed in the request/response document; final design and expiry still require confirmation before Cart/Checkout.
-- Delivery fee, currency, and default delivery company settings: requirements exist but values are not specified.
+- Cart quotes are informational only. At checkout use current server prices directly; no quote tokens, expiry, or reviewed-total comparison.
+- Currency EGP and initial general delivery fee 30.00 are confirmed. The default delivery company remains a Feature 14 decision.
 - Image storage location is approved: a persistent volume on the Hostinger VPS. Upload APIs, validation, permissions, image-serving method, and URL conventions still need specifications before implementation.
 - Source hosting is GitHub (`MohamedHamdy2003/AKEELA-Platfrom`). Feature PRs target `dev`; release PRs from `dev` to `main` require explicit owner instruction. See `GITHUB-FLOW.md`. CI workflows, branch protection, and deployment are not configured yet.
 
@@ -44,3 +44,12 @@ Official references used for foundation choices: [Nest modules](https://docs.nes
 
 - Owner confirmed one Admin created through CLI only; it cannot be disabled. Features 01-10 and this release to main are authorized.
 - Public restaurant opening status uses the single local market timezone Africa/Cairo explicitly; no per-restaurant timezone column.
+
+## Confirmed cart and checkout decisions
+
+- Features 11 and 12 are authorized. Currency EGP; initial general delivery fee 30.00. Admin-managed general fees are a future feature.
+- Accept either an owned saved address ID or a one-time address; never both.
+- Merge matching product/addon choices, combining item and total addon quantities. Different choices remain separate. Switching restaurants requires explicitly clearing the cart first.
+- No business caps on cart size or quantities. Validate storage integer range and money overflow.
+- Owner rejected checkout_key and checkout_request_hash. Do not implement them.
+- Owner rejected signed quotes and reviewed-total comparisons. Checkout calculates current prices and places the order directly.

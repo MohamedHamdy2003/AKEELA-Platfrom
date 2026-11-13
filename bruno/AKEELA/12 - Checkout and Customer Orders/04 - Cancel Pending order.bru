@@ -1,0 +1,15 @@
+meta {
+  name: Cancel Pending order
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/customer/orders/{{order_id}}/cancel
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

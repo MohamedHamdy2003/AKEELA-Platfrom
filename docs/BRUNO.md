@@ -34,3 +34,7 @@ Tokens are held in memory and cleared after successful logout or password reset/
 - Test the current feature using this same project collection; its requests follow the checked-out branch.
 
 References: [Bruno Git collaboration](https://docs.usebruno.com/git-integration/overview), [private dotenv files](https://docs.usebruno.com/secrets-management/dotenv-file), [runtime variables](https://docs.usebruno.com/variables/runtime-variables).
+
+## Cart and customer orders
+
+Folders 11 and 12 contain the ten implemented cart/order requests. Use Customer login. Set runtime rest_id/prod_id from the public menu. Add item stores cart_item_id and Checkout stores order_id in runtime variables only. Quote is informational; checkout uses current prices plus EGP 30.00 without a quote token or checkout key. The templates show a one-time address; replace it with address_id to use a saved address. Run requests individually, not the whole folder as a single scenario.

@@ -1,6 +1,6 @@
 import { moneyCents, moneyAmount } from '../../common/money';
 import { Injectable } from '@nestjs/common';
-import { DataSource, In } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
 import { RestaurantProfile } from '../restaurants/entities/restaurant-profile.entity';
 import { RestaurantsService } from '../restaurants/restaurants.service';
@@ -27,6 +27,65 @@ export class CatalogService {
     private readonly dataSource: DataSource,
     private readonly restaurants: RestaurantsService,
   ) {}
+
+  async saleSelection(
+    restId: string,
+    prodId: string | null,
+    offerId: string | null,
+    addonIds: string[],
+    manager: EntityManager,
+  ) {
+    const product = prodId
+      ? await manager
+          .getRepository(Product)
+          .findOneBy({ rest_id: restId, prod_id: prodId })
+      : null;
+    const offer = offerId
+      ? await manager
+          .getRepository(Offer)
+          .findOneBy({ rest_id: restId, offer_id: offerId })
+      : null;
+    const category = product
+      ? await manager
+          .getRepository(Category)
+          .findOneBy({ rest_id: restId, cat_id: product.cat_id })
+      : null;
+    const now = Date.now();
+    const item = product
+      ? {
+          name: product.prod_name,
+          price: product.price,
+          is_available: product.is_active && Boolean(category?.is_active),
+        }
+      : offer
+        ? {
+            name: offer.offer_title,
+            price: offer.real_price,
+            is_available:
+              offer.is_active &&
+              offer.starts_at.getTime() <= now &&
+              offer.expires_at.getTime() > now,
+          }
+        : null;
+    const addons = [];
+    for (const addonId of addonIds) {
+      const addon = await manager
+        .getRepository(Addon)
+        .findOneBy({ rest_id: restId, addon_id: addonId });
+      const link = prodId
+        ? await manager
+            .getRepository(ProductAddon)
+            .findOneBy({ rest_id: restId, prod_id: prodId, addon_id: addonId })
+        : null;
+      addons.push({
+        addon_id: addonId,
+        name: addon?.addon_name ?? '',
+        price: addon?.addon_price ?? '0.00',
+        is_available: Boolean(addon?.is_active && link?.is_active),
+      });
+    }
+    return { item, addons };
+  }
 
   async assertActiveRestaurant(userId: string): Promise<RestaurantProfile> {
     const profile = await this.restaurants.profile(userId);

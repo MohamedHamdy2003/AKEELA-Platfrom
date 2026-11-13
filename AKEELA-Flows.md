@@ -9,7 +9,7 @@
 3. Save a delivery address and browse restaurants, products, and offers.
 4. Add products or offers to the cart; choose allowed product addons.
 5. Review quantities, current prices, delivery address, and delivery fee.
-6. Confirm checkout. The cart becomes a `Pending` order and is cleared.
+6. Confirm checkout. The server uses current prices plus EGP 30.00 delivery fee; the cart becomes a `Pending` order and is cleared. No earlier price is reserved.
 7. Follow the order status until delivery, then view it in order history.
 
 - The cart holds items from one restaurant at a time.
