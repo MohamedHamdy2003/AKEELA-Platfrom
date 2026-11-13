@@ -1,6 +1,6 @@
 # Module Ownership
 
-Auth, Users, Customers, Restaurants, and Delivery contain the services and mappings needed by Feature 01. Catalog, Cart, and Orders remain empty. Only seven identity/profile/auth tables exist. The table also describes future ownership; it does not authorize the remaining tables. See `AUTH.md`.
+Features 01-10 are implemented across Auth, Users, Customers, Restaurants, Catalog, and Delivery. Cart and Orders remain planned. Fourteen table mappings exist.
 
 | Module        | Responsibilities                                                                                    | Owned logical tables / view                                 | Feature sections                                       |
 | ------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ |

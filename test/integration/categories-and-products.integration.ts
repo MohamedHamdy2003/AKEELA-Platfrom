@@ -86,7 +86,7 @@ before(async () => {
 
   await db.runMigrations({ transaction: 'all' });
   await db.query(
-    'TRUNCATE products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
+    'TRUNCATE delivery_drivers, offers, product_addons, addons, products, categories, customer_addresses, auth_sessions, auth_challenges, admin_profiles, delivery_company_profiles, restaurant_profiles, customer_profiles, users RESTART IDENTITY',
   );
 
   // 1. Register & verify Customer
@@ -454,4 +454,16 @@ test('Features 05 & 06 - Categories and Products Integration Tests', async (t) =
       .send({ prod_name: 'Hijack' });
     assert.equal(updateUnowned.status, 404);
   });
+});
+
+test('concurrent normalized category titles remain unique', async () => {
+  const results = await Promise.all(
+    ['Concurrent Title', 'concurrent title'].map((cat_title) =>
+      api()
+        .post('/api/v1/restaurant/categories')
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ cat_title }),
+    ),
+  );
+  assert.deepEqual(results.map((r) => r.status).sort(), [201, 409]);
 });

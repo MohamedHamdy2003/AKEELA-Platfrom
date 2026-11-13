@@ -1,0 +1,33 @@
+meta {
+  name: Set product addon link
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{base_url}}/restaurant/products/{{prod_id}}/addons/{{addon_id}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "is_active": true
+  }
+}
+
+tests {
+  test('Successful set product addon link', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().data.addon_id).to.be.a('string');
+  });
+}
+
+docs {
+  Create a link or enable/disable an existing link between a product and an addon.
+}

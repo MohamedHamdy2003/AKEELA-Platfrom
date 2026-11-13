@@ -15,6 +15,22 @@ export function configureApplication(
     .set('trust proxy', trustProxy ? 1 : false);
   app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalPipes(
+    {
+      transform(value: unknown, metadata: { type: string }) {
+        if (
+          metadata.type === 'param' &&
+          (typeof value !== 'string' ||
+            !/^[1-9]\d{0,18}$/.test(value) ||
+            BigInt(value) > 9223372036854775807n)
+        )
+          throw new ApiError(
+            422,
+            'VALIDATION_ERROR',
+            'Enter a valid positive record ID.',
+          );
+        return value;
+      },
+    },
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,

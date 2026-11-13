@@ -3,10 +3,19 @@ import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { CatalogService } from './catalog.service';
 import { RestaurantCategoriesController } from './restaurant-categories.controller';
 import { RestaurantProductsController } from './restaurant-products.controller';
+import { RestaurantAddonsController } from './restaurant-addons.controller';
+import { RestaurantOffersController } from './restaurant-offers.controller';
+import { PublicMenuController } from './public-menu.controller';
 
 @Module({
   imports: [RestaurantsModule],
-  controllers: [RestaurantCategoriesController, RestaurantProductsController],
+  controllers: [
+    RestaurantCategoriesController,
+    RestaurantProductsController,
+    RestaurantAddonsController,
+    RestaurantOffersController,
+    PublicMenuController,
+  ],
   providers: [CatalogService],
   exports: [CatalogService],
 })

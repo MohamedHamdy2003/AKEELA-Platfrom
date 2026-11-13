@@ -60,6 +60,12 @@ export class CustomersService {
     dto: CreateAddressDto,
   ): Promise<AddressResponse> {
     return this.dataSource.transaction(async (manager) => {
+      await manager
+        .getRepository(CustomerProfile)
+        .createQueryBuilder('customer')
+        .where('customer.user_id = :userId', { userId })
+        .setLock('pessimistic_write')
+        .getOneOrFail();
       const repo = manager.getRepository(CustomerAddress);
 
       const count = await repo.countBy({ user_id: userId });
@@ -104,6 +110,12 @@ export class CustomersService {
     }
 
     return this.dataSource.transaction(async (manager) => {
+      await manager
+        .getRepository(CustomerProfile)
+        .createQueryBuilder('customer')
+        .where('customer.user_id = :userId', { userId })
+        .setLock('pessimistic_write')
+        .getOneOrFail();
       const repo = manager.getRepository(CustomerAddress);
       const address = await repo.findOneBy({
         address_id: addressId,
@@ -151,6 +163,12 @@ export class CustomersService {
     }
 
     return this.dataSource.transaction(async (manager) => {
+      await manager
+        .getRepository(CustomerProfile)
+        .createQueryBuilder('customer')
+        .where('customer.user_id = :userId', { userId })
+        .setLock('pessimistic_write')
+        .getOneOrFail();
       const repo = manager.getRepository(CustomerAddress);
       const address = await repo.findOneBy({
         address_id: addressId,

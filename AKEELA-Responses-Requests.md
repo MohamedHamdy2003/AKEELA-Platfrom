@@ -101,7 +101,7 @@ Customer and restaurant registration return unverified accounts without tokens. 
 |---|---|---|---|---|
 | GET | `/admin/users` | List accounts; filter by role or activity. | Query: `page=1&per_page=20&role=Restaurant&is_active=true` | `200` · List<User> |
 | GET | `/admin/users/{user_id}` | Read an account and its profile. | No body | `200` · User |
-| POST | `/admin/users` | Create a Delivery_Company or Admin account and profile. | Body: `{"full_name":"Company Owner","email":"company@example.com","password":"ExamplePassword!2026","phone":"+201000000020","role":"Delivery_Company","profile":{"company_name":"Local Delivery","company_phone":"+201000000020","company_email":"office@example.com","company_address":"5 Main Street, Ismailia","is_active":true}}` | `201` · User |
+| POST | `/admin/users` | Create a Delivery_Company account and profile. | Body: `{"full_name":"Company Owner","email":"company@example.com","password":"ExamplePassword!2026","phone":"+201000000020","role":"Delivery_Company","profile":{"company_name":"Local Delivery","company_phone":"+201000000020","company_email":"office@example.com","company_address":"5 Main Street, Ismailia","is_active":true}}` | `201` · User |
 | PATCH | `/admin/users/{user_id}/activity` | Enable or disable login for an account. | Body: `{"is_active":false}` | `200` · User |
 | GET | `/admin/restaurants` | List restaurant owners and profiles; filter by activation status for review. | Query: `page=1&per_page=20&activation_status=Pending` | `200` · List<RestaurantReview> |
 | PATCH | `/admin/restaurants/{rest_id}/activation` | Activate, suspend, or reactivate a restaurant. | Body: `{"activation_status":"Active"}` | `200` · RestaurantProfile |

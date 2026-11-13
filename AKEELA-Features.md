@@ -50,10 +50,10 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 **Rules**
 
-- Admin only. Create the first Admin through a setup command or seed, not public registration.
-- Create each account and matching profile in one transaction. Email is required for all roles; restaurant, company, and admin accounts also verify their email before login. Verify the setup Admin through the same flow.
+- Admin only. Create the only Admin through the CLI, not public registration.
+- Create each account and matching profile in one transaction. Email is required for all roles; restaurant and company accounts verify email before login. The trusted Admin CLI provisions a verified account by default; ADMIN_VERIFIED=false requires normal OTP verification.
 - Do not allow direct role changes. Keep existing orders when disabling an account.
-- Prevent disabling the last active Admin.
+- Allow exactly one Admin, created through the CLI only. Do not disable it or create Admin accounts through the API.
 - Restaurants register themselves. Admin reviews Pending restaurants and may set their activation status to Active or Suspended; a Suspended restaurant may be reactivated.
 - Activation is separate from email verification and account login activity. Activation never bypasses those checks.
 
@@ -61,7 +61,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 |---|---|---|
 | GET | `/admin/users` | List accounts; filter by role or activity. |
 | GET | `/admin/users/{user_id}` | Read an account and its profile. |
-| POST | `/admin/users` | Create a Delivery_Company or Admin account and profile. |
+| POST | `/admin/users` | Create a Delivery_Company account and profile. |
 | PATCH | `/admin/users/{user_id}/activity` | Enable or disable login for an account. |
 | GET | `/admin/restaurants` | List restaurant owners and profiles; filter by activation status for review. |
 | PATCH | `/admin/restaurants/{rest_id}/activation` | Activate, suspend, or reactivate a restaurant. |

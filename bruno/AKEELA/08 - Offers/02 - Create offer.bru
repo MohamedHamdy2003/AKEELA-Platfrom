@@ -1,0 +1,36 @@
+meta {
+  name: Create offer
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/restaurant/offers
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "offer_title": "Lunch Special",
+    "offer_description": "A great lunch deal",
+    "initial_price": "150.00",
+    "real_price": "120.00",
+    "offer_image_url": null,
+    "is_active": true,
+    "starts_at": "2026-11-01T00:00:00Z",
+    "expires_at": "2026-12-01T00:00:00Z"
+  }
+}
+
+tests {
+  test('Successful create offer', function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().data.offer_id).to.be.a('string');
+    expect(res.getBody().data.offer_title).to.equal('Lunch Special');
+  });
+}
+
+docs {
+  Create a new offer for the authenticated restaurant. real_price must be <= initial_price and expires_at must be after starts_at.
+}

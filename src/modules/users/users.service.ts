@@ -49,6 +49,18 @@ export class UsersService {
     };
   }
 
+  async activeVerifiedRestaurantIds(): Promise<string[]> {
+    const users = await this.dataSource
+      .getRepository(User)
+      .createQueryBuilder('u')
+      .select(['u.user_id'])
+      .where(
+        "u.role = 'Restaurant' AND u.is_active = true AND u.email_verified_at IS NOT NULL",
+      )
+      .getMany();
+    return users.map((user) => user.user_id);
+  }
+
   async create(input: NewAccount, manager: EntityManager): Promise<Account> {
     return manager
       .getRepository(User)
