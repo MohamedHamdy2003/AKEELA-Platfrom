@@ -45,7 +45,7 @@
 6. After pickup, mark the order as `Picked_Up`.
 7. After delivery, mark it as `Delivered`.
 
-- The company sees only orders assigned to it.
+- The company sees only orders assigned to it. Its service and login account cannot be disabled in the current single-company version.
 - Drivers have no login accounts in this version; the company updates delivery status.
 - The driver can be changed before pickup.
 

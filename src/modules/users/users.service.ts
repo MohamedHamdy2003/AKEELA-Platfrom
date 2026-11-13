@@ -167,6 +167,12 @@ export class UsersService {
       if (!target) {
         throw new ApiError(404, 'NOT_FOUND', 'Account not found.');
       }
+      if (target.role === 'Delivery_Company' && !is_active)
+        throw new ApiError(
+          409,
+          'CONFLICT',
+          'Delivery company accounts cannot be disabled in the single-company version.',
+        );
       if (target.role === 'Admin' && !is_active) {
         throw new ApiError(
           409,

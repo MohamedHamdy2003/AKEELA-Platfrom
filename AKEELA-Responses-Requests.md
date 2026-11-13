@@ -67,6 +67,7 @@ API contract draft, in the same order as `AKEELA-Features.md`. All routes start 
 | 400 | `OTP_INVALID_OR_EXPIRED` | Code is wrong, used, expired, or locked after too many attempts. |
 | 401 | `UNAUTHENTICATED` | Missing, invalid, expired, or revoked credentials. |
 | 403 | `EMAIL_NOT_VERIFIED` / `FORBIDDEN` | Unverified email, inactive account, or missing role access. |
+| 403 | `DELIVERY_COMPANY_INACTIVE` | Company service is inactive. |
 | 403 | `RESTAURANT_NOT_ACTIVE` | Restaurant activation is Pending or Suspended; management is blocked. |
 | 404 | `NOT_FOUND` | Missing or inaccessible record. |
 | 409 | `CONFLICT` | Duplicate email/phone/title or invalid order state. |
@@ -75,6 +76,8 @@ API contract draft, in the same order as `AKEELA-Features.md`. All routes start 
 | 409 | `EMPTY_CART` | Add items before quote or checkout. |
 | 409 | `UNAVAILABLE` | A restaurant, item, category, addon, or link is unavailable. |
 | 409 | `RESTAURANT_CLOSED` | The restaurant is closed at the current local time. |
+| 409 | `ORDER_CONFLICT` | Concurrent order changes could not finish; refresh and retry. |
+| 409 | `DRIVER_REQUIRED` / `DRIVER_UNAVAILABLE` | Assign or reactivate an owned driver before proceeding. |
 | 409 | `DELIVERY_COMPANY_UNAVAILABLE` | Automatic assignment failed; order remains Pending. |
 | 422 | `VALIDATION_ERROR` | Invalid request fields. |
 | 429 | `RATE_LIMITED` | Too many attempts; response includes a `Retry-After` header. |
@@ -211,6 +214,8 @@ Product-addon PUT returns `200` for both a new link and an update.
 | POST | `/delivery-company/drivers` | Add a driver to the company. | Body: `{"driver_name":"Omar Hassan","driver_phone":"+201000000030","driver_email":null,"is_active":true}` | `201` · Driver |
 | PATCH | `/delivery-company/drivers/{driver_id}` | Update driver details or activity. | Body: `{"driver_name":"Omar Hassan","is_active":false}` | `200` · Driver |
 
+In the single-company version, company creation/profile updates with `is_active=false` and disabling Delivery_Company login accounts return `409 CONFLICT`. Driver activity remains editable.
+
 ## 11. Customer Cart
 
 | Method | Route | Purpose | Request | Response data |
@@ -272,6 +277,8 @@ Checkout calculates current server prices and creates a Pending order directly. 
 | PUT | `/delivery-company/orders/{order_id}/driver` | Assign or change an owned active driver before pickup. | Body: `{"driver_id":"30"}` | `200` · OrderState |
 | POST | `/delivery-company/orders/{order_id}/pickup` | Mark an assigned Accepted order as Picked_Up. | No body | `200` · OrderState |
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. | No body | `200` · OrderState |
+
+List date filters use valid `YYYY-MM-DD` dates in Africa/Cairo. Both bounds include their whole local day; `date_from` must not follow `date_to`. Delivery pickup details use the current restaurant address/coordinates; the customer delivery address and prices remain order snapshots. Only acceptance retries from Accepted are idempotent; other invalid/final-state transitions return `409 CONFLICT`.
 
 Order action response values:
 

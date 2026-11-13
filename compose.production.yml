@@ -11,6 +11,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL with postgres as the database hostname}
       DATABASE_SSL: ${DATABASE_SSL:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      DEFAULT_DELIVERY_COMPANY_ID: ${DEFAULT_DELIVERY_COMPANY_ID:-}
       TRUST_PROXY: 'true'
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
       OTP_SECRET: ${OTP_SECRET:?Set OTP_SECRET}

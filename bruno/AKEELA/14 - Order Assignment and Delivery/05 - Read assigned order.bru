@@ -1,0 +1,15 @@
+meta {
+  name: Read assigned order
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/delivery-company/orders/{{order_id}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

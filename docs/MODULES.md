@@ -1,6 +1,6 @@
 # Module Ownership
 
-Features 01-12 are implemented, including Cart and customer Orders. Twenty table mappings and the Orders_History view exist. Restaurant order handling and delivery actions remain Features 13-14.
+Features 01-14 are implemented, including restaurant, customer, Admin and delivery-company order operations. Twenty table mappings and the Orders_History view exist. Orders owns every order read and transition; Delivery and Restaurants expose transaction-aware validation only.
 
 | Module        | Responsibilities                                                                                    | Owned logical tables / view                                 | Feature sections                                       |
 | ------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ |

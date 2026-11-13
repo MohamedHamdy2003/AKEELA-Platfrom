@@ -1,5 +1,7 @@
 import {
   IsIn,
+  IsDateString,
+  Matches,
   IsOptional,
   IsString,
   MaxLength,
@@ -22,3 +24,26 @@ export class ListOrdersQuery extends PaginationQuery {
   @IsIn(ORDER_STATUSES, { message: 'Choose a valid order status.' })
   status?: OrderStatus;
 }
+
+export class OperationalOrdersQuery extends PaginationQuery {
+  @IsOptional()
+  @IsIn(ORDER_STATUSES, { message: 'Choose a valid order status.' })
+  status?: OrderStatus;
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Use YYYY-MM-DD for the start date.',
+  })
+  @IsDateString({ strict: true }, { message: 'Enter a valid start date.' })
+  date_from?: string;
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Use YYYY-MM-DD for the end date.',
+  })
+  @IsDateString({ strict: true }, { message: 'Enter a valid end date.' })
+  date_to?: string;
+}
+export class AssignDriverDto {
+  @Matches(/^[1-9]\d{0,18}$/, { message: 'Enter a valid driver ID.' })
+  driver_id!: string;
+}
+export class EmptyOrderActionDto {}

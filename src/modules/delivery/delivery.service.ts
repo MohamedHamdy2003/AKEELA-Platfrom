@@ -8,6 +8,9 @@ import {
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { DeliveryCompanyProfile } from './entities/delivery-company-profile.entity';
+import { ConfigService } from '@nestjs/config';
+import { UsersService } from '../users/users.service';
+import { Environment } from '../../config/environment';
 
 export interface DeliveryCompanyRegistration {
   company_name: string;
@@ -19,7 +22,44 @@ export interface DeliveryCompanyRegistration {
 
 @Injectable()
 export class DeliveryService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly users: UsersService,
+    private readonly config: ConfigService<Environment, true>,
+  ) {}
+
+  async defaultCompany(manager: EntityManager): Promise<string> {
+    const id = this.config.get('DEFAULT_DELIVERY_COMPANY_ID', { infer: true });
+    const company = id
+      ? await manager
+          .getRepository(DeliveryCompanyProfile)
+          .findOneBy({ company_id: id })
+      : null;
+    const owner = company
+      ? await this.users.byId(company.user_id, manager)
+      : null;
+    if (!company?.is_active || !owner?.is_active || !owner.email_verified_at)
+      throw new ApiError(
+        409,
+        'DELIVERY_COMPANY_UNAVAILABLE',
+        'No active verified delivery company is configured. The order is still Pending.',
+      );
+    return company.company_id;
+  }
+
+  async driverForOrder(
+    companyId: string,
+    driverId: string,
+    manager: EntityManager,
+  ) {
+    const driver = await manager
+      .getRepository(DeliveryDriver)
+      .findOneBy({ company_id: companyId, driver_id: driverId });
+    if (!driver) throw new ApiError(404, 'NOT_FOUND', 'Driver not found.');
+    if (!driver.is_active)
+      throw new ApiError(409, 'DRIVER_UNAVAILABLE', 'Choose an active driver.');
+    return driver.driver_id;
+  }
 
   async ownedProfile(userId: string, manager = this.dataSource.manager) {
     const company = await this.profile(userId, manager);
@@ -28,6 +68,12 @@ export class DeliveryService {
     return company;
   }
   async updateProfile(userId: string, input: UpdateCompanyDto) {
+    if (input.is_active === false)
+      throw new ApiError(
+        409,
+        'CONFLICT',
+        'Delivery company service cannot be disabled in the single-company version.',
+      );
     return this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(DeliveryCompanyProfile);
       const profile = await repo
@@ -104,6 +150,12 @@ export class DeliveryService {
     input: DeliveryCompanyRegistration,
     manager: EntityManager,
   ): Promise<DeliveryCompanyProfile> {
+    if (input.is_active === false)
+      throw new ApiError(
+        409,
+        'CONFLICT',
+        'Delivery company service must be active in the single-company version.',
+      );
     return manager.getRepository(DeliveryCompanyProfile).save(
       manager.getRepository(DeliveryCompanyProfile).create({
         ...input,

@@ -49,6 +49,22 @@ export class RestaurantsService {
     };
   }
 
+  async forOrderHandling(userId: string, manager: EntityManager, lock = false) {
+    const qb = manager
+      .getRepository(RestaurantProfile)
+      .createQueryBuilder('r')
+      .where('r.user_id = :userId', { userId });
+    if (lock) qb.setLock('pessimistic_write');
+    const profile = await qb.getOne();
+    if (!profile || profile.activation_status !== 'Active')
+      throw new ApiError(
+        403,
+        'RESTAURANT_NOT_ACTIVE',
+        'Restaurant management is not active.',
+      );
+    return profile.rest_id;
+  }
+
   async listPublic(pagination: { skip: number; take: number }) {
     const ids = await this.users.activeVerifiedRestaurantIds();
     if (!ids.length) return { items: [], total: 0 };
