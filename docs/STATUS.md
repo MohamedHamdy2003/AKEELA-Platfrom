@@ -14,6 +14,7 @@ Backend Features 01-16 and monorepo preparation are implemented. Historical rele
 | 15: Customer/restaurant/product/offer images and public URLs          | Implemented                                                                                            |
 | 16: Public liveness/readiness                                         | Implemented                                                                                            |
 | PostgreSQL                                                            | Twenty table mappings, one history view, eight reversible migrations; no schema change in this release |
+| Restaurant frontend                                                   | React/Vite/TypeScript, Arabic RTL, memory-only sessions, Leaflet location picker                       |
 | API collection                                                        | 81 routes in specifications and matching Bruno folders                                                 |
 | Docker/Caddy                                                          | Persistent images/database/certificates, private API/database; local TLS smoke verified                |
 | CI/CD                                                                 | PR checks, main GHCR publication, optional pinned-SSH deployment; deployment disabled until configured |
@@ -31,26 +32,46 @@ Backend Features 01-16 and monorepo preparation are implemented. Historical rele
 ## Pending
 
 - Buy/provision VPS, choose domain, configure DNS/private environment/SSH secrets and DEPLOY_ENABLED, then verify real HTTPS/Gmail.
-- Backup/restore automation explicitly deferred. OpenAPI, future delivery-fee Admin API, image cleanup, load testing and client token storage remain unimplemented.
+- Backup/restore automation explicitly deferred. OpenAPI, future delivery-fee Admin API, image cleanup and load testing remain unimplemented. Restaurant sessions intentionally stay in memory only.
 - No application-database migrations/seeds run in this task. Tests truncate only the dedicated local `_test` database.
 
-## Frontend planning
+## Restaurant frontend
 
-Three frontend design guides are available under `docs/frontend`: Restaurant (`vendor.akeela.com`), Admin (`admin.akeela.com`) and Delivery Company (`delivery.akeela.com`). They map existing APIs to screens, forms, permissions and error states. No frontend code, DNS records, Caddy frontend hosting or CORS changes are implemented by this planning task. The repository layout is approved: apps/api, apps/restaurant, apps/admin and apps/delivery. Framework, UI language/RTL and browser token storage remain pending.
+- `apps/restaurant` implements the supported Restaurant screens with React/Vite/TypeScript and Arabic RTL. Shared tokens/assets live in `packages/brand`. Admin/Delivery remain reserved. See the [app guide](frontend/AKEELA-Restaurant-App.md), [run guide](../apps/restaurant/README.md) and [design system](DESIGN-SYSTEM.md).
+- Access/refresh tokens stay in memory; reload requires login. Refresh coordinates concurrent requests. Activation/role gates, decimal strings, Cairo dates and server ownership checks remain authoritative. No persistent sessions/SSO, invented analytics, preparation statuses or unsupported APIs.
+- Registration labels the address “عنوان المطعم”, centers password controls and explains the known duplicate email/phone conflict without clearing input. Automatic browser location retains the best reported fix for up to 25 seconds, displays approximate accuracy and never guarantees true device position. The owner reported a wrong country in both the app and Google Maps on the laptop; the precise provider cause remains unresolved.
+- Registration/profile reuse Leaflet + OpenStreetMap. Automatic registration fixes appear directly; map click/tap, pin drag/arrow keys and coordinate inputs stay synchronized. Manual choices cancel acquisition, protecting against late fixes. Profile starts from saved coordinates; Pending/Suspended and in-flight saves disable selection, and failed saves retain the draft. No address search/geocoding or fabricated coordinates.
+- Standard OSM tile loading preserves attribution/referrer/caching, with public build-time tile URL/attribution overrides and manual fallback/reload. CSP allows data: images for Leaflet’s transparent tile-cancellation placeholder; script/style restrictions are unchanged. No Google billing/key or public deployment.
+- Shared motion tokens support reduced motion. Busy buttons preserve dimensions, real pending tables use skeletons, and dialogs release native focus immediately while an inert visual tail exits. See the design system for current interaction rules.
+- Authenticated live API/SMTP/upload/order journeys remain unverified: browser tests use location/API fixtures and no real account/database writes. Actual OSM tiles were checked separately using fixture coordinates. Other browser engines/device performance remain untested.
+
+## Workspace and deployment
+
+- Root npm workspaces use one lockfile. Existing API shortcuts still run in apps/api; `npm run dev:restaurant` starts the frontend. Root check includes both apps; browser tests run separately.
+- API, Restaurant and shared brand assets have current source/packaging. Restaurant has its own static Docker image and independent workflow; no production frontend service/site is enabled. Backend/schema, database/image volumes and live infrastructure were not changed by frontend work.
+- Specifications, Bruno, Compose/Caddy, deployment scripts and repository checks remain shared. Canonical root specifications and implementation guides stay authoritative; historical task approvals do not grant permission for new Git publication or deployment.
 
 ## Verification
 
-Docker smoke passed trusted local TLS, HTTP redirect, reverse proxy readiness, WebP serving and image persistence after API recreation. `npm run check` passed (27 unit tests, lint, formatting, types, build, docs and 81 Bruno requests). The full PostgreSQL/Mailpit suite passed 111 tests; the final changed cart/image/profile cases passed another targeted run of 28 tests. Runtime audit reports zero vulnerabilities. Workflow validation (actionlint), Bash syntax and production Caddy validation passed. See [REVIEW.md](REVIEW.md).
+- Latest implementation checks passed: root `npm run check` (27 API, 3 tooling and 6 Restaurant unit tests, lint/format/types/build/docs/81 Bruno contracts) and all 26 Chromium browser flows. Browser plugin was unavailable; Playwright verified desktop/phone/tablet, activation guards, auth, map synchronization/save/failure, motion and reduced motion. Screenshots were inspected outside the repository.
+- Clean Linux Docker npm ci/build passed for API/Restaurant. Production smoke verified local TLS, proxy readiness, WebP persistence, static assets and real OSM tile loading/referrer with zero runtime/CSP console errors. Disposable smoke containers were removed.
+- Last backend integration run passed 111 dedicated PostgreSQL/Mailpit tests, plus 28 targeted cart/image/profile cases. Runtime audit reported zero vulnerabilities; actionlint, Bash syntax and production Caddy checks passed. These are prior verification results, not newly executed database/deployment checks. See [REVIEW.md](REVIEW.md).
 
-## Monorepo migration
+## Cleanup — 2026-11-14
 
-- API source/tests/config/Dockerfile and local env examples moved to apps/api. Root npm workspaces and one lockfile preserve existing command shortcuts.
-- docs, specifications, Bruno, Compose, Caddy and CI/CD remain shared at root. Frontend folders contain README instructions only; no frontend scaffold/dependencies.
-- Docker/runtime paths, API-affected CI/release conditions, optional Caddy site imports and future subdomain templates are prepared. No schema/API behavior, production volume, DNS or live server change.
-- This task authorizes pushing/merging the change to dev; main promotion is a separate owner decision.
-- Migration validation: root check passed (27 API unit tests, 3 CI path-selection tests, lint/format/types/build, recursive doc links/API references and all 81 Bruno requests). All 111 PostgreSQL/Mailpit integration tests passed. Docker smoke verified the moved API, compiled migrations, trusted local TLS, redirects, public images and persistent storage; production and disabled frontend Caddy configurations validate. Runtime audit reports zero vulnerabilities. The private environment hash is unchanged after setup.
-- Windows npm ci encountered the existing EPERM directory lock; npm install --ignore-scripts --no-audit --no-fund restored the workspace installation. Clean Linux npm ci is verified by the Docker build and GitHub CI. No application database migration, new account or real deployment was run.
+- Audited source imports, runtime/CLI/migration entry points, asset references and repository scripts. No unused production source was confirmed; dynamically loaded entities/migrations and CLI entry points are retained.
+- Removed 41 obsolete local PR drafts, logs, old audit output and superseded scratch generators/review scripts from ignored work/. These are not tracked source changes. Maintained docs remain linked and useful; consolidated this status page and corrected stale Restaurant/workspace instructions instead of deleting current API/design/deployment guides.
+- Cleanup limitation: filesystem access denied removal of 35 obsolete files: 30 files in `work/build-before-github-setup`, plus `work/build_api_contract.py`, `work/spec-hashes.json`, `work/audit-foundation.json`, `work/audit-runtime-final.json` and `work/audit-runtime.json`. Automatic approval review rejected forced removal with “blocked by policy”, without a more specific reason. They remain ignored and are not used by current commands. Private environment files, the local GitHub helper and installed actionlint utility were retained.
+- Cleanup verification: root npm run check, a final docs/link check and git diff --check passed. No production source, schema, dependencies or runtime behavior changed; browser/database suites were not rerun for this documentation/local-scratch cleanup.
 
-## Agent handoff
+## Restaurant visual refresh — 2026-11-14
 
-Root AGENTS.md now provides a scoped reading path. Each app has its own AGENTS.md with its feature sections, source-verification pointers and role limits. Frontend work starts with status, the target app guide and relevant contracts, rather than reading the entire backend/docs. Backend architecture rules stay in apps/api/AGENTS.md; no frontend implementation is authorized by this documentation update.
+- Owner requested stronger modern interaction/motion, brighter colors, a lighter canvas and smaller type. Applied Fresh Kitchen shared tokens: near-white warm background, emerald/mint surfaces, orange home CTA, compact Arabic page/navigation/table/form typography, smaller logos and refined component radii/depth. Original identity assets, feature routes, API contracts, session/activation/save guards and Leaflet behavior are preserved.
+- Image Gen v2 dashboard/login concepts guide the visual system; the owner's compact-type requirement and existing functional copy/assets override generated typography/logo approximations. See DESIGN-SYSTEM.md for tokens, choreography and deliberate differences.
+- Added coordinated page/auth/table/menu entrances, active-navigation indicator, hover lift/light sweep/arrow feedback and pending skeleton shimmer. Existing busy-size preservation, immediate dialog focus release and guarded writes remain. Reduced motion disables new effects as well as existing animation.
+- Verification passed: root npm run check, all 27 Chromium flows and a production-container smoke. New checks cover the light palette, compact computed type, active-navigation text contrast (at least 4.5:1), hover/arrow feedback, row staggering and reduced motion; existing auth/password geometry, activation, map/save, dialog and pending-write flows still pass. Browser plugin unavailable; Playwright used with isolated fixtures, plus real OSM tiles for screenshots. No real account/database writes.
+- Final desktop/mobile screenshots were compared with the v2 concepts using view_image across palette, type, identity, containers, copy and responsive layout; deliberate compact-type/original-asset differences are recorded in DESIGN-SYSTEM.md. Docker build and runtime/CSP console checks passed; the disposable smoke container was removed. A final motion preview and representative screenshots are kept outside the repository. Other browser engines/device performance remain unmeasured.
+
+## Current release authorization — 2026-11-14
+
+- Owner explicitly requested promotion of the completed Restaurant frontend and related documentation/workspace changes to main. Follow feature PR to dev with successful checks, then a merge-commit release PR from dev to main. This request authorizes this release only; actual VPS provisioning/deployment remains outside scope. Private environments and ignored cleanup leftovers are not included in Git.

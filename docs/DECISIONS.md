@@ -1,5 +1,14 @@
 # Architecture Decisions
 
+## Restaurant frontend decisions (2026-11-14)
+
+- Owner approved an embedded Leaflet + OpenStreetMap registration picker: automatic browser coordinates are shown directly, and manual map selection updates existing decimal-string fields. Leaflet is bundled; standard OSM tiles load directly with attribution/referrer/caching per provider policy. Public tile URL/attribution can be overridden at build time. The tile service has no availability guarantee. Production img-src permits data: images for Leaflet’s transparent tile-cancellation placeholder; other CSP directives remain unchanged.
+
+- Current owner request authorizes React + Vite + strict TypeScript in apps/restaurant, Arabic-first RTL and the current Fresh Kitchen visual refresh (replacing the initial Garden Kitchen direction). See [design system](DESIGN-SYSTEM.md).
+- Owner explicitly chose memory-only browser tokens; reload requires login. JSON transport stays unchanged; no persistence/cookies/cross-subdomain SSO. Concurrent refreshes share one rotation with one retry.
+- packages/brand contains shared CSS tokens and raster identity assets as requested for the ecosystem. React UI remains app-local until another implemented app needs it.
+- Existing REST contracts define the supported screens. No analytics, staff, branches, preparation statuses or backend changes are introduced. Hosting remains disabled pending a separately approved release/configuration.
+
 Status: foundation approved and Feature 01 authorized/implemented. Other business choices remain deferred. Update decisions and reasons with architectural changes.
 
 | ID  | Choice                                                                                   | Reason / consequence                                                                                                                                                                                                     |

@@ -15,7 +15,7 @@ Read this file before work. It applies across the repository; app-level `AGENTS.
 | Path                                        | Purpose                                                                  |
 | ------------------------------------------- | ------------------------------------------------------------------------ |
 | `apps/api`                                  | Implemented NestJS modular monolith, PostgreSQL, TypeORM; Features 01-16 |
-| `apps/restaurant`                           | Planned Restaurant frontend; `vendor.akeela.com`                         |
+| `apps/restaurant`                           | Implemented React/Vite Restaurant frontend; `vendor.akeela.com`          |
 | `apps/admin`                                | Planned Admin frontend; `admin.akeela.com`                               |
 | `apps/delivery`                             | Planned Delivery_Company dispatcher frontend; `delivery.akeela.com`      |
 | `docs/frontend`                             | Per-app screens, APIs, permissions and unsupported features              |
@@ -23,7 +23,7 @@ Read this file before work. It applies across the repository; app-level `AGENTS.
 | `bruno/AKEELA`                              | Implemented API request collection                                       |
 | `deploy`, root Compose, `.github/workflows` | Docker/Caddy, VPS preparation and CI/CD                                  |
 
-Frontends currently have instructions/README only. Implement only the app/features authorized by the current task. Preparing these instructions does not authorize scaffolding. One Git repository, npm workspaces, one root lockfile; no nested repositories or per-app lockfiles.
+Restaurant is implemented locally; Admin and Delivery still have instructions/README only. Implement only the app/features authorized by the current task. One Git repository, npm workspaces, one root lockfile; no nested repositories or per-app lockfiles.
 
 ## Read on demand
 
@@ -57,7 +57,7 @@ Frontends currently have instructions/README only. Implement only the app/featur
 - Never read/dump private `.env` values for orientation, log tokens/passwords/OTPs, or commit secrets. API local configuration is `apps/api/.env`; frontend public settings must not contain API signing, SMTP or database credentials. Read committed examples for setting names.
 - Never run migrations, provision accounts, deploy infrastructure, delete persistent volumes or enable sites without task authorization. Backups are deferred. Never enable TypeORM synchronize/dropSchema/automatic migrations.
 - Start feature branches from dev and target PRs to dev. Main promotion requires an explicit owner request. Old task approvals in status/history are not blanket permission for a new release.
-- `work/` is non-authoritative scratch material. Never run its legacy API generator over maintained docs.
+- `work/` is non-authoritative local scratch material. Do not use scratch outputs to overwrite maintained documentation.
 
 ## Efficient reads and verification
 

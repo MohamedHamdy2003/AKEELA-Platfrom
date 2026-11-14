@@ -1,5 +1,7 @@
 # AKEELA Ordering Platform
 
+Restaurant frontend is implemented locally in `apps/restaurant` (React/Vite, Arabic RTL). Start with `npm run dev:restaurant`; see the [Restaurant run guide](apps/restaurant/README.md) and [shared design system](docs/DESIGN-SYSTEM.md). Admin/Delivery remain reserved; no frontend is deployed. The API/migration baseline below is unchanged.
+
 AKEELA monorepo with a restaurant ordering backend using NestJS, PostgreSQL and TypeORM. One modular monolith, one database and four roles: Customer, Restaurant, Delivery_Company and Admin.
 
 Features 01-14 cover authentication, restaurant approval, catalog/addons/offers, customer addresses/cart/checkout, history and delivery. Features 15-16 add image uploads and health probes. Includes 81 Bruno requests, PostgreSQL integration tests, Docker/Caddy and GitHub CI/CD.

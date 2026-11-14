@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/dist-test
+**/.env
+**/.env.*
+**/storage
+.git
+.npm-cache
+work
+bruno
+docs
+apps/admin
+apps/delivery
+apps/api/src
+apps/api/test
+apps/restaurant/test

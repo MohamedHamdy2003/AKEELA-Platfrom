@@ -49,9 +49,11 @@ These four existing files are included by reference, not duplicated or moved. Ed
 
 The legacy `Rico` title inside the database document refers to AKEELA; it does not name a second product. Payload examples are drafts, not permission to add requirements. Architecture documents describe technical implementation, not new product features.
 
-## Frontend application planning
+## Frontend application guides
 
-These screen/feature guides describe clients of the existing API. The frontend applications are not implemented yet. The four root specifications remain authoritative for API contracts.
+Restaurant is now implemented locally; see its [run guide](../apps/restaurant/README.md) and the shared [design system](DESIGN-SYSTEM.md). The planning table remains the screen/API guide inventory. Admin and Delivery are not implemented; no public frontend hosting is enabled.
+
+These screen/feature guides describe clients of the existing API. Restaurant is implemented; Admin and Delivery remain planned. The four root specifications remain authoritative for API contracts.
 
 | Application      | Planned frontend origin       | Design guide                                                |
 | ---------------- | ----------------------------- | ----------------------------------------------------------- |
@@ -59,7 +61,7 @@ These screen/feature guides describe clients of the existing API. The frontend a
 | Admin            | `https://admin.akeela.com`    | [Admin application](frontend/AKEELA-Admin-App.md)           |
 | Delivery company | `https://delivery.akeela.com` | [Delivery application](frontend/AKEELA-Delivery-App.md)     |
 
-The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery` alongside `apps/api`. Choose the frontend framework, UI language/RTL and browser session storage before implementation. Subdomain DNS/hosting/CORS configuration remains deployment work.
+The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery` alongside `apps/api`. Restaurant uses React/Vite, Arabic RTL and memory-only browser sessions. Confirm the corresponding choices before implementing Admin or Delivery. Subdomain DNS/hosting/CORS configuration remains deployment work.
 
 ## Resolving changes
 

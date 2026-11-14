@@ -1,5 +1,9 @@
 # Development Conventions
 
+## Frontend additions
+
+Restaurant uses React/Vite/strict TypeScript in apps/restaurant and shared CSS variables/assets in packages/brand. Keep feature components focused, App as composition, API types independent of backend internals, Arabic labels/RTL native and tokens centralized. Use npm workspaces/root lockfile. Run npm run check:restaurant and its Playwright contract-fixture flows in addition to root check. Browser screenshots/reports stay outside source. See [design system](DESIGN-SYSTEM.md).
+
 ## Code
 
 - Strict TypeScript; kebab-case filenames, PascalCase classes, camelCase internal variables. Keep API/database snake_case names from the specifications; map them explicitly.
