@@ -2,7 +2,7 @@
 
 Planned origin: `https://vendor.akeela.com`.
 
-Read the root [AGENTS.md](../../AGENTS.md) and [Restaurant design guide](../../docs/frontend/AKEELA-Restaurant-App.md) before work.
+Read the root [AGENTS.md](../../AGENTS.md), local [app instructions](AGENTS.md) and [Restaurant design guide](../../docs/frontend/AKEELA-Restaurant-App.md) before work.
 
 No frontend source, dependencies, Docker image or deployment job exists yet. Agree on framework, language/RTL and browser session handling before implementation.
 

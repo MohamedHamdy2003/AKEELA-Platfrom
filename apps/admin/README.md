@@ -2,7 +2,7 @@
 
 Planned origin: `https://admin.akeela.com`.
 
-Read the root [AGENTS.md](../../AGENTS.md) and [Admin design guide](../../docs/frontend/AKEELA-Admin-App.md) before work.
+Read the root [AGENTS.md](../../AGENTS.md), local [app instructions](AGENTS.md) and [Admin design guide](../../docs/frontend/AKEELA-Admin-App.md) before work.
 
 No frontend source, dependencies, Docker image or deployment job exists yet. Do not initialize an application until its framework, language/RTL and browser session handling are agreed with the owner.
 

@@ -2,7 +2,7 @@
 
 The existing NestJS modular monolith lives here. It keeps one PostgreSQL database and the same API contracts, roles, migrations and storage volumes.
 
-Read [AGENTS.md](../../AGENTS.md), [Architecture](../../docs/ARCHITECTURE.md), [Monorepo](../../docs/MONOREPO.md) and the relevant root specifications before edits.
+Read root [AGENTS.md](../../AGENTS.md), local [app instructions](AGENTS.md), [Architecture](../../docs/ARCHITECTURE.md), [Monorepo](../../docs/MONOREPO.md) and the relevant root specifications before edits.
 
 Run `npm ci` from the repository root. Root scripts forward API commands with the correct working directory:
 

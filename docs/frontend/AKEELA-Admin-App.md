@@ -5,7 +5,7 @@ This application is planned; the APIs below already exist. DNS and frontend host
 
 ## Read First
 
-Read [AGENTS.md](../../AGENTS.md), [Features](../../AKEELA-Features.md), [Requests/Responses](../../AKEELA-Responses-Requests.md), [Flows](../../AKEELA-Flows.md), and [Order/Delivery rules](../ORDER-DELIVERY.md). These remain authoritative. This file maps supported behavior to screens without adding backend features.
+Read root [AGENTS.md](../../AGENTS.md) and [this app's instructions](../../apps/admin/AGENTS.md) for the scoped reading path. Use this guide for screens and permissions; consult only the matching canonical API sections/models for the feature in progress. Do not read other app guides or the full backend for orientation. Existing root specifications remain authoritative; this guide adds no backend features.
 
 API paths omit `/api/v1`. Use a configured full API base URL; the backend domain is undecided. `admin.akeela.com` hosts the frontend, not a separate backend/database.
 

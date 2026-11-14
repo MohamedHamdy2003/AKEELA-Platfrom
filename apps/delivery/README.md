@@ -2,7 +2,7 @@
 
 Planned origin: `https://delivery.akeela.com`. This is a dispatcher application, not driver login.
 
-Read the root [AGENTS.md](../../AGENTS.md) and [Delivery design guide](../../docs/frontend/AKEELA-Delivery-App.md) before work.
+Read the root [AGENTS.md](../../AGENTS.md), local [app instructions](AGENTS.md) and [Delivery design guide](../../docs/frontend/AKEELA-Delivery-App.md) before work.
 
 No frontend source, dependencies, Docker image or deployment job exists yet. Agree on framework, language/RTL and browser session handling before implementation.
 

@@ -1,8 +1,19 @@
 # Documentation Index
 
-Read `../AGENTS.md` first. Documentation, not previous conversations, defines the work.
+Read [root AGENTS.md](../AGENTS.md) first, then the target app instructions below. Use this index to find needed references, not as a requirement to read all documentation.
 
 Monorepo work: read [MONOREPO.md](MONOREPO.md) for app directories, workspace commands, local environment migration and independent build/release boundaries.
+
+## Scoped agent entry points
+
+| App              | Instructions                                              |
+| ---------------- | --------------------------------------------------------- |
+| Restaurant       | [apps/restaurant/AGENTS.md](../apps/restaurant/AGENTS.md) |
+| Admin            | [apps/admin/AGENTS.md](../apps/admin/AGENTS.md)           |
+| Delivery company | [apps/delivery/AGENTS.md](../apps/delivery/AGENTS.md)     |
+| API              | [apps/api/AGENTS.md](../apps/api/AGENTS.md)               |
+
+App instructions point to the relevant feature sections and controller/DTO locations. Read extra architecture, schema or infrastructure details only when the task needs them.
 
 ## Foundation documentation
 
