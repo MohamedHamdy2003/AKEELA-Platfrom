@@ -45,7 +45,7 @@ npm run migration:run
 npm run start:dev
 ```
 
-`setup:local` generates separate local secrets and never overwrites an existing `.env`. PostgreSQL is on localhost:15432 (override `LOCAL_POSTGRES_PORT` and DATABASE_URL together). SMTP is localhost:11025; Mailpit UI is [localhost:18025](http://localhost:18025). Mailpit is for local testing only.
+`setup:local` generates `apps/api/.env` with separate local secrets and never overwrites an existing `apps/api/.env`. PostgreSQL is on localhost:15432 (override `LOCAL_POSTGRES_PORT` and DATABASE_URL together). SMTP is localhost:11025; Mailpit UI is [localhost:18025](http://localhost:18025). Mailpit is for local testing only.
 
 Register a customer through `POST /api/v1/auth/register`, read its code in Mailpit, verify through `/auth/verify-email`, then log in through `/auth/login`. Use `Authorization: Bearer <access_token>` for `/me`. See the root request/response file for payloads; do not store tokens in documentation.
 
@@ -63,7 +63,7 @@ Tests cover validation, roles/profiles, duplicate rollback, OTP expiry/attempts/
 
 ## Deployment readiness
 
-- Dockerfile builds a compiled, non-root runtime with production dependencies only. No secrets or image files are baked into it.
+- `apps/api/Dockerfile` builds a compiled, non-root runtime with production dependencies only. No secrets or image files are baked into it.
 - Production Compose connects API and PostgreSQL privately, exposes only Caddy HTTP/HTTPS, and persists PostgreSQL/images/Caddy state. Feature 15 uploads are served publicly through Caddy; see IMAGES.md.
 - `TRUST_PROXY=true` trusts exactly one Caddy hop; keep the API unpublished so clients cannot bypass the proxy or spoof rate-limit IPs.
 - Production SMTP requires TLS. JWT and OTP keys must be different random secrets of at least 32 characters. No built-in production fallback secrets exist.

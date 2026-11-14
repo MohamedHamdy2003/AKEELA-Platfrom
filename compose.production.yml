@@ -2,7 +2,6 @@
 services:
   api:
     image: ${API_IMAGE:-akeela-api:local}
-    build: .
     restart: unless-stopped
     init: true
     environment:
@@ -80,6 +79,9 @@ services:
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:-admin.akeela.com}
+      VENDOR_DOMAIN: ${VENDOR_DOMAIN:-vendor.akeela.com}
+      DELIVERY_DOMAIN: ${DELIVERY_DOMAIN:-delivery.akeela.com}
     ports:
       - '80:80'
       - '443:443'
@@ -87,6 +89,7 @@ services:
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./deploy/routes.caddy:/etc/caddy/routes.caddy:ro
+      - ./deploy/sites-enabled:/etc/caddy/sites-enabled:ro
       - images:/srv/images:ro
       - caddy_data:/data
       - caddy_config:/config

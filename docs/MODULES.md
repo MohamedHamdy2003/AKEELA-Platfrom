@@ -15,6 +15,8 @@ Features 01-16 are implemented, including restaurant, customer, Admin and delive
 | `images`      | Upload validation, encoding, persistent files and URL assignment through domain services            | None                                                        | 15                                                     |
 | `health`      | Public process/database probes                                                                      | None                                                        | 16                                                     |
 
+All backend modules below live under `apps/api/src/modules`. Frontends are separate clients in reserved `apps/restaurant`, `apps/admin` and `apps/delivery` directories; they do not own database tables.
+
 ## Route ownership
 
 - Roles are access policies, not a reason to duplicate domain modules.

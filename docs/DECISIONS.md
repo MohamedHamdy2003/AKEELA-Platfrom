@@ -1,5 +1,14 @@
 # Architecture Decisions
 
+## Restaurant frontend decisions (2026-11-14)
+
+- Owner approved an embedded Leaflet + OpenStreetMap registration picker: automatic browser coordinates are shown directly, and manual map selection updates existing decimal-string fields. Leaflet is bundled; standard OSM tiles load directly with attribution/referrer/caching per provider policy. Public tile URL/attribution can be overridden at build time. The tile service has no availability guarantee. Production img-src permits data: images for Leaflet’s transparent tile-cancellation placeholder; other CSP directives remain unchanged.
+
+- Current owner request authorizes React + Vite + strict TypeScript in apps/restaurant, Arabic-first RTL and the current Fresh Kitchen visual refresh (replacing the initial Garden Kitchen direction). See [design system](DESIGN-SYSTEM.md).
+- Owner explicitly chose memory-only browser tokens; reload requires login. JSON transport stays unchanged; no persistence/cookies/cross-subdomain SSO. Concurrent refreshes share one rotation with one retry.
+- packages/brand contains shared CSS tokens and raster identity assets as requested for the ecosystem. React UI remains app-local until another implemented app needs it.
+- Existing REST contracts define the supported screens. No analytics, staff, branches, preparation statuses or backend changes are introduced. Hosting remains disabled pending a separately approved release/configuration.
+
 Status: foundation approved and Feature 01 authorized/implemented. Other business choices remain deferred. Update decisions and reasons with architectural changes.
 
 | ID  | Choice                                                                                   | Reason / consequence                                                                                                                                                                                                     |
@@ -70,3 +79,11 @@ Official references used for foundation choices: [Nest modules](https://docs.nes
 - Use Africa/Cairo for Ismailia. Store UTC instants, return Cairo offsets, require explicit Z/offset in offer timestamps and validate real calendar dates.
 - Repriced overflow carts remain readable/removable. Additions/edits and checkout still reject money overflow.
 - Releases publish GHCR images, deploy immutable digests only after CI, use pinned SSH and explicit migrations, and never delete persistent volumes. Live deployment requires DEPLOY_ENABLED and server settings.
+
+## Monorepo decision
+
+- One Git repository contains `apps/api`, `apps/restaurant`, `apps/admin` and `apps/delivery`, with shared root docs/deployment/Bruno. Only the API is implemented.
+- Use npm workspaces with a single root lockfile; API business logic and schema are unchanged. No Nx/Turborepo, shared UI package or new framework is needed.
+- Keep API local environment in `apps/api/.env`, production service environment outside Git. Docker builds from the root using `apps/api/Dockerfile`; existing production volumes/image identity remain compatible.
+- API checks/publication are affected-path aware. Frontend CI/deployment is added with each actual application, not simulated now. Caddy frontend templates are disabled until their application and DNS are ready.
+- The owner authorized GitHub push for this change; feature PRs still target dev and a future main promotion needs explicit approval.

@@ -1,6 +1,19 @@
 # Documentation Index
 
-Read `../AGENTS.md` first. Documentation, not previous conversations, defines the work.
+Read [root AGENTS.md](../AGENTS.md) first, then the target app instructions below. Use this index to find needed references, not as a requirement to read all documentation.
+
+Monorepo work: read [MONOREPO.md](MONOREPO.md) for app directories, workspace commands, local environment migration and independent build/release boundaries.
+
+## Scoped agent entry points
+
+| App              | Instructions                                              |
+| ---------------- | --------------------------------------------------------- |
+| Restaurant       | [apps/restaurant/AGENTS.md](../apps/restaurant/AGENTS.md) |
+| Admin            | [apps/admin/AGENTS.md](../apps/admin/AGENTS.md)           |
+| Delivery company | [apps/delivery/AGENTS.md](../apps/delivery/AGENTS.md)     |
+| API              | [apps/api/AGENTS.md](../apps/api/AGENTS.md)               |
+
+App instructions point to the relevant feature sections and controller/DTO locations. Read extra architecture, schema or infrastructure details only when the task needs them.
 
 ## Foundation documentation
 
@@ -35,6 +48,20 @@ These four existing files are included by reference, not duplicated or moved. Ed
 | [AKEELA-Flows.md](../AKEELA-Flows.md)                           | Short role journeys and order state transitions               |
 
 The legacy `Rico` title inside the database document refers to AKEELA; it does not name a second product. Payload examples are drafts, not permission to add requirements. Architecture documents describe technical implementation, not new product features.
+
+## Frontend application guides
+
+Restaurant is now implemented locally; see its [run guide](../apps/restaurant/README.md) and the shared [design system](DESIGN-SYSTEM.md). The planning table remains the screen/API guide inventory. Admin and Delivery are not implemented; no public frontend hosting is enabled.
+
+These screen/feature guides describe clients of the existing API. Restaurant is implemented; Admin and Delivery remain planned. The four root specifications remain authoritative for API contracts.
+
+| Application      | Planned frontend origin       | Design guide                                                |
+| ---------------- | ----------------------------- | ----------------------------------------------------------- |
+| Restaurant       | `https://vendor.akeela.com`   | [Restaurant application](frontend/AKEELA-Restaurant-App.md) |
+| Admin            | `https://admin.akeela.com`    | [Admin application](frontend/AKEELA-Admin-App.md)           |
+| Delivery company | `https://delivery.akeela.com` | [Delivery application](frontend/AKEELA-Delivery-App.md)     |
+
+The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery` alongside `apps/api`. Restaurant uses React/Vite, Arabic RTL and memory-only browser sessions. Confirm the corresponding choices before implementing Admin or Delivery. Subdomain DNS/hosting/CORS configuration remains deployment work.
 
 ## Resolving changes
 

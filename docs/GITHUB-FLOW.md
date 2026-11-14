@@ -30,3 +30,7 @@ git switch -c feature/email-auth
 Only after the owner explicitly requests it: verify the full flow on `dev`, open a PR with **base `main` and head `dev`**, then merge after review. Use a merge commit for release PRs so shared branch history is preserved. Keep `dev` aligned with `main` afterward.
 
 Do not commit features directly to `dev` or `main`, force-push shared branches, or merge unfinished work. The one-time initial foundation creates both branches from the same snapshot. CI checks PRs/dev. Main release runs CI, publishes GHCR and optionally deploys only when configured; see [DEPLOYMENT.md](DEPLOYMENT.md). Branch protection is not configured automatically. Owner-approved main promotion does not authorize arbitrary future releases.
+
+## Monorepo checks
+
+Feature branches cover one app or a coordinated API/client change. Keep app code in its directory and shared manifests/docs/deployment at root. CI checks docs/tooling for every change; API/shared-path changes also run its integration/container checks. Main publishes/deploys the API only when affected; Restaurant has its independent check/browser/build/publication job; Admin/Delivery jobs are added when those apps are implemented. See [MONOREPO.md](MONOREPO.md).

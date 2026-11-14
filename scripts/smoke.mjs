@@ -48,10 +48,14 @@ async function retry(work) {
 }
 try {
   if (process.env.SMOKE_SKIP_BUILD !== 'true')
-    execFileSync('docker', ['build', '-t', image, '.'], {
-      stdio: 'inherit',
-      timeout: 600000,
-    });
+    execFileSync(
+      'docker',
+      ['build', '-f', 'apps/api/Dockerfile', '-t', image, '.'],
+      {
+        stdio: 'inherit',
+        timeout: 600000,
+      },
+    );
   docker(['up', '-d', '--wait', '--wait-timeout', '90', 'postgres']);
   docker([
     'run',
@@ -63,6 +67,22 @@ try {
     'migration:run:prod',
   ]);
   docker(['up', '-d', '--wait', '--wait-timeout', '90', 'api']);
+  for (const config of [
+    '/etc/caddy/Caddyfile.production',
+    '/etc/caddy/templates/frontends.caddy',
+  ])
+    docker([
+      'run',
+      '--rm',
+      '--no-deps',
+      'caddy',
+      'caddy',
+      'validate',
+      '--config',
+      config,
+      '--adapter',
+      'caddyfile',
+    ]);
   docker([
     'run',
     '--rm',
