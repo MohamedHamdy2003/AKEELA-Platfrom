@@ -14,6 +14,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
   publish:
     needs: verify
+    if: needs.verify.outputs.api_changed == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -35,6 +36,7 @@ jobs:
         id: build
         with:
           context: .
+          file: apps/api/Dockerfile
           push: true
           tags: ${{ steps.name.outputs.name }}:${{ github.sha }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -85,7 +87,7 @@ jobs:
           [[ "$REGISTRY_USER" =~ ^[a-zA-Z0-9-]+$ ]]
           remote="$DEPLOY_USER@$HOST"
           ssh -p "$PORT" "$remote" "mkdir -p /opt/akeela/releases/$RELEASE_SHA"
-          tar -czf - compose.production.yml deploy/Caddyfile deploy/routes.caddy deploy/release.sh | ssh -p "$PORT" "$remote" "tar -xzf - -C /opt/akeela/releases/$RELEASE_SHA"
+          tar -czf - compose.production.yml deploy/Caddyfile deploy/routes.caddy deploy/sites-enabled deploy/templates deploy/release.sh | ssh -p "$PORT" "$remote" "tar -xzf - -C /opt/akeela/releases/$RELEASE_SHA"
           printf '%s' "$REGISTRY_TOKEN" | ssh -p "$PORT" "$remote" "docker login ghcr.io -u '$REGISTRY_USER' --password-stdin"
           trap 'ssh -p "$PORT" "$remote" "docker logout ghcr.io" >/dev/null 2>&1 || true' EXIT
           ssh -p "$PORT" "$remote" "bash /opt/akeela/releases/$RELEASE_SHA/deploy/release.sh '$RELEASE_IMAGE' '$RELEASE_SHA'"

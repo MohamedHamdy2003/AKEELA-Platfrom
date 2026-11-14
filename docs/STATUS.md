@@ -34,6 +34,19 @@ Features 01-14, production fixes, images, health, CI/CD and Hostinger preparatio
 - Backup/restore automation explicitly deferred. OpenAPI, future delivery-fee Admin API, image cleanup, load testing and client token storage remain unimplemented.
 - No application-database migrations/seeds run in this task. Tests truncate only the dedicated local `_test` database.
 
+## Frontend planning
+
+Three frontend design guides are available under `docs/frontend`: Restaurant (`vendor.akeela.com`), Admin (`admin.akeela.com`) and Delivery Company (`delivery.akeela.com`). They map existing APIs to screens, forms, permissions and error states. No frontend code, DNS records, Caddy frontend hosting or CORS changes are implemented by this planning task. The repository layout is approved: apps/api, apps/restaurant, apps/admin and apps/delivery. Framework, UI language/RTL and browser token storage remain pending.
+
 ## Verification
 
 Docker smoke passed trusted local TLS, HTTP redirect, reverse proxy readiness, WebP serving and image persistence after API recreation. `npm run check` passed (27 unit tests, lint, formatting, types, build, docs and 81 Bruno requests). The full PostgreSQL/Mailpit suite passed 111 tests; the final changed cart/image/profile cases passed another targeted run of 28 tests. Runtime audit reports zero vulnerabilities. Workflow validation (actionlint), Bash syntax and production Caddy validation passed. See [REVIEW.md](REVIEW.md).
+
+## Monorepo migration
+
+- API source/tests/config/Dockerfile and local env examples moved to apps/api. Root npm workspaces and one lockfile preserve existing command shortcuts.
+- docs, specifications, Bruno, Compose, Caddy and CI/CD remain shared at root. Frontend folders contain README instructions only; no frontend scaffold/dependencies.
+- Docker/runtime paths, API-affected CI/release conditions, optional Caddy site imports and future subdomain templates are prepared. No schema/API behavior, production volume, DNS or live server change.
+- This task authorizes pushing/merging the change to dev; main promotion is a separate owner decision.
+- Migration validation: root check passed (27 API unit tests, 3 CI path-selection tests, lint/format/types/build, recursive doc links/API references and all 81 Bruno requests). All 111 PostgreSQL/Mailpit integration tests passed. Docker smoke verified the moved API, compiled migrations, trusted local TLS, redirects, public images and persistent storage; production and disabled frontend Caddy configurations validate. Runtime audit reports zero vulnerabilities. The private environment hash is unchanged after setup.
+- Windows npm ci encountered the existing EPERM directory lock; npm install --ignore-scripts --no-audit --no-fund restored the workspace installation. Clean Linux npm ci is verified by the Docker build and GitHub CI. No application database migration, new account or real deployment was run.

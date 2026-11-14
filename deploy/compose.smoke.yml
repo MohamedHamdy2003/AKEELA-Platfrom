@@ -44,11 +44,20 @@ services:
       retries: 30
   caddy:
     image: caddy:2
+    environment:
+      APP_DOMAIN: api.example.com
+      ACME_EMAIL: smoke@example.com
+      ADMIN_DOMAIN: admin.example.com
+      VENDOR_DOMAIN: vendor.example.com
+      DELIVERY_DOMAIN: delivery.example.com
     command: ['caddy', 'run', '--config', '/etc/caddy/Caddyfile']
     ports: ['127.0.0.1::443', '127.0.0.1::80']
     volumes:
       - ./Caddyfile.smoke:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile.production:ro
       - ./routes.caddy:/etc/caddy/routes.caddy:ro
+      - ./sites-enabled:/etc/caddy/sites-enabled:ro
+      - ./templates:/etc/caddy/templates:ro
       - images:/srv/images:ro
       - certificates:/data
     depends_on:

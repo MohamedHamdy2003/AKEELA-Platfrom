@@ -70,3 +70,11 @@ Official references used for foundation choices: [Nest modules](https://docs.nes
 - Use Africa/Cairo for Ismailia. Store UTC instants, return Cairo offsets, require explicit Z/offset in offer timestamps and validate real calendar dates.
 - Repriced overflow carts remain readable/removable. Additions/edits and checkout still reject money overflow.
 - Releases publish GHCR images, deploy immutable digests only after CI, use pinned SSH and explicit migrations, and never delete persistent volumes. Live deployment requires DEPLOY_ENABLED and server settings.
+
+## Monorepo decision
+
+- One Git repository contains `apps/api`, `apps/restaurant`, `apps/admin` and `apps/delivery`, with shared root docs/deployment/Bruno. Only the API is implemented.
+- Use npm workspaces with a single root lockfile; API business logic and schema are unchanged. No Nx/Turborepo, shared UI package or new framework is needed.
+- Keep API local environment in `apps/api/.env`, production service environment outside Git. Docker builds from the root using `apps/api/Dockerfile`; existing production volumes/image identity remain compatible.
+- API checks/publication are affected-path aware. Frontend CI/deployment is added with each actual application, not simulated now. Caddy frontend templates are disabled until their application and DNS are ready.
+- The owner authorized GitHub push for this change; feature PRs still target dev and a future main promotion needs explicit approval.

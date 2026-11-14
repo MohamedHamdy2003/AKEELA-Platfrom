@@ -38,26 +38,29 @@ Host the single NestJS backend, PostgreSQL, and primary image files on one Hosti
 ## Code organization
 
 ```text
-src/
-  main.ts                    # starts the application
-  bootstrap.ts               # shared HTTP setup
-  app.module.ts              # composition root only
-  config/environment.ts      # parse and validate settings
-  database/
-    database.module.ts       # Nest TypeORM connection
-    database.options.ts      # shared application/CLI options
-    data-source.ts           # CLI DataSource; not a second runtime connection
-    migrations/              # eight reviewed migrations
-  modules/
-    auth/ users/ customers/ restaurants/
-    catalog/ delivery/ cart/ orders/ images/ health/
-test/                        # unit and PostgreSQL integration tests
+AKEELA/
+  apps/
+    api/                     # NestJS package, src/, test/, configs, Dockerfile
+    restaurant/              # reserved frontend; no implementation
+    admin/                   # reserved frontend; no implementation
+    delivery/                # reserved frontend; no implementation
+  docs/                      # shared architecture and frontend guides
+  bruno/AKEELA/              # maintained API requests
+  deploy/                    # Caddy and VPS/release assets
+  scripts/                   # repository checks and smoke test
+  .github/workflows/         # CI and owner-approved main releases
+  package.json               # npm workspace root
+  package-lock.json          # shared lockfile
+  compose.yml
+  compose.production.yml
+  AGENTS.md
+  AKEELA-*.md                # canonical specifications
 ```
 
 As a feature is authorized, add only the files it needs:
 
 ```text
-modules/<feature>/
+apps/api/src/modules/<feature>/
   <feature>.module.ts
   <resource>.controller.ts
   <feature>.service.ts
@@ -97,7 +100,7 @@ Cart writes lock the parent cart row. Order transitions lock/check the order row
 - Environment validation fails on invalid settings without echoing credentials.
 - Database startup fails when PostgreSQL is unavailable. Graceful shutdown hooks close application resources.
 - Application and CLI use the same TypeORM options, with synchronization, schema dropping, SQL logging, and automatic migrations disabled.
-- Feature 01 controllers return explicit success envelopes. A shared filter normalizes errors and validation failures. JWT guards check live sessions/accounts, and SMTP sends codes after commit. No health endpoint, Swagger document, or seeds exist.
+- Feature 01 controllers return explicit success envelopes. A shared filter normalizes errors and validation failures. JWT guards check live sessions/accounts, and SMTP sends codes after commit. Public health probes exist; no Swagger document or automatic seeds exist.
 
 Module boundaries follow [Nest module encapsulation](https://docs.nestjs.com/modules). Database changes use [TypeORM migrations](https://typeorm.io/docs/migrations/why/) rather than automatic synchronization.
 
@@ -106,3 +109,7 @@ Cart and checkout use SERIALIZABLE transactions with bounded retries; see [CART-
 Operational order controllers remain in Orders. Delivery exports company/driver validation, and Restaurants exports current activation checks. See [ORDER-DELIVERY.md](ORDER-DELIVERY.md) for state transactions and configuration.
 
 Images uses Sharp for byte validation/re-encoding and local persistent files. It writes no foreign tables directly: exported domain setters participate in its transaction. Health exposes public process/database probes. Global HTTP serialization emits Africa/Cairo offsets while PostgreSQL keeps UTC instants. CI/CD and single-host release details are in [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Repository and deployment boundaries
+
+One monorepo contains independently owned app directories; only the API is implemented. Use npm workspaces with one lockfile. The API remains a modular monolith with one database. Frontends will consume HTTP APIs and never import backend repositories/entities. Frontend framework and browser-session storage remain open. See [MONOREPO.md](MONOREPO.md) for paths, environment migration, independent CI/release rules and reserved Caddy sites.

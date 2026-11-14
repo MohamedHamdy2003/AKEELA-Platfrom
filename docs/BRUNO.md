@@ -14,7 +14,7 @@ The collection follows the current branch of the same repository as the backend.
 
 ## Private values and test flow
 
-1. Copy the collection's `.env.example` to `.env` in that same collection folder. This is separate from the backend `.env`.
+1. Copy the collection's `.env.example` to `.env` in that same collection folder. This is separate from the backend `apps/api/.env`.
 2. Fill API_EMAIL, API_PASSWORD, API_PHONE, and API_FULL_NAME. New passwords need 8–128 characters, including a letter and a digit. Gmail SMTP credentials belong only in backend `.env`.
 3. Select **Local** for `http://localhost:3000/api/v1`. Production reads API_BASE_URL from the private collection `.env`; set the actual HTTPS API URL including `/api/v1` after deployment.
 4. Run customer registration or restaurant registration with a new email/phone. Then set VERIFICATION_OTP from the received email and run Verify email.

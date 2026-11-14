@@ -17,9 +17,16 @@ Read this file before changing any code or documentation.
 
 - Documentation is the source of truth. Do not rely on earlier chats.
 - Follow the current user's explicit instructions. If specifications disagree or omit a business decision, record the issue and ask before implementing the affected behavior.
-- Features 01-16 and production-readiness fixes are authorized. This release to main is explicitly authorized. Actual VPS provisioning/deployment requires server details and authorization; backup automation is deferred. Read docs/AUTH.md, docs/CART-ORDERS.md, docs/ORDER-DELIVERY.md, docs/IMAGES.md and docs/DEPLOYMENT.md for current decisions.
+- Features 01-16 are implemented. Monorepo reorganization, deployment/tooling updates and pushing this change to GitHub/dev are authorized. New main promotion still requires the owner's explicit instruction. Frontend applications must not be implemented in this task. Actual VPS provisioning/deployment requires server details and authorization; backup automation is deferred. Read docs/AUTH.md, docs/CART-ORDERS.md, docs/ORDER-DELIVERY.md, docs/IMAGES.md and docs/DEPLOYMENT.md for current decisions.
 - Preserve the four root specifications unless the requested change requires updating them. Do not silently rewrite them to match an implementation.
 - When a convention or architectural decision changes, update its documentation in the same change. Record progress and unresolved issues in `docs/STATUS.md`.
+
+## Monorepo layout
+
+- Read `docs/MONOREPO.md`. API source/tests/config are in `apps/api`; `apps/restaurant`, `apps/admin` and `apps/delivery` are reserved README-only locations. Do not scaffold them without authorization.
+- Install dependencies with `npm ci` at the root; use npm workspaces and the single root lockfile. Root command shortcuts run API commands in `apps/api`.
+- API local environment is `apps/api/.env`; shared docs/specifications, Bruno, Compose, Caddy and workflows remain at the root. Never initialize nested Git repositories.
+- Before implementing a frontend, register its workspace and add real tests/build/deployment and the matching Caddy site; reserved folders have no runnable jobs yet. Coordinate concurrent chat edits; each app has its own path, shared tooling/docs need joint review.
 
 ## Architecture boundaries
 

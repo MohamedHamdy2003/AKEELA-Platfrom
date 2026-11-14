@@ -4,6 +4,7 @@ image="${1:?Image digest required}"; sha="${2:?Commit SHA required}"
 [[ "$image" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$ && "$sha" =~ ^[a-f0-9]{40}$ ]] || { echo 'Invalid immutable release reference.' >&2; exit 1; }
 root=/opt/akeela; release="$root/releases/$sha"
 [[ -f "$root/.env.production" && -f "$release/compose.production.yml" ]] || { echo 'Production environment/release assets are missing.' >&2; exit 1; }
+mkdir -p "$release/deploy/sites-enabled"
 exec 9>"$root/deploy.lock"; flock -w 120 9
 chmod 600 "$root/.env.production"
 export API_IMAGE="$image"
