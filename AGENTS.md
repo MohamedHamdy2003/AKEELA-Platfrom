@@ -1,52 +1,69 @@
 # Agent Instructions
 
-Read this file before changing any code or documentation.
+Read this file before work. It applies across the repository; app-level `AGENTS.md` files add scoped instructions. Documentation is the source of truth, not previous chats. Current explicit user instructions take precedence.
 
-## Read before work
+## Start with the smallest useful context
 
-1. Read `docs/README.md`, `docs/STATUS.md`, `docs/ARCHITECTURE.md`, and `docs/CONVENTIONS.md`.
-2. Read `docs/MODULES.md` and the relevant sections of the four root specifications:
-   - `AKEELA-DB-Design.md`: data and constraints.
-   - `AKEELA-Features.md`: scope, routes, permissions, and implementation order.
-   - `AKEELA-Responses-Requests.md`: request and response contracts.
-   - `AKEELA-Flows.md`: role journeys.
-3. Read `docs/DECISIONS.md` before schema, authentication, or infrastructure work. Also read `docs/DEPLOYMENT.md` before infrastructure, Docker, Caddy, database connection, or image-storage work.
-4. Read `docs/GITHUB-FLOW.md` before branch, commit, push, or pull-request work. Read `docs/BRUNO.md` for API collection changes and `docs/GMAIL.md` for real email setup.
+1. Run `git status --short`; preserve existing changes. Identify the requested app and feature before reading source.
+2. Check [STATUS](docs/STATUS.md) for current implementation, rules and pending decisions; historical verification details are optional.
+3. Read the target app's `AGENTS.md` and its linked design guide. For cross-app work, read only the affected app instructions.
+4. Read the relevant contract sections listed by that guide, including common response/error formats and the response models actually used. Then inspect only the matching controller/DTO if needed to verify behavior.
+5. Read additional docs from the table below only when that work needs them. Do not load the entire repository or every document first.
 
-## Authority and scope
+## Project map
 
-- Documentation is the source of truth. Do not rely on earlier chats.
-- Follow the current user's explicit instructions. If specifications disagree or omit a business decision, record the issue and ask before implementing the affected behavior.
-- Features 01-16 are implemented. Monorepo reorganization, deployment/tooling updates and pushing this change to GitHub/dev are authorized. New main promotion still requires the owner's explicit instruction. Frontend applications must not be implemented in this task. Actual VPS provisioning/deployment requires server details and authorization; backup automation is deferred. Read docs/AUTH.md, docs/CART-ORDERS.md, docs/ORDER-DELIVERY.md, docs/IMAGES.md and docs/DEPLOYMENT.md for current decisions.
-- Preserve the four root specifications unless the requested change requires updating them. Do not silently rewrite them to match an implementation.
-- When a convention or architectural decision changes, update its documentation in the same change. Record progress and unresolved issues in `docs/STATUS.md`.
+| Path                                        | Purpose                                                                  |
+| ------------------------------------------- | ------------------------------------------------------------------------ |
+| `apps/api`                                  | Implemented NestJS modular monolith, PostgreSQL, TypeORM; Features 01-16 |
+| `apps/restaurant`                           | Planned Restaurant frontend; `vendor.akeela.com`                         |
+| `apps/admin`                                | Planned Admin frontend; `admin.akeela.com`                               |
+| `apps/delivery`                             | Planned Delivery_Company dispatcher frontend; `delivery.akeela.com`      |
+| `docs/frontend`                             | Per-app screens, APIs, permissions and unsupported features              |
+| `AKEELA-*.md` at root                       | Canonical data, features, request/response and role-flow specifications  |
+| `bruno/AKEELA`                              | Implemented API request collection                                       |
+| `deploy`, root Compose, `.github/workflows` | Docker/Caddy, VPS preparation and CI/CD                                  |
 
-## Monorepo layout
+Frontends currently have instructions/README only. Implement only the app/features authorized by the current task. Preparing these instructions does not authorize scaffolding. One Git repository, npm workspaces, one root lockfile; no nested repositories or per-app lockfiles.
 
-- Read `docs/MONOREPO.md`. API source/tests/config are in `apps/api`; `apps/restaurant`, `apps/admin` and `apps/delivery` are reserved README-only locations. Do not scaffold them without authorization.
-- Install dependencies with `npm ci` at the root; use npm workspaces and the single root lockfile. Root command shortcuts run API commands in `apps/api`.
-- API local environment is `apps/api/.env`; shared docs/specifications, Bruno, Compose, Caddy and workflows remain at the root. Never initialize nested Git repositories.
-- Before implementing a frontend, register its workspace and add real tests/build/deployment and the matching Caddy site; reserved folders have no runnable jobs yet. Coordinate concurrent chat edits; each app has its own path, shared tooling/docs need joint review.
+## Read on demand
 
-## Architecture boundaries
+| Work                                                | Read                                                                                                                                                                                                   |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| New app/workspace, install/build commands, paths    | [MONOREPO](docs/MONOREPO.md), root `package.json`, target app manifest if it exists                                                                                                                    |
+| HTTP integration                                    | Common rules + relevant numbered sections in [Features](AKEELA-Features.md), matching sections/models in [Requests/Responses](AKEELA-Responses-Requests.md), relevant role in [Flows](AKEELA-Flows.md) |
+| Backend changes                                     | `apps/api/AGENTS.md`, [ARCHITECTURE](docs/ARCHITECTURE.md), [CONVENTIONS](docs/CONVENTIONS.md), owning module in [MODULES](docs/MODULES.md)                                                            |
+| Auth/session handling                               | [AUTH](docs/AUTH.md), approved decisions in [DECISIONS](docs/DECISIONS.md); [GMAIL](docs/GMAIL.md) only for real SMTP work                                                                             |
+| Order actions/delivery                              | [ORDER-DELIVERY](docs/ORDER-DELIVERY.md); [DELIVERY](docs/DELIVERY.md) for company/drivers; [CART-ORDERS](docs/CART-ORDERS.md) for checkout/cart                                                       |
+| Uploads                                             | [IMAGES](docs/IMAGES.md); deployment guide if changing storage/serving                                                                                                                                 |
+| Schema/constraints                                  | Relevant tables in [DB design](AKEELA-DB-Design.md), [DECISIONS](docs/DECISIONS.md)                                                                                                                    |
+| Docker, Caddy, CI/CD, database connections, hosting | [DEPLOYMENT](docs/DEPLOYMENT.md), [MONOREPO](docs/MONOREPO.md), [DECISIONS](docs/DECISIONS.md)                                                                                                         |
+| Branch/commit/push/PR                               | [GITHUB-FLOW](docs/GITHUB-FLOW.md)                                                                                                                                                                     |
+| API collection edits                                | [BRUNO](docs/BRUNO.md)                                                                                                                                                                                 |
+| Need another document                               | Use [docs index](docs/README.md) as a directory, not a mandatory full reading list                                                                                                                     |
 
-- One NestJS application, one PostgreSQL database, TypeORM, feature modules.
-- Approved deployment target: one Hostinger VPS with separate Docker containers for Caddy, backend, and PostgreSQL; persistent image/database/Caddy storage; backup automation is deferred by the owner. Follow `docs/DEPLOYMENT.md`. This does not authorize provisioning or deployment.
-- Controllers handle HTTP; services handle use cases; TypeORM repositories handle persistence within the owning module.
-- Import exported services through Nest module imports. Do not access another module's repository or internal files.
-- Keep cross-module transactions in the owning use-case service; pass the transaction EntityManager explicitly to participating services.
-- No microservices, CQRS, event buses, generic repositories, base services, or speculative abstractions.
-- Add DTOs, services, entities, and exports only when an authorized feature needs them.
-- Never enable TypeORM `synchronize`, `dropSchema`, or automatic migration execution.
-- Never run migrations, seed users, or change external infrastructure without task authorization.
+## Frontend implementation boundaries
 
-## Checks and handoff
+- Follow the owning app guide. Do not invent endpoints, payload fields, statuses, permissions or backend features. Mocks may support tests; do not ship a fake backend or claim fixture-driven screens are integrated. If contract and implementation disagree, record the exact discrepancy and ask before implementing that behavior; do not silently rewrite specs.
+- Keep app code inside its directory. Share existing contracts/docs; do not add a shared UI library or framework abstraction before a real need. Frontends call HTTP APIs, never backend repositories/entities or the database.
+- Reuse decisions already approved in the current task/docs. Resolve missing framework, language/RTL and browser-session choices when they affect implementation; continue independent work while awaiting answers. JSON refresh tokens are the current API contract; cookies, cross-subdomain SSO and persistent browser storage are not approved defaults.
+- Use a configurable API base URL including `/api/v1`. IDs, money and coordinates remain strings; currency is EGP, display time is Africa/Cairo. Backend role/ownership/activation checks remain authoritative.
+- Add the workspace, its actual lint/type/test/build scripts, CI coverage and appropriate Docker/static-build integration with the first implementation. Inspect existing manifests/workflows rather than guessing command names. Frontend sites stay disabled until application, DNS and release configuration are ready.
+- Existing root build/test shortcuts target the API. Root lint currently covers API/scripts. Passing root checks alone does not prove a frontend works; add/run its own checks and verify key UI flows and responsive/error states.
+- Shared manifests/lockfile, docs, Caddy and workflows need coordinated review across app tasks. Do not switch a shared checkout underneath another active task or overwrite another app's changes.
 
-- Use npm and the committed lockfile. Run `npm ci` for an existing checkout.
-- Run `npm run check` after code changes. Use PostgreSQL integration tests for database behavior once entities exist; do not substitute SQLite.
-- Report what changed, checks run, limitations, and pending decisions. Do not claim business endpoints or database behavior exist when they are only documented.
-- Never commit `.env`, passwords, OTPs, raw tokens, or database credentials. Do not log secrets.
-- `work/` is scratch material, not authoritative documentation. Do not run its legacy API generator over the maintained documents.
-- Start feature branches from `dev` and target feature PRs to `dev`. Do not merge or push feature changes directly to `main`; promotion from `dev` to `main` requires the user's explicit instruction after the full flow is complete.
+## Safety and change control
 
-- Keep implemented API requests in `bruno/AKEELA`, using the feature names/order from the specifications. Add or update matching requests and concise docs in the same feature PR. Never commit private test credentials, SMTP credentials, OTPs, or runtime tokens.
+- Preserve the four root specs unless the authorized change requires an update. Update affected guides/conventions and [STATUS](docs/STATUS.md) when behavior or architecture changes; avoid copying whole specifications into new docs.
+- Never read/dump private `.env` values for orientation, log tokens/passwords/OTPs, or commit secrets. API local configuration is `apps/api/.env`; frontend public settings must not contain API signing, SMTP or database credentials. Read committed examples for setting names.
+- Never run migrations, provision accounts, deploy infrastructure, delete persistent volumes or enable sites without task authorization. Backups are deferred. Never enable TypeORM synchronize/dropSchema/automatic migrations.
+- Start feature branches from dev and target PRs to dev. Main promotion requires an explicit owner request. Old task approvals in status/history are not blanket permission for a new release.
+- `work/` is non-authoritative scratch material. Never run its legacy API generator over maintained docs.
+
+## Efficient reads and verification
+
+- Use `rg --files <app-path>` to locate files, then `rg -n` for specific routes/symbols. In large specs, search headings first (`rg -n '^## |^### ' <file>`) and read bounded sections. Expand only to resolve a concrete question; do not repeatedly reload unchanged files.
+- Skip `node_modules`, generated `dist`/`dist-test`, caches, full lockfile dumps, unrelated apps and old Git/chat history during orientation. Inspect lockfile diffs only for dependency work. Follow imports only as far as necessary to understand the use case.
+- Install with `npm ci` at root for a fresh checkout or changed dependencies; use the committed lockfile. Do not reinstall on every inspection.
+- Docs-only edits: `npm run docs:check` and formatting checks for changed files; run `npm run bruno:check` when API tables/collection change. No database/container tests for prose-only edits.
+- Code changes: run `npm run check` plus the changed app's checks. Backend database behavior needs the dedicated PostgreSQL integration suite, not SQLite. Deployment changes need appropriate Compose/Caddy/container verification; see its guide.
+- Handoff briefly: scope/app, changed files, checks/results, remaining decisions and implementation limits. Do not claim unimplemented or untested behavior. A continuation note should name the next step and references, not repeat the full project history.

@@ -5,7 +5,7 @@ This application is planned; its APIs already exist. It is used by the company/d
 
 ## Read First
 
-Read [AGENTS.md](../../AGENTS.md), [Features](../../AKEELA-Features.md), [Requests/Responses](../../AKEELA-Responses-Requests.md), [Flows](../../AKEELA-Flows.md), [Delivery](../DELIVERY.md) and [Order/Delivery rules](../ORDER-DELIVERY.md). These remain authoritative; this file maps their behavior to screens without adding backend scope.
+Read root [AGENTS.md](../../AGENTS.md) and [this app's instructions](../../apps/delivery/AGENTS.md) for the scoped reading path. Use this guide for screens and permissions; consult only the matching canonical API sections/models for the feature in progress. Do not read other app guides or the full backend for orientation. Existing root specifications remain authoritative; this guide adds no backend features.
 
 API paths omit `/api/v1`. Configure the full API base URL; the backend domain is undecided. This frontend shares the existing backend/database.
 

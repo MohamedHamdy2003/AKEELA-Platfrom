@@ -2,7 +2,7 @@
 
 ## Authorized scope
 
-Features 01-14, production fixes, images, health, CI/CD and Hostinger preparation are authorized. The owner requested promotion of this complete change to main. The VPS has not been purchased; real provisioning, DNS, certificates and deployment remain pending. Backup automation is deferred by the owner.
+Backend Features 01-16 and monorepo preparation are implemented. Historical release approvals do not authorize a new main promotion; follow the current user request and GitHub flow. The VPS has not been purchased; real provisioning, DNS, certificates and deployment remain pending. Backup automation is deferred by the owner.
 
 ## Implemented
 
@@ -50,3 +50,7 @@ Docker smoke passed trusted local TLS, HTTP redirect, reverse proxy readiness, W
 - This task authorizes pushing/merging the change to dev; main promotion is a separate owner decision.
 - Migration validation: root check passed (27 API unit tests, 3 CI path-selection tests, lint/format/types/build, recursive doc links/API references and all 81 Bruno requests). All 111 PostgreSQL/Mailpit integration tests passed. Docker smoke verified the moved API, compiled migrations, trusted local TLS, redirects, public images and persistent storage; production and disabled frontend Caddy configurations validate. Runtime audit reports zero vulnerabilities. The private environment hash is unchanged after setup.
 - Windows npm ci encountered the existing EPERM directory lock; npm install --ignore-scripts --no-audit --no-fund restored the workspace installation. Clean Linux npm ci is verified by the Docker build and GitHub CI. No application database migration, new account or real deployment was run.
+
+## Agent handoff
+
+Root AGENTS.md now provides a scoped reading path. Each app has its own AGENTS.md with its feature sections, source-verification pointers and role limits. Frontend work starts with status, the target app guide and relevant contracts, rather than reading the entire backend/docs. Backend architecture rules stay in apps/api/AGENTS.md; no frontend implementation is authorized by this documentation update.
