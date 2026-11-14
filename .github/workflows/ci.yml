@@ -5,12 +5,18 @@ on:
   push:
     branches: [dev]
   workflow_call:
+    outputs:
+      api_changed:
+        description: Whether the API or shared build/deployment files changed
+        value: ${{ jobs.verify.outputs.api_changed }}
 permissions:
   contents: read
 jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    outputs:
+      api_changed: ${{ steps.changes.outputs.api }}
     services:
       postgres:
         image: postgres:17
@@ -29,13 +35,24 @@ jobs:
       TEST_DATABASE_URL: postgresql://test:ci-only-password@localhost:15432/akeela_ci_test
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - run: npm run check
-      - run: npm run test:integration
+      - id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: node scripts/changed-apps.mjs
+      - run: npm run check:repo
+      - if: steps.changes.outputs.api == 'true'
+        run: npm run check:api
+      - if: steps.changes.outputs.api == 'true'
+        run: npm run test:integration
       - run: npm audit --omit=dev --audit-level=moderate
       - run: bash -n deploy/bootstrap-vps.sh deploy/release.sh
-      - run: npm run smoke:production
+      - if: steps.changes.outputs.api == 'true'
+        run: npm run smoke:production

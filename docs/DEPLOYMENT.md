@@ -26,9 +26,9 @@ Only Caddy publishes application ports. PostgreSQL uses an internal network. Nam
 
 ## GitHub CI/CD
 
-[GitHub flow](GITHUB-FLOW.md) keeps feature PRs on dev and requires owner approval for main. CI checks PRs/dev with npm ci, lint/format/types/unit/build/docs/Bruno, actual PostgreSQL/Mailpit integration, runtime dependency audit, shell syntax and Docker/Caddy smoke tests. CI has no production secrets.
+[GitHub flow](GITHUB-FLOW.md) keeps feature PRs on dev and requires owner approval for main. CI checks PRs/dev with root npm ci, repository lint/format/docs/Bruno/tool tests and runtime audit. API/shared deployment/tooling changes also run API types/unit/build, actual PostgreSQL/Mailpit integration and Docker/Caddy smoke tests. CI has no production secrets.
 
-Main releases run these checks, build and publish `ghcr.io/mohamedhamdy2003/akeela-platfrom:<commit>`, then optionally deploy its immutable SHA256 digest. Publication requires Actions/package permissions. Configure these after the server is ready:
+Main releases run these checks and, when the API path is affected, build and publish `ghcr.io/mohamedhamdy2003/akeela-platfrom:<commit>`, then optionally deploy its immutable SHA256 digest. Publication requires Actions/package permissions. Configure these after the server is ready:
 
 | Setting         | Location                      | Value                                                       |
 | --------------- | ----------------------------- | ----------------------------------------------------------- |
@@ -62,3 +62,12 @@ Public `/api/v1/health/live` checks the process. `/api/v1/health/ready` also run
 References: [Caddy HTTPS](https://caddyserver.com/docs/automatic-https), [file serving](https://caddyserver.com/docs/caddyfile/directives/file_server), [Docker Ubuntu installation](https://docs.docker.com/engine/install/ubuntu/), [GitHub image publishing](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images).
 
 Schema migrations run before replacing the API. Keep them compatible with the previous running version; plan separate maintenance for any future breaking/data-heavy migration. Database statements have a 10-second timeout and connection acquisition a 5-second timeout; review these for future long-running migrations.
+
+## Monorepo and future frontends
+
+- Build locally with `docker build -f apps/api/Dockerfile -t akeela-api:local .` from the root. Production Compose uses prebuilt images, without a local build fallback. Runtime cwd is `/app/apps/api`; the image volume remains `/app/storage/images` and existing named volumes are preserved.
+- Local API secrets are now in apps/api/.env; server .env.production remains in /opt/akeela. Shared root package-lock.json drives all workspace installs. See [MONOREPO.md](MONOREPO.md).
+- Frontend locations: apps/admin, apps/restaurant and apps/delivery. They contain documentation only. No frontend images, services, sites or release jobs are active.
+- Caddy imports only deploy/sites-enabled/*.caddy, initially empty. deploy/templates/frontends.caddy is disabled preparation for ADMIN_DOMAIN, VENDOR_DOMAIN and DELIVERY_DOMAIN; validation does not enable sites or issue their certificates. Future frontend releases must add tested site files/services after DNS and the chosen framework are ready.
+- Production environment examples contain the three exact CORS origins. CORS does not create DNS or host an application; keep its values aligned with real frontend domains.
+- Current deploy assets include sites-enabled. Enabling a frontend site must ship its corresponding service/static artifact in the same reviewed release, not through API-only deployment.

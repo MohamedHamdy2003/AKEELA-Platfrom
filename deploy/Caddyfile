@@ -4,3 +4,4 @@
 {$APP_DOMAIN} {
 	import /etc/caddy/routes.caddy
 }
+import /etc/caddy/sites-enabled/*.caddy

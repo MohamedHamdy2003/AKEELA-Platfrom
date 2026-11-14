@@ -2,6 +2,8 @@
 
 Read `../AGENTS.md` first. Documentation, not previous conversations, defines the work.
 
+Monorepo work: read [MONOREPO.md](MONOREPO.md) for app directories, workspace commands, local environment migration and independent build/release boundaries.
+
 ## Foundation documentation
 
 | Document                           | Read for                                                                  |
@@ -35,6 +37,18 @@ These four existing files are included by reference, not duplicated or moved. Ed
 | [AKEELA-Flows.md](../AKEELA-Flows.md)                           | Short role journeys and order state transitions               |
 
 The legacy `Rico` title inside the database document refers to AKEELA; it does not name a second product. Payload examples are drafts, not permission to add requirements. Architecture documents describe technical implementation, not new product features.
+
+## Frontend application planning
+
+These screen/feature guides describe clients of the existing API. The frontend applications are not implemented yet. The four root specifications remain authoritative for API contracts.
+
+| Application      | Planned frontend origin       | Design guide                                                |
+| ---------------- | ----------------------------- | ----------------------------------------------------------- |
+| Restaurant       | `https://vendor.akeela.com`   | [Restaurant application](frontend/AKEELA-Restaurant-App.md) |
+| Admin            | `https://admin.akeela.com`    | [Admin application](frontend/AKEELA-Admin-App.md)           |
+| Delivery company | `https://delivery.akeela.com` | [Delivery application](frontend/AKEELA-Delivery-App.md)     |
+
+The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery` alongside `apps/api`. Choose the frontend framework, UI language/RTL and browser session storage before implementation. Subdomain DNS/hosting/CORS configuration remains deployment work.
 
 ## Resolving changes
 

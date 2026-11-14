@@ -9,7 +9,7 @@
 npm ci
 ```
 
-Generate an ignored `.env` with independent random auth secrets (existing files are preserved). In PowerShell:
+Generate an ignored `apps/api/.env` with independent random auth secrets (existing files are preserved). In PowerShell:
 
 ```powershell
 npm run setup:local
@@ -41,21 +41,21 @@ Manual API testing uses [Bruno](BRUNO.md). Real Gmail setup uses [GMAIL.md](GMAI
 | Command                | Purpose                                                                |
 | ---------------------- | ---------------------------------------------------------------------- |
 | `npm run start:dev`    | Start with file watching; requires PostgreSQL                          |
-| `npm run build`        | Compile application to `dist/`                                         |
+| `npm run build`        | Compile API to `apps/api/dist/`                                        |
 | `npm run start:prod`   | Run compiled application; build first                                  |
 | `npm run typecheck`    | Strict application TypeScript check                                    |
 | `npm run lint`         | ESLint without auto-fixes                                              |
 | `npm run format`       | Format foundation code/docs; excludes the four original specifications |
 | `npm run format:check` | Check formatting without changing files                                |
-| `npm test`             | Compile tests to `dist-test/`, then run Node test runner               |
+| `npm test`             | Compile API tests to `apps/api/dist-test/`, then run Node test runner  |
 | `npm run docs:check`   | Check API route parity, JSON examples, and local doc links             |
 | `npm run check`        | All local foundation checks                                            |
 
-Unit/bootstrap tests do not open a database. `npm run test:integration` uses the actual Auth APIs with a dedicated local PostgreSQL database and Mailpit. Read `AUTH.md` first: tests intentionally truncate that test database and roll back/reapply migrations. Auth secrets and SMTP/token/OTP/rate-limit settings are described in `AUTH.md` and `.env.example`.
+Unit/bootstrap tests do not open a database. `npm run test:integration` uses the actual Auth APIs with a dedicated local PostgreSQL database and Mailpit. Read `AUTH.md` first: tests intentionally truncate that test database and roll back/reapply migrations. Auth secrets and SMTP/token/OTP/rate-limit settings are described in `AUTH.md` and `apps/api/.env.example`.
 
 ## Migration workflow
 
-The CLI uses `src/database/data-source.ts`, with the same validated configuration as the Nest connection. Migrations run as an explicit release step, never during application boot.
+The CLI uses `apps/api/src/database/data-source.ts` (relative API workspace path: `src/database/data-source.ts`), with the same validated configuration as the Nest connection. Migrations run as an explicit release step, never during application boot.
 
 ```sh
 npm run migration:show
@@ -82,3 +82,5 @@ Development commands use TypeScript and dev dependencies. Production uses `npm r
 ## Production target
 
 Production is planned on one Hostinger VPS using Docker and Caddy, with backend, database, and primary image files on the same server. Read [DEPLOYMENT.md](DEPLOYMENT.md). Local compose.yml provides PostgreSQL and Mailpit only; never reuse its sample credentials or published database port as production configuration. No production services are started by local setup.
+
+Repository commands run from the root and delegate to the API workspace. Run npm ci only at the root; no per-app lockfiles. Existing local root .env must be moved to apps/api/.env in older checkouts without overwriting a destination. Read [MONOREPO.md](MONOREPO.md).

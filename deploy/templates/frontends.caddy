@@ -1,0 +1,13 @@
+# Preparation only. Not imported by the production Caddyfile.
+# These 503 routes reserve no application behavior and contain no frontend build.
+# Replace each response with the tested static-file or reverse-proxy setup
+# for that application, then enable only its ready site in sites-enabled/.
+{$ADMIN_DOMAIN} {
+	respond "Admin application is not available yet." 503
+}
+{$VENDOR_DOMAIN} {
+	respond "Restaurant application is not available yet." 503
+}
+{$DELIVERY_DOMAIN} {
+	respond "Delivery application is not available yet." 503
+}

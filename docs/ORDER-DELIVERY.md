@@ -4,7 +4,7 @@ Features 13 and 14 implement the final twelve routes in the root specifications.
 
 ## Setup
 
-Set DEFAULT_DELIVERY_COMPANY_ID in the ignored backend .env to the company profile ID returned by Admin account creation or the company profile API, not its user ID. Restart the backend after changing environment settings. Production Compose passes the same key.
+Set DEFAULT_DELIVERY_COMPANY_ID in the ignored apps/api/.env to the company profile ID returned by Admin account creation or the company profile API, not its user ID. Restart the backend after changing environment settings. Production Compose passes the same key.
 
 Empty configuration is allowed at startup. Acceptance returns 409 DELIVERY_COMPANY_UNAVAILABLE and keeps Pending if configuration is missing, the company does not exist, its service/account is inactive, or its account email is unverified. No default ID is hard-coded and no first-company lookup is used.
 

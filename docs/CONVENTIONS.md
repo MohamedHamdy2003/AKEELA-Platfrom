@@ -7,7 +7,7 @@
 - Use explicit DTO classes with validation for HTTP input. Do not bind request bodies to entities or accept arbitrary partial entities.
 - Services return explicit data; controllers map output. Never serialize entities containing secrets directly.
 - Do not add interfaces that simply mirror one concrete service, generic repositories, or speculative extension points.
-- Add dependencies only when needed. Use npm with exact dependency versions and the lockfile; document runtime changes.
+- Add dependencies only when needed. Use npm workspaces, exact dependency versions and the single root lockfile; document runtime changes.
 
 ## HTTP contracts
 
@@ -47,3 +47,7 @@
 - Run `npm run check` and record what passed and what was not tested. Keep the four business specs unchanged unless needed; update architecture/status alongside technical changes.
 
 Image operations follow [IMAGES.md](IMAGES.md); do not add general uploads or delete old files without a specified policy. Production readiness includes actual PostgreSQL and isolated Caddy TLS/persistence tests, not only Compose syntax.
+
+## Monorepo paths
+
+API code and tests live in `apps/api`; root scripts delegate with the correct working directory. Add dependencies to the owning workspace, shared checks at root. Keep local secrets per app and do not create nested repositories or lockfiles. Frontend placeholders have no code or builds. Follow [MONOREPO.md](MONOREPO.md).

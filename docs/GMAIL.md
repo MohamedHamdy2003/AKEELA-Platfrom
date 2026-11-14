@@ -6,7 +6,7 @@ The application sends real OTP emails through Nodemailer SMTP. Mailpit remains i
 
 1. Create the sending Google account and enable 2-Step Verification.
 2. Create a Google App Password for AKEELA. Use that password, not the Google sign-in password.
-3. Edit the ignored root `.env` locally. Copy the SMTP keys from `.env.gmail.example` and fill:
+3. Edit the ignored `apps/api/.env` locally. Copy the SMTP keys from `apps/api/.env.gmail.example` and fill:
 
 ```dotenv
 SMTP_HOST=smtp.gmail.com
@@ -31,6 +31,6 @@ For the compiled Docker runtime, use `npm run smtp:check:prod` inside a containe
 - Port 465 uses implicit TLS. Alternatively use 587 with SMTP_SECURE=false and SMTP_REQUIRE_TLS=true.
 - Missing credentials, a mismatched sender, and invalid Gmail TLS settings fail startup validation. Delivery failures are reported through the existing signup/resend handling and a sanitized server warning; no pretend OTP delivery is returned.
 - Google App Password availability depends on the account's security settings. Replacing the Google account password can revoke App Passwords.
-- Automated integration tests always override SMTP to local Mailpit, even when root `.env` uses Gmail. They never send test messages through your real account.
+- Automated integration tests always override SMTP to local Mailpit, even when `apps/api/.env` uses Gmail. They never send test messages through your real account.
 
 References: [Google App Passwords](https://support.google.com/accounts/answer/185833), [Google SMTP configuration](https://support.google.com/a/answer/176600), [Nodemailer SMTP](https://nodemailer.com/smtp).
