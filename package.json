@@ -8,7 +8,9 @@
     "npm": ">=11 <12"
   },
   "workspaces": [
-    "apps/api"
+    "apps/api",
+    "apps/restaurant",
+    "packages/brand"
   ],
   "scripts": {
     "build": "npm run build --workspace akeela-api --",
@@ -27,14 +29,16 @@
     "smtp:check": "npm run smtp:check --workspace akeela-api --",
     "smtp:check:prod": "npm run smtp:check:prod --workspace akeela-api --",
     "lint": "eslint apps/api/src apps/api/test scripts",
-    "format": "prettier --write apps scripts docs deploy README.md AGENTS.md *.json *.yml .github/workflows .prettierrc.json",
-    "format:check": "prettier --check apps scripts docs deploy README.md AGENTS.md *.json *.yml .github/workflows .prettierrc.json",
+    "format": "prettier --write apps packages scripts docs deploy README.md AGENTS.md *.json *.yml .github/workflows .prettierrc.json",
+    "format:check": "prettier --check apps packages scripts docs deploy README.md AGENTS.md *.json *.yml .github/workflows .prettierrc.json",
     "docs:check": "node scripts/check-docs.mjs",
     "bruno:check": "node scripts/check-bruno.mjs",
     "test:tools": "node --test scripts/*.test.mjs",
     "check:repo": "npm run lint && npm run format:check && npm run docs:check && npm run bruno:check && npm run test:tools",
     "check:api": "npm run typecheck && npm test && npm run build",
-    "check": "npm run check:repo && npm run check:api",
+    "check": "npm run check:repo && npm run check:api && npm run check:restaurant",
+    "check:restaurant": "npm run check --workspace @akeela/restaurant",
+    "dev:restaurant": "npm run dev --workspace @akeela/restaurant",
     "setup:local": "node scripts/setup-local.mjs",
     "smoke:production": "node scripts/smoke.mjs"
   },

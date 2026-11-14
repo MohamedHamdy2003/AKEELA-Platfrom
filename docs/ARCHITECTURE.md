@@ -1,5 +1,9 @@
 # Architecture
 
+## Restaurant frontend
+
+The Restaurant client is now implemented in apps/restaurant with React/Vite/TypeScript, Arabic RTL, app-local feature components and a configurable HTTP client. packages/brand shares CSS tokens and identity assets. Browser tokens stay in memory only; frontend code never imports backend internals. Admin and Delivery folders remain reserved. See [design system](DESIGN-SYSTEM.md) and [Restaurant run guide](../apps/restaurant/README.md). Historical baseline sections below describe the API and monorepo preparation; this addition does not change backend architecture.
+
 ## Scope and status
 
 One deployable NestJS application, one PostgreSQL database, and TypeORM. Features 01-14 include twenty table mappings, one history view and eight reviewed migrations. Features 01-16 are implemented, including image uploads and health checks. See [AUTH.md](AUTH.md).

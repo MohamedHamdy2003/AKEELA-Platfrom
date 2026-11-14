@@ -33,4 +33,4 @@ Do not commit features directly to `dev` or `main`, force-push shared branches, 
 
 ## Monorepo checks
 
-Feature branches cover one app or a coordinated API/client change. Keep app code in its directory and shared manifests/docs/deployment at root. CI checks docs/tooling for every change; API/shared-path changes also run its integration/container checks. Main publishes/deploys the API only when affected; future frontend jobs are added with their implementation. See [MONOREPO.md](MONOREPO.md).
+Feature branches cover one app or a coordinated API/client change. Keep app code in its directory and shared manifests/docs/deployment at root. CI checks docs/tooling for every change; API/shared-path changes also run its integration/container checks. Main publishes/deploys the API only when affected; Restaurant has its independent check/browser/build/publication job; Admin/Delivery jobs are added when those apps are implemented. See [MONOREPO.md](MONOREPO.md).

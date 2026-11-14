@@ -1,5 +1,7 @@
 # AKEELA Restaurant Application
 
+Implementation update (2026-11-14): the local React/Vite Arabic RTL client now implements the supported screens below. See [run guide](../../apps/restaurant/README.md) and [design system](../DESIGN-SYSTEM.md). The owner chose memory-only browser tokens; refresh/reload requires login. The planning statements below describe the original baseline; no public hosting or live authenticated integration verification is implied.
+
 Frontend design scope for **vendor.akeela.com**. Login role: `Restaurant`.
 This application is planned; the APIs below already exist. DNS and frontend hosting are not configured by this document.
 
@@ -44,6 +46,11 @@ All API paths below omit `/api/v1`. Configure the full API base URL; the backend
 - Registration: account `full_name`, `email`, `password`, `phone`; nested `profile` with `rest_title`, `rest_address`, `longitude`, `latitude`, `opens_at`, `closes_at`. Description/mobile image URL are optional.
 - Password: 8-128 characters with a letter and digit. Phone: international `+` format. OTP goes only to email.
 - Registration returns no tokens. Verify email, then log in. Email verification does not activate the restaurant.
+- Registration labels `rest_address` as “عنوان المطعم”. With permission, browser `watchPosition` requests fresh high-accuracy device fixes for up to 25 seconds, retaining the best reported accuracy and filling seven-place decimal strings. Acquisition stops early at a reported accuracy of 50m or better; this is a collection heuristic, not a registration requirement or guarantee. Show the reported approximate accuracy in meters; device estimates may be distant and the owner must review the restaurant point. Browser geolocation requires HTTPS or a trusted localhost context.
+- An embedded Leaflet 1.9.4 map with OpenStreetMap raster tiles immediately shows/recenters on valid automatic coordinates. Click/tap selects a point; dragging the marker or moving it with arrow keys updates the existing longitude/latitude fields. Manual coordinate edits also move the marker. Manual map/field interaction cancels automatic acquisition so late callbacks cannot overwrite it; explicit retry starts a fresh acquisition. Drag start cancels acquisition before the marker is released. No marker or submitted default location is invented when location is unavailable; the map initially shows a world overview for manual selection.
+- Tile loading failure displays a recoverable message/reload control and preserves manual fields. Map/marker/listeners and ResizeObserver clean up on route exit; map movement is unanimated, wheel zoom is disabled to preserve form scrolling, and attribution remains visible. No address search/geocoding or API payload fields are added. The earlier Google Maps copy/paste helper is replaced by direct map interaction.
+- Registration now makes direct HTTPS tile requests to OpenStreetMap, including visible map areas. Standard tile use follows [OSM policy](https://operations.osmfoundation.org/policies/tiles/): visible attribution, valid browser referrer and normal HTTP caching, no bulk download/prefetch. Public tile service is best-effort, not unlimited hosting. Optional public build settings `VITE_MAP_TILE_URL` and `VITE_MAP_ATTRIBUTION` allow a suitable alternative provider; attribution HTML is developer-controlled. Production CSP permits HTTPS tiles and data: images for Leaflet’s transparent tile-cancellation placeholder; script/style restrictions remain unchanged. The existing strict-origin-when-cross-origin policy sends the required referrer.
+- The existing duplicate-account registration response is shown as an explicit Arabic email/phone conflict with login/verification options, preserving entered data. It does not identify which unique field conflicts, delete accounts or bypass uniqueness. Other conflict responses keep their existing error handling.
 - Initial image can be omitted; authenticated file upload is available only after activation. Do not upload files from the public signup form through a protected API.
 - A wrong-role login must not open the vendor workspace. Password changes/resets revoke all sessions.
 
@@ -65,6 +72,7 @@ All API paths below omit `/api/v1`. Configure the full API base URL; the backend
 
 - Password security, authentication and logout remain available while Pending/Suspended. Refresh status on revisit/manual refresh; no activation push events exist.
 - Editable restaurant fields: title, description, mobile image URL, address, coordinates, opening/closing times and `is_active`. Activation is Admin-controlled and never an owner form field.
+- The profile form reuses the registration Leaflet picker, initialized from the saved longitude/latitude. Map click/tap, pin drag/arrow keys and manual coordinate inputs update the same draft; the existing PATCH saves its decimal-string fields. It does not automatically replace the saved point with the device location. Pending/Suspended and in-flight saves show a read-only map; failed saves retain the draft.
 - Hours are daily Cairo `HH:mm:ss`; overnight hours are supported. Opening and closing cannot be equal. No weekly schedule API exists.
 - Service `is_active=false` stops new sales; it does not stop existing order handling when activation stays Active. It is different from Admin suspension and account activity.
 

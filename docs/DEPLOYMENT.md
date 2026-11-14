@@ -1,5 +1,7 @@
 # Hostinger VPS Deployment
 
+Restaurant packaging update: apps/restaurant/Dockerfile builds its static client and serves port 8080; an independent workflow checks and publishes a commit-tagged image on future approved main changes. This does not enable a Caddy site or deploy a service. Set its build-time public API URL/CORS or a same-origin proxy in a separate reviewed deployment change. See [Restaurant README](../apps/restaurant/README.md). Admin/Delivery are still reserved.
+
 One Hostinger VPS runs Caddy, NestJS and PostgreSQL in separate Docker containers. The VPS has not been purchased or provisioned. Real DNS, certificates, capacity and SMTP delivery need verification on that server. Backup automation is deferred by the owner.
 
 ## Layout

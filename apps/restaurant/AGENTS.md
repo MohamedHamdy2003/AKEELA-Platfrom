@@ -1,6 +1,6 @@
 # Restaurant Frontend Agent
 
-Follow the root [AGENTS.md](../../AGENTS.md) first. Work in `apps/restaurant`; planned role `Restaurant`, origin `vendor.akeela.com`.
+Follow the root [AGENTS.md](../../AGENTS.md) first. Work in `apps/restaurant`; role `Restaurant`, origin `vendor.akeela.com`.
 
 1. Read the [Restaurant app guide](../../docs/frontend/AKEELA-Restaurant-App.md) for screens, forms and build order. Do not read other frontend guides for a restaurant-only task.
 2. In root Features and Requests/Responses, use sections 01, 04-08, 13 and the restaurant routes in 15, only as needed for the current feature. Section 09 is optional public-menu preview, not a management API. Read common formats and the referenced response models; use the Restaurant Owner role flow.
@@ -8,4 +8,4 @@ Follow the root [AGENTS.md](../../AGENTS.md) first. Work in `apps/restaurant`; p
 
 Key limits: Pending/Suspended permits own account/profile/dashboard reads and security flows, but no management edits/catalog/order operations. Service `is_active=false` stops new sales only. Acceptance assigns the company automatically; the restaurant never assigns drivers or reports delivery. There are no Preparing/Ready statuses or revenue APIs.
 
-The folder is not an implemented app yet. Follow the root frontend checklist when the owner authorizes implementation, including its own workspace checks/CI. Preserve the backend and other apps.
+The app is implemented with React/Vite/TypeScript and shared brand assets. Use its workspace checks and Playwright flows for changes; see README.md for commands. Preserve the backend and other apps. Browser sessions remain memory-only. Registration/profile maps use Leaflet + OpenStreetMap; keep attribution, coordinate strings and activation/save guards.
