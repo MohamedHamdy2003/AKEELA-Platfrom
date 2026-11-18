@@ -719,4 +719,4 @@ erDiagram
 
 - All listed tables and the history view are implemented: twenty entity tables, eight migrations.
 - Image uploads update existing URL fields; files live in a persistent VPS volume and are served publicly from `/images`. No binary image column or new table.
-- Features 01-16 are implemented. Hostinger deployment is prepared but not live; backups and a future Admin delivery-fee setting remain deferred.
+- Features 01-17 are implemented. Hostinger deployment is live with verified public HTTPS; backups and a future Admin delivery-fee setting remain deferred.

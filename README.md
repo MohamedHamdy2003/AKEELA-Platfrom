@@ -68,6 +68,8 @@ Integration tests require dedicated local PostgreSQL TEST_DATABASE_URL ending in
 
 Target: purchased Hostinger KVM 2 VPS (2.25.12.243), Ubuntu 26.04.1 LTS with Caddy HTTPS, non-root API and private PostgreSQL containers. Volumes preserve database, images and certificates. CI checks PRs; main releases publish GHCR images and optionally deploy immutable digests through pinned SSH.
 
-Domain: akeelaonline.tech, with api/admin/restaurant/delivery subdomains. Docker/private configuration and public DNS are ready. Public TLS and actual application rollout await the reviewed release. Deployment stays disabled until DEPLOY_ENABLED and server settings are added. Local TLS/persistence are tested; public certificates and production email need server verification. Backup automation is deferred.
+Domain: akeelaonline.tech, with api/admin/restaurant/delivery subdomains. Docker/private configuration and public DNS are ready. The first production rollout is live with verified public HTTPS, Admin login/WSS and Gmail SMTP authentication. DEPLOY_ENABLED is configured; subsequent main releases use the same pinned deployment flow. OTP inbox delivery remains a real user-flow check. Backup automation is deferred.
 
 Build images from root using each apps/<app>/Dockerfile. Production Compose starts PostgreSQL, migrations/idempotent Admin initialization, API, three static frontends and Caddy in one command; see [deployment](docs/DEPLOYMENT.md). Restart never resets an existing Admin.
+
+Live applications: [Admin](https://admin.akeelaonline.tech), [Restaurant](https://restaurant.akeelaonline.tech), [Delivery](https://delivery.akeelaonline.tech), [API readiness](https://api.akeelaonline.tech/api/v1/health/ready). The real company account is created by Admin, verified, then configured with its company profile ID before accepting orders. See [status](docs/STATUS.md).

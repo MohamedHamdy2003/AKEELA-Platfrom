@@ -12,6 +12,7 @@ import {
   useResource,
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
+import { ProfileDetails } from './profile-details';
 const roles: Record<string, string> = {
   Customer: 'عميل',
   Restaurant: 'مطعم',
@@ -137,6 +138,7 @@ export function Users({
             {selected && (
               <>
                 <h2>{selected.full_name}</h2>
+                <ProfileDetails user={selected} />
                 <p>
                   <bdi>
                     {selected.email} · {selected.phone}

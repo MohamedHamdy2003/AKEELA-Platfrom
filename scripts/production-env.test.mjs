@@ -18,6 +18,13 @@ test('private Compose encoding is repeatable and preserves dollar signs, apostro
   const rendered = renderPrivateEnvironment(values);
   const parsed = parsePrivateEnvironment(rendered, parse);
   assert.deepEqual(parsed, values);
+  assert.deepEqual(
+    parsePrivateEnvironment(
+      '\uFEFF' + rendered.replaceAll('\n', '\r\n'),
+      parse,
+    ),
+    values,
+  );
   assert.equal(renderPrivateEnvironment(parsed), rendered);
   assert.deepEqual(
     parsePrivateEnvironment("PASSWORD='owner\\'value'", parse),

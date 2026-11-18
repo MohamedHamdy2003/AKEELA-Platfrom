@@ -34,3 +34,7 @@ For the compiled Docker runtime, use `npm run smtp:check:prod` inside a containe
 - Automated integration tests always override SMTP to local Mailpit, even when `apps/api/.env` uses Gmail. They never send test messages through your real account.
 
 References: [Google App Passwords](https://support.google.com/accounts/answer/185833), [Google SMTP configuration](https://support.google.com/a/answer/176600), [Nodemailer SMTP](https://nodemailer.com/smtp).
+
+## Production verification — 2026-11-18
+
+TLS and Gmail authentication passed from inside the production API container. A different SMTP_USER in the initial production configuration caused a 535 response and was corrected to the owner-approved, locally verified account. App Password and SMTP_USER must belong to the same Google account. No email was sent by the connectivity test; verify real OTP inbox delivery through an intended user flow. Credentials remain private.

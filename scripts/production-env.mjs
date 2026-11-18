@@ -3,7 +3,12 @@ export function parsePrivateEnvironment(content, parse) {
   const values = parse(content);
   // dotenv retains Compose's escaped apostrophes in single-quoted values.
   // Decode only our own rendered format; leave owner-authored dotenv files alone.
-  if (content.startsWith(header))
+  if (
+    content
+      .replace(/^\uFEFF/, '')
+      .replaceAll('\r\n', '\n')
+      .startsWith(header)
+  )
     for (const key of Object.keys(values))
       values[key] = values[key].replaceAll("\\'", "'");
   return values;
