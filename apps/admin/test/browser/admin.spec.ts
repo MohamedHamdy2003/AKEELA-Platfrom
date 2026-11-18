@@ -18,6 +18,9 @@ test('admin reviews, fails an order, receives realtime updates and keeps session
     .click();
   await page.getByRole('button', { name: 'عرض التفاصيل' }).first().click();
   await expect(page.getByText('وجبة دجاج مشوي × 2')).toBeVisible();
+  await expect(page.locator('.detail-panel')).toContainText('سعر الوحدة:');
+  await expect(page.locator('.detail-panel')).toContainText('آخر تحديث:');
+  await expect(page.locator('.detail-panel')).toContainText('معرّف العميل');
   await page.screenshot({
     path: join(tmpdir(), 'akeela-admin-desktop.png'),
     fullPage: true,
@@ -79,7 +82,13 @@ test('compact mobile navigation, failed requests, and keyboard confirmation', as
   await page.setViewportSize({ width: 390, height: 844 });
   await portalFixture(page, 'Admin');
   await login(page);
+  await expect(page.getByRole('navigation')).not.toBeVisible();
   await page.getByRole('button', { name: 'فتح القائمة' }).click();
+  await page.locator('.sidebar').getByRole('button').last().focus();
+  await page.keyboard.press('Tab');
+  await expect(
+    page.locator('.sidebar').getByRole('button', { name: 'إغلاق القائمة' }),
+  ).toBeFocused();
   await page
     .getByRole('navigation')
     .getByRole('button', { name: 'الطلبات', exact: true })
@@ -117,4 +126,50 @@ test('compact mobile navigation, failed requests, and keyboard confirmation', as
   await expect(
     page.getByRole('button', { name: 'إعادة المحاولة' }).first(),
   ).toBeVisible();
+});
+test('large restaurant images stay contained and account details include the role profile', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/test-restaurant.png', (route) =>
+    route.fulfill({
+      contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000"><rect width="1600" height="1000" fill="#146044"/></svg>',
+    }),
+  );
+  await portalFixture(
+    page,
+    'Admin',
+    'http://127.0.0.1:5174/test-restaurant.png',
+  );
+  await login(page);
+  await page.getByRole('button', { name: 'فتح القائمة' }).click();
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'المطاعم', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'مراجعة المطعم' }).click();
+  await expect(
+    page.getByRole('img', { name: 'مطعم بيت الشواية' }),
+  ).toBeVisible();
+  expect(
+    (await page.getByRole('img', { name: 'مطعم بيت الشواية' }).boundingBox())!
+      .width,
+  ).toBeLessThanOrEqual(180);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+  await page.getByRole('button', { name: 'فتح القائمة' }).click();
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'المستخدمون', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'عرض الحساب' }).last().click();
+  const profile = page.getByRole('region', { name: 'بيانات الملف' });
+  await expect(profile).toContainText('معرّف المطعم');
+  await expect(profile).toContainText('بانتظار التفعيل');
+  await expect(profile).toContainText('10:00:00');
+  await expect(profile.getByRole('img', { name: 'صورة المطعم' })).toBeVisible();
 });

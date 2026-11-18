@@ -2,6 +2,7 @@ import type { Page, WebSocketRoute } from '@playwright/test';
 export async function portalFixture(
   page: Page,
   role: 'Admin' | 'Delivery_Company',
+  restaurantImageUrl: string | null = null,
 ) {
   const now = '2026-11-18T12:30:00+02:00';
   const user = {
@@ -27,6 +28,21 @@ export async function portalFixture(
     driver_phone: '+201000000011',
     driver_email: null,
     is_active: true,
+  };
+  const restaurantProfile = {
+    rest_id: '7',
+    rest_title: 'مطعم بيت الشواية',
+    rest_description: 'وجبات ومشويات',
+    rest_address: 'الإسماعيلية',
+    longitude: '32.2700000',
+    latitude: '30.5900000',
+    opens_at: '10:00:00',
+    closes_at: '23:00:00',
+    rest_image_url_mobile: restaurantImageUrl,
+    is_active: true,
+    activation_status: 'Pending',
+    created_at: now,
+    updated_at: now,
   };
   const orders = Array.from({ length: 6 }, (_, index) => ({
     order_id: String(1248 - index),
@@ -143,19 +159,7 @@ export async function portalFixture(
       data = [
         {
           owner: user,
-          profile: {
-            rest_id: '7',
-            rest_title: 'مطعم بيت الشواية',
-            rest_description: 'وجبات ومشويات',
-            rest_address: 'الإسماعيلية',
-            longitude: '32.2700000',
-            latitude: '30.5900000',
-            opens_at: '10:00:00',
-            closes_at: '23:00:00',
-            rest_image_url_mobile: null,
-            is_active: true,
-            activation_status: 'Pending',
-          },
+          profile: restaurantProfile,
         },
       ];
       total = 1;
@@ -167,16 +171,31 @@ export async function portalFixture(
         data = [
           user,
           { ...user, user_id: '4', full_name: 'عميل أكيلة', role: 'Customer' },
+          {
+            ...user,
+            user_id: '5',
+            full_name: 'مالك المطعم',
+            role: 'Restaurant',
+            profile: restaurantProfile,
+          },
         ];
-        total = 2;
+        total = 3;
       }
     } else if (path.startsWith('/admin/users/'))
-      data = {
-        ...user,
-        user_id: '4',
-        full_name: 'عميل أكيلة',
-        role: 'Customer',
-      };
+      data = path.endsWith('/5')
+        ? {
+            ...user,
+            user_id: '5',
+            full_name: 'مالك المطعم',
+            role: 'Restaurant',
+            profile: restaurantProfile,
+          }
+        : {
+            ...user,
+            user_id: '4',
+            full_name: 'عميل أكيلة',
+            role: 'Customer',
+          };
     else if (path.startsWith('/delivery-company/drivers')) {
       if (method !== 'GET') {
         Object.assign(driver, body);

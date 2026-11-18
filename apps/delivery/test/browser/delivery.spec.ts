@@ -20,6 +20,9 @@ test('dispatcher assigns, picks up and delivers, then sees live changes', async 
   await expect(
     page.getByText('مطعم بيت الشواية', { exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'إسناد السائق', exact: true }),
+  ).toBeInViewport({ ratio: 1 });
   await page.screenshot({
     path: join(tmpdir(), 'akeela-delivery-desktop.png'),
     fullPage: true,

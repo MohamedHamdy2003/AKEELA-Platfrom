@@ -2,7 +2,7 @@
 
 ## Authorized scope
 
-Backend Features 01-17, three browser dashboards and Compose initialization are implemented. Historical release approvals do not authorize a new main promotion; follow the current user request and GitHub flow. The owner purchased a Hostinger VPS at public IPv4 2.25.12.243. Read-only SSH confirmed Ubuntu 26.04.1 LTS; domain is akeelaonline.tech. Docker provisioning and public DNS resolution are complete. Public HTTPS and application rollout remain pending. Backup automation is deferred by the owner.
+Backend Features 01-17, three browser dashboards and Compose initialization are implemented. Historical release approvals do not authorize a new main promotion; follow the current user request and GitHub flow. The owner purchased a Hostinger VPS at public IPv4 2.25.12.243. Read-only SSH confirmed Ubuntu 26.04.1 LTS; domain is akeelaonline.tech. Docker provisioning and public DNS resolution are complete. Public HTTPS and the first application rollout are verified. Backup automation is deferred by the owner.
 
 ## Implemented
 
@@ -27,13 +27,13 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 - Pending/Suspended restaurants may authenticate and read account/profile/dashboard, but cannot modify account/profile/catalog/images or handle orders. Password security operations remain available. Service is_active=false stops new sales only while activation stays Active.
 - Catalog writes recheck activation under transaction locks. Nested profile arrays are rejected before business work. Offer timestamps require explicit Z/offset and valid calendar dates.
 - PostgreSQL stores UTC instants; API timestamps use Africa/Cairo and its current offset. Restaurant hours are Cairo times. Over-limit repriced carts remain readable/removable; checkout/additions/edits enforce numeric storage limits.
-- Gmail authentication was verified earlier. Tests use Mailpit; production inbox delivery needs server verification.
+- Gmail authentication was verified earlier. Tests use Mailpit; Gmail TLS/authentication also passed inside the production API; inbox delivery still needs a real user flow.
 
 ## Pending
 
-- Complete the reviewed release, enable DEPLOY_ENABLED and verify public HTTPS/Gmail. Docker, private production configuration, deployment SSH secrets and the four A records are ready.
+- Create/verify the real Delivery_Company account through Admin and set its company profile ID in DEFAULT_DELIVERY_COMPANY_ID before accepting customer orders. No company is seeded automatically.
 - Backup/restore automation explicitly deferred. OpenAPI, future delivery-fee Admin API, image cleanup and load testing remain unimplemented. Restaurant sessions intentionally stay in memory only.
-- No application-database migrations/seeds run in this task. Tests truncate only the dedicated local `_test` database.
+- The owner-authorized production init applied all eight migrations and provisioned the single Admin. No test/customer/restaurant/company/driver/catalog data was seeded on production. Tests truncate only dedicated test databases.
 
 ## Restaurant frontend
 
@@ -78,18 +78,31 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Current work: dashboards, realtime and deployment
 
-Owner authorized Admin and Delivery Company dashboards, realtime order updates for all authorized clients, and Compose-managed initialization/startup before deploying to the purchased VPS. Approved: React/Vite/TypeScript, Arabic RTL and memory-only sessions; only visual identity differs. Socket.IO notifications are approved. SSH confirmed the server OS; provisioning is complete and no application has been started yet. The Admin CLI is idempotent: existing Admin accounts are preserved, first creation uses private environment values, and concurrent initialization is serialized.
+Owner authorized Admin and Delivery Company dashboards, realtime order updates for all authorized clients, and Compose-managed initialization/startup before deploying to the purchased VPS. Approved: React/Vite/TypeScript, Arabic RTL and memory-only sessions; only visual identity differs. Socket.IO notifications are approved. SSH confirmed the server OS; provisioning and the initial application rollout are complete. The Admin CLI is idempotent: existing Admin accounts are preserved, first creation uses private environment values, and concurrent initialization is serialized.
 
 ### Current implementation / verification
 
 - Admin: restaurant activation/review, user activity/details, company account creation, order monitoring/failure, own account/auth. Delivery: owned order lists/details, active owned driver assignment, pickup/delivery, driver CRUD without delete, company/account forms. Real REST integration; no fake production data or unsupported reports.
 - Socket.IO emits minimal order invalidations after commit with role/ownership/live-session/activation checks; clients resynchronize through REST. Browser notifications are integrated in all three dashboards; mobile client work remains external.
 - Compose init serializes migrations/Admin setup; an existing Admin is preserved. All three static images, Caddy same-origin API/socket proxies and a coherent four-image release are included. See REALTIME.md, PORTAL-DESIGN.md and DEPLOYMENT.md.
-- Private production template created locally and excluded from Git. Owner-filled Admin/ACME fields and SMTP passed private preflight. Public DNS resolves api/admin/restaurant/delivery to the VPS. Docker 29.10.0 and Compose 5.8.0 are installed; deployment user/key and GitHub production secrets are configured. Public TLS/application startup still await the reviewed release.
+- Private production template created locally and excluded from Git. Owner-filled Admin/ACME fields and SMTP passed private preflight. Public DNS resolves api/admin/restaurant/delivery to the VPS. Docker 29.10.0 and Compose 5.8.0 are installed; deployment user/key and GitHub production secrets are configured. Public TLS/application startup are verified; see the production entry below.
 
-- Verification: root check passed; all 113 dedicated PostgreSQL/Mailpit cases passed. Admin/Delivery browser suites passed (4 scenarios), Restaurant browser suite passed (27 scenarios). Docker production smoke passed all four image builds, Caddy config/local trusted TLS, static frontends, persistence and repeated Admin initialization. A real browser/API order lifecycle passed checkout → restaurant accept → driver create/assign → pickup → delivery, including live Admin and Restaurant updates with no HTTP mocks or runtime/CSP errors.
+- Verification: root check passed; all 113 dedicated PostgreSQL/Mailpit cases passed. Admin/Delivery browser suites passed (5 scenarios), Restaurant browser suite passed (27 scenarios). Docker production smoke passed all four image builds, Caddy config/local trusted TLS, static frontends, persistence and repeated Admin initialization. A real browser/API order lifecycle passed checkout → restaurant accept → driver create/assign → pickup → delivery, including live Admin and Restaurant updates with no HTTP mocks or runtime/CSP errors.
 - Runtime audit passes with the owner-approved, expiring picomatch advisory exception only; see SECURITY.md. No zero-vulnerability claim. CI workflow/actionlint and Bash syntax checks passed.
 
 ### Release approval
 
 The owner explicitly approved promotion of PR #17 through dev to main and deployment after CI passes. This approval covers the dashboards/realtime/startup release and its necessary verification fixes only. The personal root SSH key remains local; CI uses a separate Ed25519 deployment key.
+
+### Final support-detail review
+
+Order detail panels show all authorized participant references, saved unit prices and created/updated times. Admin account details include the returned role profile; restaurant/customer images are bounded to prevent wide-image overflow. Closed mobile navigation is hidden from keyboard/accessibility navigation, with focus wrapping while open. Browser coverage checks these cases. No REST contract, permission or schema changes.
+
+### Production verification — 2026-11-18
+
+- First production release: de97321d9c18883b361ba74ccc01f87c0f56b503, PR #18 after green CI. GitHub production deployment history tracks subsequent release commits. All six services are running; API/PostgreSQL/three frontends are healthy. Only Caddy exposes 80/443 (and UDP 443); API/database ports are internal. Existing root SSH/Hostinger settings were preserved.
+- Verified trusted public TLS and HTTP→HTTPS for api/admin/restaurant/delivery.akeelaonline.tech. Chromium verified all three frontend assets/login pages with zero runtime/CSP errors. Real Admin login, all permitted read screens, authenticated WSS and logout passed. Verification created no business records.
+- Gmail authenticated successfully from the production API after correcting a differing SMTP_USER to the approved, locally verified account. Credentials were never printed/committed. No email was sent; OTP inbox delivery remains a user-flow check.
+- The final support-detail patch is covered by 32 browser scenarios total (27 Restaurant, 3 Admin, 2 Delivery), including bounded restaurant images and mobile drawer focus. It adds no REST endpoint, permission or migration.
+
+- Production storage access was checked without uploading test files: the image directory is writable and the database contains exactly one Admin. Delivery actions precede reference-only metadata in the detail pane so driver assignment remains visible on the tested desktop viewport.

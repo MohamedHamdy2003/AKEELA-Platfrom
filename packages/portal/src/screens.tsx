@@ -222,8 +222,10 @@ export function OrdersBoard({
           <ResourceState resource={detail}>
             {detail.result && (
               <>
-                <OrderFacts order={detail.result.data} />
-                {actions(detail.result.data, refresh)}
+                <OrderFacts
+                  order={detail.result.data}
+                  actions={actions(detail.result.data, refresh)}
+                />
               </>
             )}
           </ResourceState>

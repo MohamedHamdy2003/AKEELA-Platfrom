@@ -769,7 +769,13 @@ export function AuthPage({
     </div>
   );
 }
-export function OrderFacts({ order }: { order: Order }) {
+export function OrderFacts({
+  order,
+  actions,
+}: {
+  order: Order;
+  actions?: ReactNode;
+}) {
   return (
     <>
       <div className="detail-status">
@@ -796,10 +802,14 @@ export function OrderFacts({ order }: { order: Order }) {
               </strong>
               <bdi>{money(item.subtotal)}</bdi>
             </div>
+            <small>
+              سعر الوحدة: <bdi>{money(item.unit_price)}</bdi>
+            </small>
             {item.addons.map((addon) => (
               <small key={addon.order_item_addon_id}>
                 {addon.addon_name} × {addon.quantity} ·{' '}
-                <bdi>{money(addon.subtotal)}</bdi>
+                <bdi>{money(addon.subtotal)}</bdi> · سعر الوحدة:{' '}
+                <bdi>{money(addon.unit_price)}</bdi>
               </small>
             ))}
           </div>
@@ -813,6 +823,7 @@ export function OrderFacts({ order }: { order: Order }) {
         </bdi>
         {order.notes && <p className="order-note">{order.notes}</p>}
       </section>
+      {actions}
       <section className="detail-section">
         <div className="key-value">
           <span>رسوم التوصيل</span>
@@ -822,7 +833,25 @@ export function OrderFacts({ order }: { order: Order }) {
           <strong>الإجمالي</strong>
           <bdi>{money(order.total_price)}</bdi>
         </div>
-        <small>{dateTime(order.created_at)}</small>
+        <small>تاريخ الطلب: {dateTime(order.created_at)}</small>
+        <br />
+        <small>آخر تحديث: {dateTime(order.updated_at)}</small>
+      </section>
+      <section className="detail-section">
+        <h3>مراجع الطلب</h3>
+        {(
+          [
+            ['معرّف العميل', order.customer_id],
+            ['معرّف المطعم', order.rest_id],
+            ['معرّف الشركة', order.company_id],
+            ['معرّف السائق', order.driver_id],
+          ] as const
+        ).map(([label, id]) => (
+          <div className="key-value" key={label}>
+            <span>{label}</span>
+            <bdi>{id ? '#' + id : 'لم يُسند'}</bdi>
+          </div>
+        ))}
       </section>
     </>
   );
