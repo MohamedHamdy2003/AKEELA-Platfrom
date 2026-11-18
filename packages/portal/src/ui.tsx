@@ -1,3 +1,4 @@
+import { LogoutConfirmation } from './logout-confirmation';
 import {
   useEffect,
   useRef,
@@ -375,7 +376,7 @@ export function Shell({
   route: string;
   navigate: (key: string) => void;
   status: string;
-  logout: () => void;
+  logout: () => Promise<void>;
   children: ReactNode;
 }) {
   const [drawer, setDrawer] = useState(false);
@@ -393,7 +394,9 @@ export function Shell({
     return () => media.removeEventListener('change', update);
   }, []);
   const drawerRef = useRef<HTMLElement>(null);
-  const [logoutBusy, setLogoutBusy] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const logoutTrigger = useRef<HTMLButtonElement>(null);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!drawer) return;
     const old = document.activeElement as HTMLElement | null;
@@ -512,28 +515,37 @@ export function Shell({
         <div className="sidebar-foot">
           <button
             className="sidebar-logout"
-            aria-label={logoutBusy ? 'جارٍ الخروج…' : 'تسجيل الخروج'}
-            disabled={logoutBusy}
+            ref={logoutTrigger}
+            aria-label="تسجيل الخروج"
+            aria-haspopup="dialog"
             title={collapsed ? 'تسجيل الخروج' : undefined}
             onClick={() => {
-              setLogoutBusy(true);
               setDrawer(false);
-              Promise.resolve(logout())
-                .catch(() => undefined)
-                .finally(() => setLogoutBusy(false));
+              setLogoutOpen(true);
             }}
           >
             <LogOut size={18} aria-hidden="true" />
-            <span className="nav-label">
-              {logoutBusy ? 'جارٍ الخروج…' : 'تسجيل الخروج'}
-            </span>
+            <span className="nav-label">تسجيل الخروج</span>
           </button>
         </div>
       </aside>
+      {logoutOpen && (
+        <LogoutConfirmation
+          appName={appName}
+          confirm={logout}
+          closed={() => {
+            setLogoutOpen(false);
+            requestAnimationFrame(() => {
+              (compact ? menuTrigger.current : logoutTrigger.current)?.focus();
+            });
+          }}
+        />
+      )}
       <div className="workspace" inert={compact && drawer}>
         <header className="topbar">
           <div className="breadcrumb">
             <button
+              ref={menuTrigger}
               className="mobile-menu"
               aria-label="فتح القائمة"
               aria-expanded={drawer}

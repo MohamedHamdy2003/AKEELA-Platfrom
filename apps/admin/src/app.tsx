@@ -84,11 +84,8 @@ export function App() {
         navigate={navigate}
         status={status}
         logout={async () => {
-          try {
-            await api.request('/auth/logout', { method: 'POST' });
-          } finally {
-            api.clearSession();
-          }
+          await api.request('/auth/logout', { method: 'POST' });
+          api.clearSession();
         }}
       >
         {route === 'home' && <Home revision={revision} navigate={navigate} />}

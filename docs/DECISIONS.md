@@ -90,7 +90,7 @@ Official references used for foundation choices: [Nest modules](https://docs.nes
 
 ## Dashboards, realtime and deployment — 2026-11-18
 
-Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and tab-scoped sessionStorage sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant shares the realtime, session-storage and bootstrap helpers and keeps its own HTTP/UI implementation. Root check and consolidated CI cover all workspaces.
+Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and tab-scoped sessionStorage sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant shares the realtime, session-storage, bootstrap and logout-confirmation helpers while keeping its own HTTP client and remaining UI. Root check and consolidated CI cover all workspaces.
 
 Socket.IO runs inside the single API process. Events invalidate authorized REST reads after order commits; no schema, microservice, Redis or durable event log is added. See [REALTIME](REALTIME.md) and [portal design](PORTAL-DESIGN.md).
 

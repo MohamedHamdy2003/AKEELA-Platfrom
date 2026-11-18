@@ -8,4 +8,4 @@ Follow the root [AGENTS.md](../../AGENTS.md) first. Work in `apps/admin`; role `
 
 Key limits: one CLI-created Admin, no Admin signup/creation; never disable it or the company account. Admin approves/suspends restaurants, creates company accounts, monitors orders and may fail Accepted/Picked_Up orders. No manual company/driver assignment, menu management, payments/refunds, revenue dashboard or delivery-fee editing API exists.
 
-This is an implemented React/Vite/TypeScript app with Arabic RTL and tab-scoped sessionStorage sessions. Read [portal design](../../docs/PORTAL-DESIGN.md) and [realtime](../../docs/REALTIME.md) for affected work. Run its own check and browser suite. Shared packages/portal changes affect both apps; Restaurant also shares its realtime and session helpers.
+This is an implemented React/Vite/TypeScript app with Arabic RTL and tab-scoped sessionStorage sessions. Read [portal design](../../docs/PORTAL-DESIGN.md) and [realtime](../../docs/REALTIME.md) for affected work. Run its own check and browser suite. Shared packages/portal changes affect both apps; Restaurant also shares its realtime, session and logout-confirmation helpers.
