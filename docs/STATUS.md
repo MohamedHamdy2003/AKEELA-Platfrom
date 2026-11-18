@@ -10,6 +10,8 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
+- Mobile toggle styling, sidebar logout & date hint cleanup: In Admin, Delivery, and Restaurant dashboards, the mobile menu toggle button features a themed translucent tinted surface, matching border, smooth lift, glow shadow on hover, and tactile active-press feedback. The logout action was moved from the topbar to the sidebar foot in Admin and Delivery (replacing the static shield mark) with a translucent red tinted button and hover effect, matched across Restaurant's sidebar logout button. Redundant neutral 'اليوم / الشهر / السنة' date input description text was removed from Admin date filter fields while preserving validation and formatted date feedback. Dev-only change; main promotion deferred per owner instruction.
+
 - Current UI: verification is an icon-only green/red shield adjacent to email, with accessible state/hover title and the account-action border shape. User IDs take a compact column. All three desktop sidebars collapse to an 80px icon rail with keyboard-accessible routes, active-state markers and reduced-motion support; mobile keeps its full drawer. No backend/schema changes.
 - Current UI verification: root npm run check and all 52 Chromium scenarios passed (13 Admin, 7 Delivery, 32 Restaurant). Tests cover icon-only states/borders, narrow IDs, collapse/expand, keyboard navigation, viewport changes, mobile focus return and reduced motion. Expanded/rail/mobile screenshots were reviewed. Browser plugin not available; existing Playwright fixtures used. Live rollout verification belongs to the owner-authorized release above.
 

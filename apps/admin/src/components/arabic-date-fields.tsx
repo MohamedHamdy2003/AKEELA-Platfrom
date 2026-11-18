@@ -127,7 +127,7 @@ function ArabicDate({
                 ? 'أكمل اليوم والشهر والسنة لتطبيق التاريخ.'
                 : complete
                   ? `التاريخ: ${arabicDigits(draft.day)} ${months[Number(draft.month) - 1]} ${arabicDigits(year)}`
-                  : 'اليوم / الشهر / السنة'}
+                  : ''}
         </small>
         {(draft.day || draft.month || draft.year) && (
           <button

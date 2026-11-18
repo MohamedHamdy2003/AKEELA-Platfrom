@@ -510,8 +510,24 @@ export function Shell({
           })}
         </nav>
         <div className="sidebar-foot">
-          <ShieldCheck size={16} />
-          <span>مساحة آمنة · AKEELA</span>
+          <button
+            className="sidebar-logout"
+            aria-label={logoutBusy ? 'جارٍ الخروج…' : 'تسجيل الخروج'}
+            disabled={logoutBusy}
+            title={collapsed ? 'تسجيل الخروج' : undefined}
+            onClick={() => {
+              setLogoutBusy(true);
+              setDrawer(false);
+              Promise.resolve(logout())
+                .catch(() => undefined)
+                .finally(() => setLogoutBusy(false));
+            }}
+          >
+            <LogOut size={18} aria-hidden="true" />
+            <span className="nav-label">
+              {logoutBusy ? 'جارٍ الخروج…' : 'تسجيل الخروج'}
+            </span>
+          </button>
         </div>
       </aside>
       <div className="workspace" inert={compact && drawer}>
@@ -544,18 +560,6 @@ export function Shell({
               {user.full_name}
               <small>{appName}</small>
             </span>
-            <button
-              aria-label="تسجيل الخروج"
-              disabled={logoutBusy}
-              onClick={() => {
-                setLogoutBusy(true);
-                Promise.resolve(logout())
-                  .catch(() => undefined)
-                  .finally(() => setLogoutBusy(false));
-              }}
-            >
-              <LogOut size={18} />
-            </button>
           </div>
         </header>
         <main id="main-content" tabIndex={-1} className="portal-main">

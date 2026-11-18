@@ -32,8 +32,8 @@
   display: flex;
   justify-content: space-between;
   gap: 6px;
-  min-height: 25px;
-  margin-top: 5px;
+  min-height: 20px;
+  margin-top: 4px;
 }
 .arabic-date-foot small {
   font-size: 12px;
@@ -41,6 +41,14 @@
 .arabic-date-foot .text-button {
   white-space: nowrap;
   font-size: 12px;
+  color: var(--p-muted, #72827d);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.arabic-date-foot .text-button:hover {
+  color: #c0392b;
 }
 @media (max-width: 680px) {
   .arabic-date {
