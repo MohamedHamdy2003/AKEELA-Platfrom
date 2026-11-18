@@ -677,7 +677,11 @@ export function AuthPage({
       <main className="auth-content">
         <div className="auth-card">
           <span className="auth-icon">
-            <ShieldCheck size={25} />
+            {theme === 'delivery' ? (
+              <Truck size={26} aria-hidden="true" />
+            ) : (
+              <ShieldCheck size={25} aria-hidden="true" />
+            )}
           </span>
           <h1>
             {mode === 'login'
