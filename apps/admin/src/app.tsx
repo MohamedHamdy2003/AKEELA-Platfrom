@@ -9,6 +9,8 @@ import { Home } from './features/home';
 import { Restaurants } from './features/restaurants';
 import { Users, Companies } from './features/users';
 import { AdminActions } from './features/orders';
+import { ArabicFields } from './components/arabic-fields';
+import { ArabicDateFields } from './components/arabic-date-fields';
 const currentRoute = () =>
   navigation.some(([key]) => key === location.hash.slice(2))
     ? location.hash.slice(2)
@@ -44,47 +46,52 @@ export function App() {
       <AuthPage api={api} title="إدارة المنصة" theme="admin" login={setUser} />
     );
   return (
-    <Shell
-      user={user}
-      appName="إدارة المنصة"
-      theme="admin"
-      navigation={navigation}
-      route={route}
-      navigate={navigate}
-      status={status}
-      logout={async () => {
-        try {
-          await api.request('/auth/logout', { method: 'POST' });
-        } finally {
-          api.clearSession();
-        }
-      }}
-    >
-      {route === 'home' && <Home revision={revision} navigate={navigate} />}
-      {route === 'restaurants' && <Restaurants />}
-      {route === 'users' && (
-        <>
-          <PageTitle
-            title="المستخدمون"
-            description="الحسابات والأدوار وحالة النشاط."
+    <ArabicFields>
+      <Shell
+        user={user}
+        appName="إدارة المنصة"
+        theme="admin"
+        navigation={navigation}
+        route={route}
+        navigate={navigate}
+        status={status}
+        logout={async () => {
+          try {
+            await api.request('/auth/logout', { method: 'POST' });
+          } finally {
+            api.clearSession();
+          }
+        }}
+      >
+        {route === 'home' && <Home revision={revision} navigate={navigate} />}
+        {route === 'restaurants' && <Restaurants />}
+        {route === 'users' && (
+          <>
+            <PageTitle
+              title="المستخدمون"
+              description="الحسابات والأدوار وحالة النشاط."
+            />
+            <Users />
+          </>
+        )}
+        {route === 'companies' && <Companies />}
+        {route === 'orders' && (
+          <OrdersBoard
+            api={api}
+            prefix="/admin"
+            revision={revision}
+            dateFields={(value, change) => (
+              <ArabicDateFields value={value} change={change} />
+            )}
+            actions={(order, refresh) => (
+              <AdminActions order={order} refresh={refresh} />
+            )}
           />
-          <Users />
-        </>
-      )}
-      {route === 'companies' && <Companies />}
-      {route === 'orders' && (
-        <OrdersBoard
-          api={api}
-          prefix="/admin"
-          revision={revision}
-          actions={(order, refresh) => (
-            <AdminActions order={order} refresh={refresh} />
-          )}
-        />
-      )}
-      {route === 'account' && (
-        <AccountScreen api={api} user={user} updated={setUser} />
-      )}
-    </Shell>
+        )}
+        {route === 'account' && (
+          <AccountScreen api={api} user={user} updated={setUser} />
+        )}
+      </Shell>
+    </ArabicFields>
   );
 }

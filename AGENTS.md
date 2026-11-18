@@ -53,6 +53,8 @@ Restaurant is implemented locally; Admin and Delivery are implemented React/Vite
 
 ## Safety and change control
 
+- Current owner policy: integrate completed changes into `dev` only. Do not promote to `main` or deploy to the VPS without a fresh explicit request. Earlier release approvals do not authorize future deployments.
+
 - Preserve the four root specs unless the authorized change requires an update. Update affected guides/conventions and [STATUS](docs/STATUS.md) when behavior or architecture changes; avoid copying whole specifications into new docs.
 - Never read/dump private `.env` values for orientation, log tokens/passwords/OTPs, or commit secrets. API local configuration is `apps/api/.env`; frontend public settings must not contain API signing, SMTP or database credentials. Read committed examples for setting names.
 - Never run migrations, provision accounts, deploy infrastructure, delete persistent volumes or enable sites without task authorization. Backups are deferred. Never enable TypeORM synchronize/dropSchema/automatic migrations.

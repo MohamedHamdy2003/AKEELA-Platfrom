@@ -22,3 +22,7 @@ Design references: [Admin concept](design/admin/concept.png), [Delivery concept]
 - Browser tests use explicit fixtures to cover UI actions, error/mobile states and event-driven refresh. Real PostgreSQL integration covers backend permissions, transitions, socket isolation/revocation/expiry and concurrent initialization.
 - Use the production smoke stack for Docker/Caddy/TLS/static serving and persistent images. Fixtures alone do not prove real REST integration.
 - Browser plugin was unavailable in this environment; Chromium Playwright is the fallback. Inspect both concepts and actual desktop/mobile screenshots before reporting visual completion.
+
+## Admin field language
+
+Admin uses its app-owned Arabic date range fields and Arabic form feedback. The day/month/year selectors keep Gregorian YYYY-MM-DD API values; display digits/month names are Arabic even in English browsers. The Admin workspace provider translates native/inline field feedback while auth pages keep their existing behavior. Entered content and standard email/phone/password/ID formats remain intact. Delivery keeps its current controls. See apps/admin/src/components and src/lib/arabic-fields.ts.

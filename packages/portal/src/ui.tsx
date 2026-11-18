@@ -2,6 +2,8 @@ import {
   useEffect,
   useRef,
   useState,
+  createContext,
+  useContext,
   useId,
   Children,
   cloneElement,
@@ -79,9 +81,10 @@ export function Failure({
   error: unknown;
   retry?: () => void;
 }) {
+  const messages = useContext(FieldMessagesContext);
   return (
     <Notice error>
-      {errorMessage(error)}{' '}
+      {messages('', [errorMessage(error)]).join(' ')}{' '}
       {retry && (
         <button className="text-button" onClick={retry}>
           إعادة المحاولة
@@ -90,6 +93,9 @@ export function Failure({
     </Notice>
   );
 }
+export const FieldMessagesContext = createContext<
+  (name: string, messages: string[]) => string[]
+>((_name, messages) => messages);
 export function Field({
   label,
   name,
@@ -102,6 +108,7 @@ export function Field({
   children: ReactNode;
 }) {
   const id = useId();
+  const messages = useContext(FieldMessagesContext);
   return (
     <label className="field">
       <span id={id}>{label}</span>
@@ -115,7 +122,9 @@ export function Field({
           : child,
       )}
       {name && errors?.[name] && (
-        <small className="field-error">{errors[name]!.join(' ')}</small>
+        <small className="field-error">
+          {messages(name, errors[name]!).join(' ')}
+        </small>
       )}
     </label>
   );
