@@ -265,7 +265,14 @@ export function Companies() {
                   ['company_email', 'بريد الشركة (اختياري)', 'email'],
                   ['company_address', 'عنوان الشركة', 'text'],
                 ].map(([name, label, type]) => (
-                  <Field key={name} label={label!} name={name} errors={fields}>
+                  <Field
+                    key={name}
+                    label={label!}
+                    name={
+                      name?.startsWith('company_') ? 'profile.' + name : name
+                    }
+                    errors={fields}
+                  >
                     <input
                       name={name}
                       type={type}
