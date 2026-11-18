@@ -4,7 +4,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 ## Implementation Status
 
-Features 01-17 are implemented. Docker/Caddy and CI/CD are prepared; real Hostinger deployment is pending VPS/domain setup. Backups, OpenAPI, image cleanup and the future Admin delivery-fee API are not implemented.
+Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger; public HTTPS is verified. See [STATUS](docs/STATUS.md) for deployment evidence and remaining setup. Backups, OpenAPI, image cleanup and the future Admin delivery-fee API are not implemented.
 
 ## Common Rules
 

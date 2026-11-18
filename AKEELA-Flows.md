@@ -90,7 +90,7 @@
 ## Images and Deployment Status
 
 - Customer: upload an avatar. Active restaurant owner: upload restaurant, product and offer images. The API saves a public image URL.
-- Features 01-17 are implemented. Docker/Caddy and CI/CD are prepared; Hostinger Docker/private configuration and DNS are ready; public TLS/application rollout are pending. Backup automation and the future Admin delivery-fee API remain deferred.
+- Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger with verified public HTTPS. See [STATUS](docs/STATUS.md). Backup automation and the future Admin delivery-fee API remain deferred.
 
 ## Realtime — All Roles
 
