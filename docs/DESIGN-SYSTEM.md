@@ -10,6 +10,7 @@ The implementation follows the owner's explicit compact-type request rather than
 
 - Import [shared tokens](../packages/brand/tokens.css) before app styles. Future consumers use the existing `@akeela/brand` workspace and root lockfile.
 - Preserve the original [wordmark](../packages/brand/assets/logo.png) and [icon](../packages/brand/assets/icon.png); generated concepts contain approximate logo variants that are not replacement assets. The login panel uses the wordmark in white.
+- Browser tabs use app-specific symbols without changing the in-app brand: Restaurant has a storefront in `apps/restaurant/public/favicon.svg`. Its title is `AKEELA - المطعم - <page>`, including login. Admin/Delivery tab identities are documented in [portal design](PORTAL-DESIGN.md).
 - [Botanical artwork](../packages/brand/assets/botanical.png) remains on the emerald login panel. Its entry reveal runs once; no continuous floating/decorative loop.
 - [Restaurant UI primitives](../apps/restaurant/src/components/ui.tsx) remain app-local. Do not introduce a shared React library before another implemented app needs it.
 

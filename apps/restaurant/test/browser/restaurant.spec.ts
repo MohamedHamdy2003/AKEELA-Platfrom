@@ -23,7 +23,7 @@ test('desktop: identity, orders, details, acceptance and contract-safe category 
     path: join(tmpdir(), 'akeela-login.png'),
   });
   await login(page);
-  await expect(page).toHaveTitle('أكيلة | الرئيسية');
+  await expect(page).toHaveTitle('AKEELA - المطعم - الرئيسية');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(
     page.getByRole('cell', { name: '#1084', exact: true }),
