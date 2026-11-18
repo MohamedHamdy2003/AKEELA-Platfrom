@@ -46,6 +46,7 @@ Lucide navigation icons are 20px with the original metaphor/stroke system. Meani
 - The sidebar logo is smaller and the navigation rows are 46px tall. The login form is capped at 440px, registration at 640px; a small wordmark anchors the white form. The brand panel retains room for the original botanical artwork.
 - Open headings/status strips lead into white rounded tables. Compact type does not reduce touch targets: ordinary controls stay approximately 46–50px tall, compact actions remain at least 38px. Tables preserve their columns and scroll inside their region on phones.
 - Two-column labeled forms retain normal native inputs/selects; focused fields use an emerald border and soft ring. Password controls remain centered against the actual input. Native dialogs keep keyboard focus, Escape and immediate dismissal guards.
+- All three apps use packages/brand/forms.css for a consistent single-select arrow with a 12px inset and reserved text space. RTL puts it on the left; LTR and forced-colors mode are supported without replacing native selection.
 - Pending is amber, Accepted/Delivered green, Picked_Up blue, Rejected/Failed red, Cancelled neutral. Only existing API enums are valid.
 - Skeletons reflect real pending requests; empty/error/success states preserve actual API feedback. No invented revenue, preparation statuses, staff, branches or notification features.
 

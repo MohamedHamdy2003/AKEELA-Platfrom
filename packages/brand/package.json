@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./tokens.css": "./tokens.css",
+    "./forms.css": "./forms.css",
     "./logo.png": "./assets/logo.png",
     "./icon.png": "./assets/icon.png",
     "./botanical.png": "./assets/botanical.png"

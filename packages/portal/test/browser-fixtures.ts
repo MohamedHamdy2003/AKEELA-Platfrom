@@ -170,7 +170,13 @@ export async function portalFixture(
       else {
         data = [
           user,
-          { ...user, user_id: '4', full_name: 'عميل أكيلة', role: 'Customer' },
+          {
+            ...user,
+            user_id: '4',
+            full_name: 'عميل أكيلة',
+            role: 'Customer',
+            email_verified_at: null,
+          },
           {
             ...user,
             user_id: '5',
@@ -195,6 +201,7 @@ export async function portalFixture(
             user_id: '4',
             full_name: 'عميل أكيلة',
             role: 'Customer',
+            email_verified_at: null,
           };
     else if (path.startsWith('/delivery-company/drivers')) {
       if (method !== 'GET') {

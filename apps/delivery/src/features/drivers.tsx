@@ -156,6 +156,7 @@ export function Drivers() {
             <table>
               <thead>
                 <tr>
+                  <th>رقم السائق</th>
                   <th>السائق</th>
                   <th>الهاتف</th>
                   <th>البريد</th>
@@ -167,8 +168,10 @@ export function Drivers() {
                 {resource.result?.data.map((item) => (
                   <tr key={item.driver_id}>
                     <td>
+                      <bdi>#{item.driver_id}</bdi>
+                    </td>
+                    <td>
                       <strong>{item.driver_name}</strong>
-                      <small>#{item.driver_id}</small>
                     </td>
                     <td>
                       <bdi>{item.driver_phone}</bdi>
