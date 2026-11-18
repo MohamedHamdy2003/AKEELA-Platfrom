@@ -18,10 +18,20 @@ import { Users, Companies } from './features/users';
 import { AdminActions } from './features/orders';
 import { ArabicFields } from './components/arabic-fields';
 import { ArabicDateFields } from './components/arabic-date-fields';
-const currentRoute = () =>
-  navigation.some(([key]) => key === location.hash.slice(2))
-    ? location.hash.slice(2)
-    : 'home';
+const currentRoute = () => {
+  if (typeof window === 'undefined') return 'home';
+  if (window.location.hash.startsWith('#/')) {
+    const hashKey = window.location.hash.slice(2);
+    if (hashKey) {
+      window.history.replaceState(null, '', '/' + hashKey);
+      return navigation.some(([key]) => key === hashKey) ? hashKey : 'home';
+    }
+  }
+  const segment = window.location.pathname
+    .replace(/^\/+|\/+$/g, '')
+    .split('/')[0];
+  return navigation.some(([key]) => key === segment) ? segment : 'home';
+};
 export function App() {
   const [user, setUser] = useState<User | null>(null),
     [route, setRoute] = useState(currentRoute),
@@ -33,9 +43,11 @@ export function App() {
   );
   useEffect(() => {
     const change = () => setRoute(currentRoute());
+    window.addEventListener('popstate', change);
     window.addEventListener('hashchange', change);
     api.onSessionEnd = () => setUser(null);
     return () => {
+      window.removeEventListener('popstate', change);
       window.removeEventListener('hashchange', change);
       api.onSessionEnd = undefined;
     };
@@ -50,7 +62,11 @@ export function App() {
     });
   }, [user?.user_id]);
   const navigate = (key: string) => {
-    location.hash = '/' + key;
+    const target = '/' + key;
+    if (window.location.pathname !== target) {
+      window.history.pushState(null, '', target);
+    }
+    setRoute(key);
   };
   if (restoring || restoreError)
     return (
@@ -86,6 +102,8 @@ export function App() {
         logout={async () => {
           await api.request('/auth/logout', { method: 'POST' });
           api.clearSession();
+          window.history.replaceState(null, '', '/');
+          setRoute('home');
         }}
       >
         {route === 'home' && <Home revision={revision} navigate={navigate} />}
