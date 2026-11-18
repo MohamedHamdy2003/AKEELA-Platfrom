@@ -2,7 +2,7 @@
 
 ## Restaurant frontend
 
-The Restaurant client is now implemented in apps/restaurant with React/Vite/TypeScript, Arabic RTL, app-local feature components and a configurable HTTP client. packages/brand shares CSS tokens and identity assets. Browser tokens stay in memory only; frontend code never imports backend internals. Admin and Delivery are implemented. See [portal design](PORTAL-DESIGN.md) and [realtime](REALTIME.md). See [design system](DESIGN-SYSTEM.md) and [Restaurant run guide](../apps/restaurant/README.md). Historical baseline sections below describe the API and monorepo preparation; this addition does not change backend architecture.
+The Restaurant client is now implemented in apps/restaurant with React/Vite/TypeScript, Arabic RTL, app-local feature components and a configurable HTTP client. packages/brand shares CSS tokens and identity assets. Browser tokens survive refresh in tab-scoped sessionStorage; see AUTH.md; frontend code never imports backend internals. Admin and Delivery are implemented. See [portal design](PORTAL-DESIGN.md) and [realtime](REALTIME.md). See [design system](DESIGN-SYSTEM.md) and [Restaurant run guide](../apps/restaurant/README.md). Historical baseline sections below describe the API and monorepo preparation; this addition does not change backend architecture.
 
 ## Scope and status
 
@@ -116,11 +116,11 @@ Images uses Sharp for byte validation/re-encoding and local persistent files. It
 
 ## Repository and deployment boundaries
 
-One monorepo contains the implemented API and three independently owned browser apps. Use npm workspaces with one lockfile. The API remains a modular monolith with one database. Frontends consume HTTP APIs and never import backend repositories/entities. React/Vite/TypeScript, Arabic RTL and memory-only sessions are approved for all three browser apps. See [MONOREPO.md](MONOREPO.md) for paths, environment migration, coordinated CI/release rules and Caddy sites.
+One monorepo contains the implemented API and three independently owned browser apps. Use npm workspaces with one lockfile. The API remains a modular monolith with one database. Frontends consume HTTP APIs and never import backend repositories/entities. React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions are approved for all three browser apps. See [MONOREPO.md](MONOREPO.md) for paths, environment migration, coordinated CI/release rules and Caddy sites.
 
 ## Dashboards, realtime and deployment — 2026-11-18
 
-Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and memory-only sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant imports only the realtime helper and keeps its UI. Root check and consolidated CI cover all workspaces.
+Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and tab-scoped sessionStorage sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant shares the realtime, session-storage and bootstrap helpers and keeps its own HTTP/UI implementation. Root check and consolidated CI cover all workspaces.
 
 Socket.IO runs inside the single API process. Events invalidate authorized REST reads after order commits; no schema, microservice, Redis or durable event log is added. See [REALTIME](REALTIME.md) and [portal design](PORTAL-DESIGN.md).
 

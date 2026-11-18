@@ -28,7 +28,7 @@ Registration, email OTP/resend, login, password recovery/reset, activation, rece
 
 Pending/Suspended owners can read own account/profile/status and use password security. Management stays locked until Active. Stopped service still permits existing-order handling. Refresh is manual; no revenue, staff, branches or customer-phone functionality is invented.
 
-Tokens stay in memory only, per owner choice. Reload requires login. Refresh coordinates concurrent requests in the same page and retries once. No persistent storage, cookies or SSO. Wrong-role login never opens the workspace; password change ends login. The server remains authoritative.
+Tokens use tab-scoped sessionStorage, per the current owner request. Reload checks /me and restores login. Refresh coordinates concurrent requests in the same page and retries once. No localStorage tokens, cookies or SSO. Wrong-role login never opens the workspace; password change ends login. The server remains authoritative.
 
 `src/features` owns auth/home/orders/catalog/settings. `components/ui.tsx` provides primitives; `lib` owns HTTP, API response types, Cairo/decimal formatting and cancellable reads. `@akeela/brand` owns reusable tokens/assets; no backend internals are imported.
 

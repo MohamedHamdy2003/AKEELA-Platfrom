@@ -61,7 +61,7 @@ These screen/feature guides describe clients of the existing API. Restaurant is 
 | Admin            | `https://admin.akeela.com`    | [Admin application](frontend/AKEELA-Admin-App.md)           |
 | Delivery company | `https://delivery.akeela.com` | [Delivery application](frontend/AKEELA-Delivery-App.md)     |
 
-The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery` alongside `apps/api`. Restaurant uses React/Vite, Arabic RTL and memory-only browser sessions. Confirm the corresponding choices before implementing Admin or Delivery. Subdomain DNS/hosting/CORS configuration remains deployment work.
+The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery` alongside `apps/api`. Restaurant uses React/Vite, Arabic RTL and tab-scoped sessionStorage sessions. Admin and Delivery use the same stack and session policy. Subdomain DNS/hosting/CORS configuration remains deployment work.
 
 ## Resolving changes
 

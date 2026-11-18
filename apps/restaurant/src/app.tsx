@@ -33,6 +33,7 @@ import { Orders } from './features/orders';
 import { Account, RestaurantProfile } from './features/settings';
 import { ButtonContent, Failure, Loading, Notice } from './components/ui';
 import { Presence } from './components/presence';
+import { useSessionRestore } from '@akeela/portal/use-session-restore';
 
 const navigation = [
   { key: 'home', label: 'الرئيسية', icon: House },
@@ -86,6 +87,10 @@ function Workspace() {
     () => window.matchMedia('(max-width: 960px)').matches,
   );
   const [user, setUser] = useState<User | null>(null);
+  const { restoring, restoreError, retryRestore } = useSessionRestore(
+    api,
+    setUser,
+  );
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [route, setRoute] = useState(currentRoute);
@@ -206,6 +211,16 @@ function Workspace() {
       setLoggingOut(false);
     }
   }
+  if (restoring || restoreError)
+    return (
+      <main className="state" aria-label="استعادة الجلسة">
+        {restoring ? (
+          <Loading />
+        ) : (
+          <Failure error={restoreError} retry={retryRestore} />
+        )}
+      </main>
+    );
   if (!user)
     return (
       <Auth

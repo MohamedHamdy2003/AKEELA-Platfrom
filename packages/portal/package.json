@@ -5,6 +5,8 @@
   "type": "module",
   "exports": {
     "./api": "./src/api.ts",
+    "./session-store": "./src/session-store.ts",
+    "./use-session-restore": "./src/use-session-restore.ts",
     "./models": "./src/models.ts",
     "./realtime": "./src/realtime.ts",
     "./ui": "./src/ui.tsx",

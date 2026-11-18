@@ -99,15 +99,15 @@ API paths omit `/api/v1`. Use a configured full API base URL; the backend domain
 
 - Include loading, empty, confirmation, success, validation, forbidden, missing-record and retry states. Map `error.fields` to forms and use server messages.
 - Lists use paginated `data` and `meta`; show only supported filters. IDs, money and coordinates stay strings. Money is EGP; timestamps display in Africa/Cairo. A page subtotal is not an all-time revenue metric.
-- Access JWT uses Authorization; refresh currently uses a JSON token. Tokens stay in memory; reload requires login and no remember-me is implemented. Coordinate refreshes; avoid retry loops, shared-subdomain SSO assumptions and secrets in frontend configuration.
+- Access JWT uses Authorization; refresh currently uses a JSON token. Tokens use tab-scoped sessionStorage so reload restores login; see [AUTH](../AUTH.md). No remember-me across browser sessions is implemented. Coordinate refreshes; avoid retry loops, shared-subdomain SSO assumptions and secrets in frontend configuration.
 - OTP resend/reset follows server cooldown, expiry and attempt errors; show Retry-After when provided. Recovery uses a generic account-eligibility message.
 - Socket.IO notifications invalidate order REST reads; reconnect also refreshes. See [realtime](../REALTIME.md).
 - Build order: auth → user list/detail → restaurant approval → company creation → order monitoring/failure → account/security → responsive/error checks.
-- Implemented stack: React/Vite/TypeScript, Arabic RTL and memory-only sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
+- Implemented stack: React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
 - Not supported: creating more Admins, manual company assignment, payment/refund tools, revenue reports, commission settings, general delivery-fee editing, notifications, data export and arbitrary database administration. Ask for specifications/backend APIs before adding them.
 
 Monorepo location: `apps/admin`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
 
 ## Current implementation
 
-React/Vite/TypeScript, Arabic RTL and memory-only sessions. See [portal design](../PORTAL-DESIGN.md) for identity and shared components. Order changes refresh through [Socket.IO](../REALTIME.md). No unsupported business actions were added.
+React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions. See [portal design](../PORTAL-DESIGN.md) for identity and shared components. Order changes refresh through [Socket.IO](../REALTIME.md). No unsupported business actions were added.

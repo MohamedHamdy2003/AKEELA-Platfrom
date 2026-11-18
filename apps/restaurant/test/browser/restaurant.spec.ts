@@ -84,12 +84,11 @@ test('desktop: identity, orders, details, acceptance and contract-safe category 
   });
   expect(errors).toEqual([]);
   await page.reload();
+  await expect(page.getByRole('navigation')).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: 'أهلًا بعودتك' }),
+    page.getByRole('heading', { name: 'المنتجات', exact: true }),
   ).toBeVisible();
-  expect(
-    await page.evaluate(() => localStorage.length + sessionStorage.length),
-  ).toBe(0);
+  expect(await page.evaluate(() => localStorage.length)).toBe(0);
 });
 test('mobile RTL navigation and non-overflowing first screen', async ({
   page,

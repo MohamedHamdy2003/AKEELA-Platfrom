@@ -66,8 +66,9 @@ test('dispatcher assigns, picks up and delivers, then sees live changes', async 
   fixture.notify();
   await expect(page.locator('.detail-status')).toContainText('متعثر');
   await page.reload();
+  await expect(page.getByRole('navigation')).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: 'مرحبًا بعودتك' }),
+    page.getByRole('heading', { name: 'طلبات الشركة', exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

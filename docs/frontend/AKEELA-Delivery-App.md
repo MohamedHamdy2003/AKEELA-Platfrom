@@ -100,14 +100,14 @@ API paths omit `/api/v1`. Configure the full API base URL; the backend domain is
 - Design for dispatcher desktop use and usable small screens; use Arabic RTL and responsive small screens. Include loading, empty, confirmation, validation, forbidden, not-found, success and retry states.
 - Show field messages from `error.fields` and safe server errors. Do not assume a local hidden button replaces backend authorization.
 - Read paginated `data` and `meta`. Keep IDs, coordinates and money as strings. Display EGP and Africa/Cairo time; do not turn current-page sums into company earnings reports.
-- JWT access uses Authorization; refresh currently uses JSON tokens. Keep tokens in memory, coordinate refreshes and avoid retry loops. Reload requires login; no remember-me is implemented. No shared-subdomain SSO or browser-exposed secrets are assumed.
+- JWT access uses Authorization; refresh currently uses JSON tokens. Keep tokens in tab-scoped sessionStorage, coordinate refreshes and avoid retry loops. Reload checks /me before restoring login; see [AUTH](../AUTH.md). No remember-me across browser sessions is implemented. No shared-subdomain SSO or browser-exposed secrets are assumed.
 - OTP actions respect cooldown/expiry/errors; recovery messaging stays generic. Socket.IO notifications invalidate order REST reads; reconnect also refreshes. See [realtime](../REALTIME.md).
 - Build order: auth → company profile → drivers → assigned orders/details → assignment → pickup/delivery → history/account/security → responsive/error checks.
-- Implemented stack: React/Vite/TypeScript, Arabic RTL and memory-only sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
+- Implemented stack: React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
 - Out of scope: driver accounts, tracking, payouts, financial reports, delivery-fee settings, multiple-company routing, payments and new backend endpoints.
 
 Monorepo location: `apps/delivery`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
 
 ## Current implementation
 
-React/Vite/TypeScript, Arabic RTL and memory-only sessions. See [portal design](../PORTAL-DESIGN.md) for identity and shared components. Order changes refresh through [Socket.IO](../REALTIME.md). No unsupported business actions were added.
+React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions. See [portal design](../PORTAL-DESIGN.md) for identity and shared components. Order changes refresh through [Socket.IO](../REALTIME.md). No unsupported business actions were added.

@@ -1,6 +1,6 @@
 # AKEELA Ordering Platform
 
-Three React/Vite/TypeScript dashboards are implemented: Restaurant, Admin and Delivery Company, with Arabic RTL and memory-only sessions. Admin and Delivery have separate visual identities. [Run guides](docs/MONOREPO.md) · [Portal design](docs/PORTAL-DESIGN.md).
+Three React/Vite/TypeScript dashboards are implemented: Restaurant, Admin and Delivery Company, with Arabic RTL and tab-scoped sessionStorage sessions. Admin and Delivery have separate visual identities. [Run guides](docs/MONOREPO.md) · [Portal design](docs/PORTAL-DESIGN.md).
 
 AKEELA monorepo with a restaurant ordering backend using NestJS, PostgreSQL and TypeORM. One modular monolith, one database and four roles: Customer, Restaurant, Delivery_Company and Admin.
 

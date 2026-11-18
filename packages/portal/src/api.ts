@@ -1,3 +1,4 @@
+import type { SessionStore } from './session-store.ts';
 import type { Envelope, Tokens, User } from './models.ts';
 
 export class ApiError extends Error {
@@ -42,20 +43,24 @@ export function errorMessage(error: unknown): string {
 export class ApiClient {
   private base: string;
   private transport: typeof fetch;
+  private sessionStore: SessionStore | null;
   private role: string;
   private tokens: Tokens | null = null;
   private generation = 0;
   private refreshing: Promise<void> | null = null;
+  private restoring: Promise<User | null> | null = null;
   onSessionEnd?: () => void;
   onActivationDenied?: () => void;
   constructor(
     base: string,
     role: 'Admin' | 'Delivery_Company',
     transport: typeof fetch = (...args) => fetch(...args),
+    sessionStore: SessionStore | null = null,
   ) {
     this.role = role;
     this.base = base.replace(/\/$/, '');
     this.transport = transport;
+    this.sessionStore = sessionStore;
     if (!/^\/(?!\/)/.test(base) && !/^https?:\/\//.test(base)) {
       throw new Error('عنوان API غير صالح.');
     }
@@ -63,11 +68,45 @@ export class ApiClient {
   setSession(tokens: Tokens) {
     this.generation++;
     this.tokens = tokens;
+    this.sessionStore?.write(tokens);
   }
   clearSession() {
     this.generation++;
     this.tokens = null;
+    this.sessionStore?.clear();
     this.onSessionEnd?.();
+  }
+  restoreSession(): Promise<User | null> {
+    if (this.restoring) return this.restoring;
+    if (!this.tokens) {
+      const saved = this.sessionStore?.read();
+      if (!saved) return Promise.resolve(null);
+      this.setSession(saved);
+    }
+    const generation = this.generation;
+    this.restoring = (async () => {
+      try {
+        const result = await this.request<User>('/me');
+        if (generation !== this.generation) return null;
+        if (result.data.role !== this.role) {
+          this.clearSession();
+          return null;
+        }
+        return result.data;
+      } catch (error) {
+        if (
+          error instanceof ApiError &&
+          (error.status === 401 || error.status === 403)
+        ) {
+          if (generation === this.generation) this.clearSession();
+          return null;
+        }
+        throw error;
+      }
+    })().finally(() => {
+      this.restoring = null;
+    });
+    return this.restoring;
   }
   async login(email: string, password: string): Promise<User> {
     const result = await this.request<{ user: User; tokens: Tokens }>(
@@ -105,8 +144,14 @@ export class ApiClient {
         if (generation !== this.generation)
           throw new ApiError(401, 'UNAUTHENTICATED', 'انتهت الجلسة.');
         this.tokens = result.data;
+        this.sessionStore?.write(result.data);
       } catch (error) {
-        if (generation === this.generation) this.clearSession();
+        if (
+          generation === this.generation &&
+          error instanceof ApiError &&
+          (error.status === 401 || error.status === 403)
+        )
+          this.clearSession();
         throw error;
       }
     })().finally(() => {
@@ -124,6 +169,7 @@ export class ApiClient {
     } = {},
     retry = true,
   ): Promise<Envelope<T>> {
+    const requestGeneration = this.generation;
     const access = this.tokens?.access_token;
     const headers: Record<string, string> = {};
     const multipart = options.body instanceof FormData;
@@ -149,8 +195,16 @@ export class ApiClient {
       if (options.signal?.aborted) throw error;
       throw new ApiError(0, 'NETWORK', messages.NETWORK);
     }
-    if (response.status === 401 && !options.public && retry && this.tokens) {
+    if (
+      response.status === 401 &&
+      !options.public &&
+      retry &&
+      this.tokens &&
+      requestGeneration === this.generation
+    ) {
       if (this.tokens.access_token === access) await this.refresh();
+      if (requestGeneration !== this.generation)
+        throw new ApiError(401, 'UNAUTHENTICATED', 'انتهت الجلسة.');
       return this.request<T>(path, options, false);
     }
     const data = (await response
@@ -161,7 +215,12 @@ export class ApiClient {
         data?.error?.code ??
         (response.status === 401 ? 'UNAUTHENTICATED' : 'HTTP_ERROR');
       if (code === 'RESTAURANT_NOT_ACTIVE') this.onActivationDenied?.();
-      if (response.status === 401 && !options.public) this.clearSession();
+      if (
+        response.status === 401 &&
+        !options.public &&
+        requestGeneration === this.generation
+      )
+        this.clearSession();
       throw new ApiError(
         response.status,
         code,
