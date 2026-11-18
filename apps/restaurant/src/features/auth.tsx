@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Eye, EyeOff, MapPin } from 'lucide-react';
 import logo from '@akeela/brand/logo.png';
+import logoWebp from '@akeela/brand/logo.webp';
 import botanical from '@akeela/brand/botanical.png';
+import botanicalWebp from '@akeela/brand/botanical.webp';
 import { api, ApiError } from '../lib/api';
 import type { User } from '../lib/models';
 import { useDeviceLocation } from '../lib/use-device-location';
@@ -451,10 +453,31 @@ export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
         </div>
       </section>
       <aside className="auth-brand">
-        <img className="auth-logo" src={logo} alt="أكيلة — AKEELA" />
+        <picture>
+          <source srcSet={logoWebp} type="image/webp" />
+          <img
+            className="auth-logo"
+            src={logo}
+            alt="أكيلة — AKEELA"
+            width={150}
+            height={160}
+            decoding="async"
+            fetchPriority="high"
+          />
+        </picture>
         <h2>مساحة هادئة ليومٍ حافل.</h2>
         <p>من قائمة الطعام إلى آخر طلب.</p>
-        <img className="botanical" src={botanical} alt="" />
+        <picture>
+          <source srcSet={botanicalWebp} type="image/webp" />
+          <img
+            className="botanical"
+            src={botanical}
+            alt=""
+            width={960}
+            height={960}
+            decoding="async"
+          />
+        </picture>
       </aside>
     </main>
   );

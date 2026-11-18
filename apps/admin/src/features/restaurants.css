@@ -1,0 +1,205 @@
+/* Restaurant Activation Status Badges */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.5;
+  transition: transform 140ms ease;
+}
+
+.status-pill .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Green translucent for Active (مفعّل) */
+.status-pill.activation-active {
+  background: color-mix(in srgb, #16a34a, transparent 88%);
+  color: #15803d;
+  border: 1px solid color-mix(in srgb, #16a34a, transparent 70%);
+}
+.status-pill.activation-active .status-dot {
+  background: #16a34a;
+  box-shadow: 0 0 6px color-mix(in srgb, #16a34a, transparent 40%);
+}
+
+/* Orange translucent for Pending (بانتظار التفعيل) */
+.status-pill.activation-pending {
+  background: color-mix(in srgb, #ea580c, transparent 88%);
+  color: #c2410c;
+  border: 1px solid color-mix(in srgb, #ea580c, transparent 70%);
+}
+.status-pill.activation-pending .status-dot {
+  background: #ea580c;
+  box-shadow: 0 0 6px color-mix(in srgb, #ea580c, transparent 40%);
+}
+
+/* Red translucent for Suspended (معلّق) */
+.status-pill.activation-suspended {
+  background: color-mix(in srgb, #dc2626, transparent 88%);
+  color: #b91c1c;
+  border: 1px solid color-mix(in srgb, #dc2626, transparent 70%);
+}
+.status-pill.activation-suspended .status-dot {
+  background: #dc2626;
+  box-shadow: 0 0 6px color-mix(in srgb, #dc2626, transparent 40%);
+}
+
+/* Restaurant Details Header */
+.restaurant-detail-title-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--p-line, #e2ded5);
+}
+
+.restaurant-detail-title-wrap h2 {
+  margin: 0;
+}
+
+/* Modern Confirmation Dialog */
+.restaurant-confirm-dialog {
+  border: 1px solid var(--p-line, #e2ded5);
+  border-radius: 18px;
+  color: var(--p-text, #132a26);
+  background: #ffffff;
+  padding: 24px;
+  max-width: 480px;
+  width: calc(100% - 32px);
+  box-shadow: 0 24px 64px rgb(19 42 38 / 22%);
+  font: inherit;
+  direction: rtl;
+  margin: auto;
+  animation: dialog-pop 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.restaurant-confirm-dialog::backdrop {
+  background: rgb(19 42 38 / 55%);
+  backdrop-filter: blur(4px);
+}
+
+.restaurant-confirm-dialog .dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--p-line, #e2ded5);
+}
+
+.restaurant-confirm-dialog .dialog-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.restaurant-confirm-dialog .dialog-title-group h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--p-text, #132a26);
+}
+
+.dialog-badge.badge-activate {
+  color: #15803d;
+  background: color-mix(in srgb, #16a34a, transparent 88%);
+  border: 1px solid color-mix(in srgb, #16a34a, transparent 72%);
+}
+
+.dialog-badge.badge-suspend {
+  color: #b91c1c;
+  background: color-mix(in srgb, #dc2626, transparent 88%);
+  border: 1px solid color-mix(in srgb, #dc2626, transparent 72%);
+}
+
+.confirm-target-summary {
+  background: #fbf9f4;
+  border: 1px solid var(--p-line, #e2ded5);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: right;
+}
+
+.confirm-target-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.confirm-target-row .label {
+  color: var(--p-muted, #72827d);
+}
+
+.confirm-target-row .value {
+  font-weight: 600;
+  color: var(--p-text, #132a26);
+}
+
+/* Explanation Box */
+.confirm-explanation {
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confirm-explanation.explain-activate {
+  background: color-mix(in srgb, #16a34a, transparent 92%);
+  border: 1px solid color-mix(in srgb, #16a34a, transparent 76%);
+}
+
+.confirm-explanation.explain-activate strong {
+  color: #15803d;
+  font-size: 13px;
+}
+
+.confirm-explanation.explain-activate p {
+  color: #274b37;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.confirm-explanation.explain-suspend {
+  background: color-mix(in srgb, #dc2626, transparent 92%);
+  border: 1px solid color-mix(in srgb, #dc2626, transparent 76%);
+}
+
+.confirm-explanation.explain-suspend strong {
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.confirm-explanation.explain-suspend p {
+  color: #5a262a;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
