@@ -1879,3 +1879,82 @@ tbody tr:hover {
     display: none;
   }
 }
+
+/* Match the Admin reading scale while keeping Restaurant identity and motion. */
+body {
+  font-size: var(--dashboard-type-body);
+}
+h1,
+.auth-form h1,
+.auth-form.registration h1,
+.auth-form .registration h1,
+.auth-brand h2 {
+  font-size: var(--dashboard-type-page);
+}
+h2,
+.section-heading h2,
+.dialog-heading h2 {
+  font-size: var(--dashboard-type-section);
+}
+h3 {
+  font-size: var(--dashboard-type-navigation);
+}
+.sidebar nav button {
+  font-size: var(--dashboard-type-navigation);
+}
+.button,
+.page-heading .button,
+.section-heading .text-button {
+  font-size: var(--dashboard-type-button);
+}
+th,
+td,
+td strong,
+td .numeric {
+  font-size: var(--dashboard-type-table);
+}
+.field,
+.auth-form .field,
+.auth-form.registration .field,
+.page-heading p,
+.auth-subtitle,
+.auth-form.registration .auth-subtitle {
+  font-size: var(--dashboard-type-label);
+}
+small,
+.badge {
+  font-size: var(--dashboard-type-caption);
+}
+.field input,
+.field select,
+.field textarea,
+.auth-form .field input,
+.auth-form.registration .field input {
+  font-size: var(--dashboard-type-control);
+}
+@media (max-width: 680px) {
+  h1,
+  .auth-form h1,
+  .auth-form.registration h1,
+  .auth-form .registration h1,
+  .auth-brand h2 {
+    font-size: var(--dashboard-type-page-mobile);
+  }
+}
+
+.settings-panel h2 {
+  font-size: var(--dashboard-type-section);
+}
+.detail-section h3 {
+  font-size: var(--dashboard-type-navigation);
+}
+.detail-section p,
+.order-item,
+.notice,
+.text-button {
+  font-size: var(--dashboard-type-label);
+}
+.pager,
+.main-footer {
+  font-size: var(--dashboard-type-caption);
+}
