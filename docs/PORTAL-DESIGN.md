@@ -6,6 +6,7 @@ Both apps use React, Vite, TypeScript, Arabic RTL and self-hosted IBM Plex Sans 
 
 - Admin: dark emerald navigation, porcelain canvas, restrained gold accents. Compact text and clear sections support daily account/restaurant/order review.
 - Delivery: deep navy navigation, cool canvas and teal actions. Order state, pickup address, driver assignment and delivery actions have priority.
+- Browser tabs use `AKEELA - الإدارة` and `AKEELA - شركة التوصيل`, with app-local shield and truck SVG favicons in `public/favicon.svg`. The Restaurant tab uses `AKEELA - المطعم - <page>` and a storefront favicon. Each HTML entry declares its icon before JavaScript loads; app assets stay same-origin and need no external service.
 - Desktop: 236px right sidebar, three real count cards, filters/table, optional left detail pane. Small screens use a keyboard-accessible drawer and stacked sections; tables scroll inside their panels.
 - Admin and Restaurant share typography tokens in packages/brand/tokens.css: 16px body/inputs, 14px tables/labels, 15px navigation/buttons, 13px captions, 19px section headings, and 26px desktop/22px phone page titles. Delivery keeps its existing 14px body/12px tables and identity. Original AKEELA logo is preserved. No generated logo or fictional data is shipped.
 - Use visible focus, native confirmation dialogs, safe errors, pending-write guards and reduced-motion support. Mutations use REST; realtime notifications only reload order reads.

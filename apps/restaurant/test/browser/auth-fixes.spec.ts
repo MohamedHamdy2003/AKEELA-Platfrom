@@ -14,7 +14,7 @@ test.use({
 
 async function openRegistration(page: Page) {
   await page.goto('/');
-  await expect(page).toHaveTitle('أكيلة | تسجيل الدخول');
+  await expect(page).toHaveTitle('AKEELA - المطعم - تسجيل الدخول');
   await page
     .getByRole('button', { name: 'إنشاء حساب مطعم', exact: true })
     .click();

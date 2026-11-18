@@ -192,7 +192,7 @@ function Workspace() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
   useEffect(() => {
-    document.title = `أكيلة | ${user ? (navigation.find((item) => item.key === route)?.label ?? 'لوحة المطعم') : 'تسجيل الدخول'}`;
+    document.title = `AKEELA - المطعم - ${user ? (navigation.find((item) => item.key === route)?.label ?? 'لوحة المطعم') : 'تسجيل الدخول'}`;
   }, [route, user]);
   async function logout() {
     setLoggingOut(true);

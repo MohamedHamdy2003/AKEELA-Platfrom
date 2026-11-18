@@ -8,6 +8,9 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
+- Browser tabs: all three dashboards have distinct same-origin SVG favicons (Admin shield, Restaurant storefront, Delivery truck) and `AKEELA - <Arabic app name>` titles. Restaurant preserves its current page suffix. These changes target dev only; production needs a separate owner-authorized release.
+- Tab verification: root npm run check and all 35 Chromium UI scenarios passed. A local browser check verified all three titles, one SVG favicon per app, correct SVG responses and reload behavior without page errors; icons were visually reviewed at 16/32/64px. Browser plugin not available; existing Playwright used. No VPS changes.
+
 | Scope                                                                 | State                                                                                                  |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | 01-04: Auth, Admin, customer addresses, restaurant profile/activation | Implemented                                                                                            |
