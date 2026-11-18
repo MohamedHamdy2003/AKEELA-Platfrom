@@ -4,7 +4,7 @@ Build features in the order below. Routes use the `/api/v1` prefix, omitted from
 
 ## Implementation Status
 
-Features 01-16 are implemented. Docker/Caddy and CI/CD are prepared; real Hostinger deployment is pending VPS/domain setup. Backups, OpenAPI, image cleanup and the future Admin delivery-fee API are not implemented.
+Features 01-17 are implemented. Docker/Caddy and CI/CD are prepared; real Hostinger deployment is pending VPS/domain setup. Backups, OpenAPI, image cleanup and the future Admin delivery-fee API are not implemented.
 
 ## Common Rules
 
@@ -314,3 +314,14 @@ Features 01-16 are implemented. Docker/Caddy and CI/CD are prepared; real Hostin
 - Features 01-16 below are implemented. Check `docs/STATUS.md` for verification and deployment state.
 - For each feature: build its routes, role/ownership checks, validation, and database rules; verify its main success and failure cases before moving on.
 - Quote responses are informational; checkout uses current server prices without tokens or price comparisons. Auth settings and setup are documented in `docs/AUTH.md`. Auth uses `Auth_Challenges` and `Auth_Sessions` from the database design; rate limits may also use a cache.
+
+## 17. Realtime Order Notifications
+
+Implemented with Socket.IO in the existing API process. See [realtime contract](docs/REALTIME.md) for the connection example, payload and recovery rules. No HTTP route or database table is added.
+
+| Event | Purpose | Allowed clients |
+| --- | --- | --- |
+| `order.created` | Re-fetch a new order after checkout commits. | Owning Customer, Restaurant, Admin |
+| `order.updated` | Re-fetch after a committed status/driver change. | Owning Customer, Restaurant, assigned Delivery_Company, Admin |
+
+JWT goes in handshake auth.token; namespace /orders, transport websocket, path /socket.io. Payload: order_id, status, company_id, driver_id, updated_at only. Re-fetch REST on every connection/event; no replay or delivery guarantee. Expired/revoked sessions cannot receive new updates. Browser apps are integrated; mobile must add the Socket.IO client.

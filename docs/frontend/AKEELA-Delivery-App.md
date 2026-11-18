@@ -1,7 +1,7 @@
 # AKEELA Delivery Company Application
 
-Frontend design scope for **delivery.akeela.com**. Login role: `Delivery_Company`.
-This application is planned; its APIs already exist. It is used by the company/dispatcher, not by drivers. DNS and frontend hosting are not configured here.
+Frontend design scope for **delivery.akeelaonline.tech**. Login role: `Delivery_Company`.
+This application is implemented for the company/dispatcher, not drivers. Production rollout requires DNS/private configuration and verification.
 
 ## Read First
 
@@ -101,9 +101,13 @@ API paths omit `/api/v1`. Configure the full API base URL; the backend domain is
 - Show field messages from `error.fields` and safe server errors. Do not assume a local hidden button replaces backend authorization.
 - Read paginated `data` and `meta`. Keep IDs, coordinates and money as strings. Display EGP and Africa/Cairo time; do not turn current-page sums into company earnings reports.
 - JWT access uses Authorization; refresh currently uses JSON tokens. Agree on browser persistence/remember-me before coding, coordinate refreshes and avoid retry loops. No shared-subdomain SSO or browser-exposed secrets are assumed.
-- OTP actions respect cooldown/expiry/errors; recovery messaging stays generic. No notifications/WebSocket feed exists; use manual REST refresh, with polling only after a design decision.
+- OTP actions respect cooldown/expiry/errors; recovery messaging stays generic. Socket.IO notifications invalidate order REST reads; reconnect also refreshes. See [realtime](../REALTIME.md).
 - Build order: auth → company profile → drivers → assigned orders/details → assignment → pickup/delivery → history/account/security → responsive/error checks.
 - Before implementation, agree on framework, language/RTL, branding, app setup in apps/delivery, browser token storage, refresh/polling strategy and optional maps. Exact CORS origins and subdomain hosting require deployment work later.
 - Out of scope: driver accounts, tracking, payouts, financial reports, delivery-fee settings, multiple-company routing, payments and new backend endpoints.
 
-Monorepo location: `apps/delivery`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app folder is reserved with README only. Use the root npm workspace/lockfile when implementation is authorized; see [Monorepo](../MONOREPO.md).
+Monorepo location: `apps/delivery`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
+
+## Current implementation
+
+React/Vite/TypeScript, Arabic RTL and memory-only sessions. See [portal design](../PORTAL-DESIGN.md) for identity and shared components. Order changes refresh through [Socket.IO](../REALTIME.md). No unsupported business actions were added.

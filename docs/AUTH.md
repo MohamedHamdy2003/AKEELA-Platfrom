@@ -75,3 +75,7 @@ Tests cover validation, roles/profiles, duplicate rollback, OTP expiry/attempts/
 New password policy applies at registration, reset, and password change. Login and current-password checks keep accepting existing valid credentials; they do not rewrite stored hashes. The approved minimum is eight characters with a letter and a digit (including Unicode letters/digits); maximum remains 128.
 
 Real email configuration and connectivity checks are in [GMAIL.md](GMAIL.md). The current Bruno collection is in [BRUNO.md](BRUNO.md). Future feature agents update requests and concise docs together. Local Gmail connection, TLS, and authentication were verified. Inbox delivery remains unconfirmed. The owner explicitly approved promoting the current Auth + Bruno release from dev to main; future main promotions still need explicit approval.
+
+## Compose Admin initialization
+
+Production init runs pending migrations, then the same create:admin:prod CLI. The CLI now returns success without modifications if an Admin exists; it never resets that account from changed ADMIN_* values. Initial creation requires ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_FULL_NAME and ADMIN_PHONE and uses the existing password/phone rules. Transactions and an advisory lock prevent concurrent duplicate creation. Empty values fail safely only when no Admin exists. Default ADMIN_VERIFIED=true; no company/customer is seeded. See [deployment](DEPLOYMENT.md).

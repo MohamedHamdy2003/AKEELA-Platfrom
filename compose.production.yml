@@ -1,10 +1,22 @@
 # Template only. Requires server-side secrets and an actual domain before deployment.
 services:
+  admin:
+    image: ${ADMIN_IMAGE:-akeela-admin:local}
+    restart: unless-stopped
+    networks: [edge]
+  restaurant:
+    image: ${RESTAURANT_IMAGE:-akeela-restaurant:local}
+    restart: unless-stopped
+    networks: [edge]
+  delivery:
+    image: ${DELIVERY_IMAGE:-akeela-delivery:local}
+    restart: unless-stopped
+    networks: [edge]
   api:
     image: ${API_IMAGE:-akeela-api:local}
     restart: unless-stopped
     init: true
-    environment:
+    environment: &api-environment
       NODE_ENV: production
       PORT: '3000'
       TZ: Africa/Cairo
@@ -38,8 +50,8 @@ services:
       - images:/app/storage/images
     networks: [edge, database]
     depends_on:
-      postgres:
-        condition: service_healthy
+      init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [
@@ -58,6 +70,23 @@ services:
       options:
         max-size: '10m'
         max-file: '3'
+  init:
+    image: ${API_IMAGE:-akeela-api:local}
+    restart: 'no'
+    init: true
+    command:
+      ['sh', '-c', 'npm run migration:run:prod && npm run create:admin:prod']
+    environment:
+      <<: *api-environment
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_FULL_NAME: ${ADMIN_FULL_NAME:-}
+      ADMIN_PHONE: ${ADMIN_PHONE:-}
+      ADMIN_VERIFIED: ${ADMIN_VERIFIED:-true}
+    networks: [database]
+    depends_on:
+      postgres:
+        condition: service_healthy
   postgres:
     image: postgres:17
     restart: unless-stopped
@@ -79,9 +108,9 @@ services:
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
-      ADMIN_DOMAIN: ${ADMIN_DOMAIN:-admin.akeela.com}
-      VENDOR_DOMAIN: ${VENDOR_DOMAIN:-vendor.akeela.com}
-      DELIVERY_DOMAIN: ${DELIVERY_DOMAIN:-delivery.akeela.com}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?Set ADMIN_DOMAIN}
+      VENDOR_DOMAIN: ${VENDOR_DOMAIN:?Set VENDOR_DOMAIN}
+      DELIVERY_DOMAIN: ${DELIVERY_DOMAIN:?Set DELIVERY_DOMAIN}
     ports:
       - '80:80'
       - '443:443'
@@ -89,13 +118,19 @@ services:
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./deploy/routes.caddy:/etc/caddy/routes.caddy:ro
-      - ./deploy/sites-enabled:/etc/caddy/sites-enabled:ro
+      - ./deploy/frontend-routes.caddy:/etc/caddy/frontend-routes.caddy:ro
       - images:/srv/images:ro
       - caddy_data:/data
       - caddy_config:/config
     networks: [edge]
     depends_on:
       api:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+      restaurant:
+        condition: service_healthy
+      delivery:
         condition: service_healthy
 networks:
   edge:

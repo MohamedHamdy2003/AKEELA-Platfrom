@@ -314,6 +314,12 @@ export class AuthService {
   }
 
   async authenticate(token: string): Promise<AuthActor> {
+    return (await this.authenticateAccess(token)).actor;
+  }
+
+  async authenticateAccess(
+    token: string,
+  ): Promise<{ actor: AuthActor; expiresAt: number }> {
     let payload: { sub?: unknown; sid?: unknown; exp?: unknown };
     try {
       payload = await this.jwt.verifyAsync(token, {
@@ -348,9 +354,12 @@ export class AuthService {
     if (!account) this.unauthorized();
     this.checkAccount(account);
     return {
-      userId: account.user_id,
-      sessionId: session.session_id,
-      role: account.role,
+      actor: {
+        userId: account.user_id,
+        sessionId: session.session_id,
+        role: account.role,
+      },
+      expiresAt: payload.exp * 1000,
     };
   }
 

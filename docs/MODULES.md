@@ -1,6 +1,6 @@
 # Module Ownership
 
-Features 01-16 are implemented, including restaurant, customer, Admin and delivery-company order operations. Twenty table mappings and the Orders_History view exist. Orders owns every order read and transition; Delivery and Restaurants expose transaction-aware validation only.
+Features 01-17 are implemented, including restaurant, customer, Admin and delivery-company order operations. Twenty table mappings and the Orders_History view exist. Orders owns every order read and transition; Delivery and Restaurants expose transaction-aware validation only.
 
 | Module        | Responsibilities                                                                                    | Owned logical tables / view                                 | Feature sections                                       |
 | ------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ |
@@ -15,7 +15,7 @@ Features 01-16 are implemented, including restaurant, customer, Admin and delive
 | `images`      | Upload validation, encoding, persistent files and URL assignment through domain services            | None                                                        | 15                                                     |
 | `health`      | Public process/database probes                                                                      | None                                                        | 16                                                     |
 
-All backend modules below live under `apps/api/src/modules`. Frontends are separate clients in reserved `apps/restaurant`, `apps/admin` and `apps/delivery` directories; they do not own database tables.
+All backend modules below live under `apps/api/src/modules`. Frontends are separate clients in implemented `apps/restaurant`, `apps/admin` and `apps/delivery` directories; they do not own database tables.
 
 ## Route ownership
 
@@ -29,19 +29,21 @@ All backend modules below live under `apps/api/src/modules`. Frontends are separ
 
 ## Dependency direction
 
-| Caller      | Permitted collaborators when needed                    |
-| ----------- | ------------------------------------------------------ |
-| Users       | No business module dependency                          |
-| Customers   | Users                                                  |
-| Restaurants | Users                                                  |
-| Delivery    | Users                                                  |
-| Catalog     | Restaurants                                            |
-| Auth        | Users, Customers, Restaurants, Delivery                |
-| Cart        | Customers, Restaurants, Catalog                        |
-| Orders      | Users, Customers, Restaurants, Catalog, Cart, Delivery |
+| Caller      | Permitted collaborators when needed                          |
+| ----------- | ------------------------------------------------------------ |
+| Users       | No business module dependency                                |
+| Customers   | Users                                                        |
+| Restaurants | Users                                                        |
+| Delivery    | Users                                                        |
+| Catalog     | Restaurants                                                  |
+| Auth        | Users, Customers, Restaurants, Delivery                      |
+| Cart        | Customers, Restaurants, Catalog                              |
+| Orders      | Auth, Users, Customers, Restaurants, Catalog, Cart, Delivery |
 
 Images may call Users, Customers, Restaurants and Catalog; Health uses the shared DataSource without table ownership.
 
 These are permitted directions, not imports to add in advance. Technical config/database dependencies are shared. Auth registers AccessGuard once as APP_GUARD. Routes are protected by default; public auth endpoints opt out with the common PublicRoute decorator, and logout explicitly remains protected. CurrentActor is a common HTTP decorator exposing only user/session IDs, never credentials. Other modules do not import Auth to authenticate requests, avoiding reverse dependencies. Business role, ownership, and activation checks remain in owning services.
 
 No other module may write Orders tables, and Orders may not bypass another module's service to write its tables. Foreign keys and cross-module transactions do not change ownership.
+
+Orders also owns the authenticated Socket.IO gateway for minimal post-commit order notifications. It reads Auth live sessions through the exported AuthService; Auth does not import Orders, so there is no circular dependency. See [REALTIME](REALTIME.md).

@@ -1,9 +1,16 @@
-# Admin application (reserved)
+# AKEELA Admin
 
-Planned origin: `https://admin.akeela.com`.
+Implemented React/Vite/TypeScript dashboard, Arabic RTL and memory-only sessions. Read [app instructions](AGENTS.md) and [design](../../docs/PORTAL-DESIGN.md).
 
-Read the root [AGENTS.md](../../AGENTS.md), local [app instructions](AGENTS.md) and [Admin design guide](../../docs/frontend/AKEELA-Admin-App.md) before work.
+From the repository root:
 
-No frontend source, dependencies, Docker image or deployment job exists yet. Use current-task decisions for framework, language/RTL and browser sessions; clarify only missing choices that block the requested work.
+```powershell
+npm ci
+npm run dev:admin
+npm run check:admin
+npm run test:e2e --workspace @akeela/admin
+```
 
-When implemented, add this directory to root npm workspaces, use the root lockfile, and add its own tests, Docker/static-build configuration, Caddy site and independent CI/release job. Keep frontend secrets separate from the API; public API configuration must never contain database, JWT signing or SMTP secrets.
+Local URL: http://127.0.0.1:5174. API default: /api/v1 through the Vite proxy to port 3000; the socket proxy uses /socket.io. Optional public VITE_API_BASE_URL only; never add secrets.
+
+Production: admin.akeelaonline.tech via [Docker/Caddy deployment](../../docs/DEPLOYMENT.md). Build from the repository root with apps/admin/Dockerfile.

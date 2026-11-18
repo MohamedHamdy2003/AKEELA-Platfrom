@@ -332,7 +332,9 @@ export function OrderDetails({
               </div>
             )}
             {order.status !== 'Pending' && (
-              <p className="muted">تظهر تحديثات التوصيل هنا عند تحديث الطلب.</p>
+              <p className="muted">
+                تظهر تحديثات الطلب لحظيًا، ويمكنك التحديث يدويًا أيضًا.
+              </p>
             )}
             <button
               className="text-button"

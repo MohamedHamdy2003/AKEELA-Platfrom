@@ -913,3 +913,14 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
 ```json
 {"status":"ok","checked_at":"2026-11-13T12:00:00.000+02:00"}
 ```
+
+## 17. Realtime Order Notifications
+
+Implemented with Socket.IO in the existing API process. See [realtime contract](docs/REALTIME.md) for the connection example, payload and recovery rules. No HTTP route or database table is added.
+
+| Event | Purpose | Allowed clients |
+| --- | --- | --- |
+| `order.created` | Re-fetch a new order after checkout commits. | Owning Customer, Restaurant, Admin |
+| `order.updated` | Re-fetch after a committed status/driver change. | Owning Customer, Restaurant, assigned Delivery_Company, Admin |
+
+JWT goes in handshake auth.token; namespace /orders, transport websocket, path /socket.io. Payload: order_id, status, company_id, driver_id, updated_at only. Re-fetch REST on every connection/event; no replay or delivery guarantee. Expired/revoked sessions cannot receive new updates. Browser apps are integrated; mobile must add the Socket.IO client.
