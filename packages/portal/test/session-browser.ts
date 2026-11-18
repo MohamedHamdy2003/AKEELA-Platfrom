@@ -54,6 +54,10 @@ export function sessionBrowserTests(
     await page
       .getByRole('button', { name: 'تسجيل الخروج', exact: true })
       .click();
+    await page
+      .getByRole('dialog', { name: 'تأكيد تسجيل الخروج' })
+      .getByRole('button', { name: 'تأكيد تسجيل الخروج', exact: true })
+      .click();
     await expect(
       page.getByRole('heading', { name: authHeading }),
     ).toBeVisible();

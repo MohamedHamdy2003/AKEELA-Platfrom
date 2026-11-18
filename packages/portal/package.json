@@ -10,6 +10,7 @@
     "./models": "./src/models.ts",
     "./realtime": "./src/realtime.ts",
     "./ui": "./src/ui.tsx",
+    "./logout-confirmation": "./src/logout-confirmation.tsx",
     "./styles.css": "./src/styles.css",
     "./screens": "./src/screens.tsx"
   },

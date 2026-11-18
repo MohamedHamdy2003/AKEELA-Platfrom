@@ -1,3 +1,4 @@
+import { LogoutConfirmation } from '@akeela/portal/logout-confirmation';
 import {
   Component,
   useCallback,
@@ -31,7 +32,7 @@ import { Home } from './features/home';
 import { Catalog } from './features/catalog';
 import { Orders } from './features/orders';
 import { Account, RestaurantProfile } from './features/settings';
-import { ButtonContent, Failure, Loading, Notice } from './components/ui';
+import { Failure, Loading, Notice } from './components/ui';
 import { Presence } from './components/presence';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import brandIcon from '@akeela/brand/icon.png';
@@ -127,7 +128,9 @@ function Workspace() {
   }, [mobile]);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const logoutTrigger = useRef<HTMLButtonElement>(null);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
   const [initialOrder, setInitialOrder] = useState<string | null>(null);
   const navigate = useCallback((key: string) => {
     window.location.hash = '/' + key;
@@ -203,16 +206,8 @@ function Workspace() {
     document.title = `AKEELA - المطعم - ${user ? (navigation.find((item) => item.key === route)?.label ?? 'لوحة المطعم') : 'تسجيل الدخول'}`;
   }, [route, user]);
   async function logout() {
-    setLoggingOut(true);
-    setError(null);
-    try {
-      await api.request('/auth/logout', { method: 'POST' });
-      api.clearSession();
-    } catch (cause) {
-      setError(cause);
-    } finally {
-      setLoggingOut(false);
-    }
+    await api.request('/auth/logout', { method: 'POST' });
+    api.clearSession();
   }
   if (restoring || restoreError)
     return (
@@ -282,6 +277,7 @@ function Workspace() {
       <div className="mobile-top" inert={mobile}>
         <img src={logo} alt="أكيلة" />
         <button
+          ref={menuTrigger}
           className="icon-button"
           aria-label="فتح القائمة"
           aria-expanded={mobile}
@@ -359,19 +355,34 @@ function Workspace() {
         </nav>
         <button
           className="logout"
-          disabled={loggingOut}
-          onClick={logout}
-          aria-label={loggingOut ? 'جارٍ الخروج…' : 'تسجيل الخروج'}
+          ref={logoutTrigger}
+          onClick={() => {
+            setMobile(false);
+            setLogoutOpen(true);
+          }}
+          aria-label="تسجيل الخروج"
+          aria-haspopup="dialog"
           title={collapsed ? 'تسجيل الخروج' : undefined}
         >
           <LogOut size={23} strokeWidth={1.7} aria-hidden="true" />
-          <span className="nav-label">
-            <ButtonContent busy={loggingOut} pending="جارٍ الخروج…">
-              تسجيل الخروج
-            </ButtonContent>
-          </span>
+          <span className="nav-label">تسجيل الخروج</span>
         </button>
       </aside>
+      {logoutOpen && (
+        <LogoutConfirmation
+          appName="لوحة المطعم"
+          confirm={logout}
+          closed={() => {
+            setLogoutOpen(false);
+            requestAnimationFrame(() => {
+              (compactNavigation
+                ? menuTrigger.current
+                : logoutTrigger.current
+              )?.focus();
+            });
+          }}
+        />
+      )}
       <main id="main-content" className="workspace" inert={mobile}>
         <header className="topbar">
           <span>لوحة المطعم</span>

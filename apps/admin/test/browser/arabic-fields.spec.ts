@@ -145,6 +145,13 @@ test('dashboard native and server field feedback is Arabic; authentication remai
     'regular expression',
   );
   await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: 'تأكيد تسجيل الخروج' })
+    .getByRole('button', { name: 'تأكيد تسجيل الخروج', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'مرحبًا بعودتك' }),
+  ).toBeVisible();
   await page.reload();
   await expect(
     page.getByRole('heading', { name: 'مرحبًا بعودتك' }),
