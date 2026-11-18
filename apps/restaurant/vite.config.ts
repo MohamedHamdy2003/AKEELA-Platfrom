@@ -8,6 +8,11 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
+      '/socket.io': {
+        target: 'http://127.0.0.1:3000',
+        ws: true,
+        changeOrigin: true,
+      },
       '/api': { target: 'http://127.0.0.1:3000', changeOrigin: true },
       '/images': { target: 'http://127.0.0.1:3000', changeOrigin: true },
     },

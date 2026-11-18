@@ -1,6 +1,6 @@
 # Restaurant Frontend Agent
 
-Follow the root [AGENTS.md](../../AGENTS.md) first. Work in `apps/restaurant`; role `Restaurant`, origin `vendor.akeela.com`.
+Follow the root [AGENTS.md](../../AGENTS.md) first. Work in `apps/restaurant`; role `Restaurant`, origin `restaurant.akeelaonline.tech`.
 
 1. Read the [Restaurant app guide](../../docs/frontend/AKEELA-Restaurant-App.md) for screens, forms and build order. Do not read other frontend guides for a restaurant-only task.
 2. In root Features and Requests/Responses, use sections 01, 04-08, 13 and the restaurant routes in 15, only as needed for the current feature. Section 09 is optional public-menu preview, not a management API. Read common formats and the referenced response models; use the Restaurant Owner role flow.

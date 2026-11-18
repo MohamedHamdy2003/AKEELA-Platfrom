@@ -14,7 +14,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 35
     outputs:
       api_changed: ${{ steps.changes.outputs.api }}
     services:
@@ -52,7 +52,13 @@ jobs:
         run: npm run check:api
       - if: steps.changes.outputs.api == 'true'
         run: npm run test:integration
-      - run: npm audit --omit=dev --audit-level=moderate
+      - if: steps.changes.outputs.frontends == 'true'
+        run: npm run check:restaurant && npm run check:admin && npm run check:delivery
+      - if: steps.changes.outputs.frontends == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.changes.outputs.frontends == 'true'
+        run: npm run test:e2e --workspace @akeela/restaurant && npm run test:e2e --workspace @akeela/admin && npm run test:e2e --workspace @akeela/delivery
+      - run: npm run audit:runtime
       - run: bash -n deploy/bootstrap-vps.sh deploy/release.sh
-      - if: steps.changes.outputs.api == 'true'
+      - if: steps.changes.outputs.frontends == 'true'
         run: npm run smoke:production

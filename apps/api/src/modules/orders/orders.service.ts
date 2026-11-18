@@ -1,3 +1,4 @@
+import { OrderEventsGateway, OrderEvent } from './order-events.gateway';
 import { AuthActor } from '../../common/http/current-actor.decorator';
 import { UsersService } from '../users/users.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
@@ -24,7 +25,18 @@ export class OrdersService {
     private readonly users: UsersService,
     private readonly restaurants: RestaurantsService,
     private readonly delivery: DeliveryService,
+    private readonly events: OrderEventsGateway,
   ) {}
+  private async announce(orderId: string, event: OrderEvent) {
+    try {
+      const order = await this.db
+        .getRepository(Order)
+        .findOneBy({ order_id: orderId });
+      if (order) await this.events.notify(event, order);
+    } catch {
+      this.events.reportFailure();
+    }
+  }
   private summary(order: Order) {
     return {
       order_id: order.order_id,
@@ -89,7 +101,7 @@ export class OrdersService {
     };
   }
   async checkout(userId: string, input: CheckoutDto) {
-    return this.cart.transaction(userId, async (m) => {
+    const result = await this.cart.transaction(userId, async (m) => {
       const ready = await this.cart.ready(userId, input, m);
       const order = await m.getRepository(Order).save(
         m.getRepository(Order).create({
@@ -134,6 +146,8 @@ export class OrdersService {
       await this.cart.clearInTransaction(userId, m);
       return this.details(userId, order.order_id, m);
     });
+    await this.announce(result.order_id, 'order.created');
+    return result;
   }
   async list(userId: string, query: ListOrdersQuery) {
     const page = resolvePagination(query);
@@ -286,16 +300,26 @@ export class OrdersService {
   ) {
     for (let attempt = 0; ; attempt++) {
       try {
-        return await this.db.transaction('SERIALIZABLE', async (m) => {
+        const result = await this.db.transaction('SERIALIZABLE', async (m) => {
           const scope = await this.scope(actor, m, true);
           const order = await this.scopedQuery(scope, m)
             .andWhere('o.order_id = :id', { id })
             .setLock('pessimistic_write')
             .getOne();
           if (!order) throw new ApiError(404, 'NOT_FOUND', 'Order not found.');
+          const before = [order.status, order.company_id, order.driver_id].join(
+            ':',
+          );
           await work(order, m);
-          return this.state(order);
+          return {
+            state: this.state(order),
+            changed:
+              before !==
+              [order.status, order.company_id, order.driver_id].join(':'),
+          };
         });
+        if (result.changed) await this.announce(id, 'order.updated');
+        return result.state;
       } catch (error) {
         const code = (error as { driverError?: { code?: string } }).driverError
           ?.code;
@@ -365,7 +389,7 @@ export class OrdersService {
     });
   }
   async cancel(userId: string, id: string) {
-    return this.cart.transaction(userId, async (m) => {
+    const result = await this.cart.transaction(userId, async (m) => {
       const repo = m.getRepository(Order);
       const order = await repo
         .createQueryBuilder('o')
@@ -389,5 +413,7 @@ export class OrdersService {
         updated_at: saved.updated_at,
       };
     });
+    await this.announce(result.order_id, 'order.updated');
+    return result;
   }
 }

@@ -90,4 +90,10 @@
 ## Images and Deployment Status
 
 - Customer: upload an avatar. Active restaurant owner: upload restaurant, product and offer images. The API saves a public image URL.
-- Features 01-16 are implemented. Docker/Caddy and CI/CD are prepared; live Hostinger setup awaits the VPS/domain. Backup automation and the future Admin delivery-fee API remain deferred.
+- Features 01-17 are implemented. Docker/Caddy and CI/CD are prepared; Hostinger Docker/private configuration and DNS are ready; public TLS/application rollout are pending. Backup automation and the future Admin delivery-fee API remain deferred.
+
+## Realtime — All Roles
+
+After login, connect Socket.IO with the current JWT. Each role receives only authorized order notifications. Re-fetch the order list/open order after a notification or reconnection. Refresh JWT through REST when needed; disconnect on logout. See [realtime contract](docs/REALTIME.md).
+
+Compose runs migrations and creates the single Admin only when absent. Restarting never resets an existing Admin. Admin/Restaurant/Delivery dashboards are implemented; live deployment status is tracked in [STATUS](docs/STATUS.md).

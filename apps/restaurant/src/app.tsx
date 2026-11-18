@@ -22,6 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import logo from '@akeela/brand/logo.png';
+import { watchOrders } from '@akeela/portal/realtime';
 import { api } from './lib/api';
 import type { CatalogKind, Dashboard, Profile, User } from './lib/models';
 import { today } from './lib/format';
@@ -163,6 +164,14 @@ function Workspace() {
     };
   }, [refreshStatus]);
   const authenticated = !!user;
+  useEffect(() => {
+    if (!authenticated || !dashboard?.can_manage) return;
+    return watchOrders({
+      baseUrl: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+      getToken: () => api.tokenForRealtime(),
+      changed: () => window.dispatchEvent(new Event('akeela:orders-changed')),
+    });
+  }, [authenticated, dashboard?.can_manage]);
   useEffect(() => {
     if (authenticated) void refreshStatus();
   }, [authenticated, route, refreshStatus]);

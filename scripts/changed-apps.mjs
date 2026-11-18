@@ -16,6 +16,17 @@ export function apiAffected(paths) {
     );
   });
 }
+export function frontendsAffected(paths) {
+  return (
+    apiAffected(paths) ||
+    paths.some(
+      (file) =>
+        /^apps\/(admin|restaurant|delivery)\//.test(
+          file.replaceAll('\\', '/'),
+        ) && !file.endsWith('.md'),
+    )
+  );
+}
 
 if (
   process.argv[1] &&
@@ -24,6 +35,7 @@ if (
   const base = process.env.BASE_SHA ?? '';
   const head = process.env.HEAD_SHA ?? 'HEAD';
   let affected = true;
+  let frontends = true;
   if (/^[a-f0-9]{40}$/.test(base) && !/^0+$/.test(base)) {
     try {
       const files = execFileSync(
@@ -36,12 +48,13 @@ if (
         .split('\0')
         .filter(Boolean);
       affected = apiAffected(files);
+      frontends = frontendsAffected(files);
     } catch {
       // Missing history must never silently skip API validation/publication.
       affected = true;
     }
   }
-  const result = `api=${affected}\n`;
+  const result = `api=${affected}\nfrontends=${frontends}\n`;
   if (process.env.GITHUB_OUTPUT)
     appendFileSync(process.env.GITHUB_OUTPUT, result);
   process.stdout.write(result);

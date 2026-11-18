@@ -87,3 +87,11 @@ Official references used for foundation choices: [Nest modules](https://docs.nes
 - Keep API local environment in `apps/api/.env`, production service environment outside Git. Docker builds from the root using `apps/api/Dockerfile`; existing production volumes/image identity remain compatible.
 - API checks/publication are affected-path aware. Frontend CI/deployment is added with each actual application, not simulated now. Caddy frontend templates are disabled until their application and DNS are ready.
 - The owner authorized GitHub push for this change; feature PRs still target dev and a future main promotion needs explicit approval.
+
+## Dashboards, realtime and deployment — 2026-11-18
+
+Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and memory-only sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant imports only the realtime helper and keeps its UI. Root check and consolidated CI cover all workspaces.
+
+Socket.IO runs inside the single API process. Events invalidate authorized REST reads after order commits; no schema, microservice, Redis or durable event log is added. See [REALTIME](REALTIME.md) and [portal design](PORTAL-DESIGN.md).
+
+The owner purchased Hostinger KVM 2 at 2.25.12.243, France. SSH confirmed Ubuntu 26.04.1 LTS. Domain: akeelaonline.tech; API/admin/vendor/delivery subdomains. Production Compose includes all services plus one-off migrations and idempotent Admin initialization. Existing Admin values are never reset. See [DEPLOYMENT](DEPLOYMENT.md).

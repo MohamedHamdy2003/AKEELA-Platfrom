@@ -1,13 +1,13 @@
 # AKEELA Admin Application
 
-Frontend design scope for **admin.akeela.com**. Login role: `Admin`.
-This application is planned; the APIs below already exist. DNS and frontend hosting are not configured by this document.
+Frontend design scope for **admin.akeelaonline.tech**. Login role: `Admin`.
+This application is implemented locally. Production hosting requires the tested release and valid DNS; see [deployment](../DEPLOYMENT.md).
 
 ## Read First
 
 Read root [AGENTS.md](../../AGENTS.md) and [this app's instructions](../../apps/admin/AGENTS.md) for the scoped reading path. Use this guide for screens and permissions; consult only the matching canonical API sections/models for the feature in progress. Do not read other app guides or the full backend for orientation. Existing root specifications remain authoritative; this guide adds no backend features.
 
-API paths omit `/api/v1`. Use a configured full API base URL; the backend domain is undecided. `admin.akeela.com` hosts the frontend, not a separate backend/database.
+API paths omit `/api/v1`. Use a configured full API base URL; the backend domain is undecided. `admin.akeelaonline.tech` hosts the frontend, not a separate backend/database.
 
 ## Screens and Features
 
@@ -101,9 +101,13 @@ API paths omit `/api/v1`. Use a configured full API base URL; the backend domain
 - Lists use paginated `data` and `meta`; show only supported filters. IDs, money and coordinates stay strings. Money is EGP; timestamps display in Africa/Cairo. A page subtotal is not an all-time revenue metric.
 - Access JWT uses Authorization; refresh currently uses a JSON token. Browser persistence and remember-me need a decision before coding. Coordinate refreshes; avoid retry loops, shared-subdomain SSO assumptions and secrets in frontend configuration.
 - OTP resend/reset follows server cooldown, expiry and attempt errors; show Retry-After when provided. Recovery uses a generic account-eligibility message.
-- No real-time notifications feed exists; use manual REST refresh. Agree on polling separately if needed.
+- Socket.IO notifications invalidate order REST reads; reconnect also refreshes. See [realtime](../REALTIME.md).
 - Build order: auth → user list/detail → restaurant approval → company creation → order monitoring/failure → account/security → responsive/error checks.
 - Before implementation, agree on framework, language/RTL, branding, frontend app setup in apps/admin, browser token storage and refresh strategy. Deployment must later configure exact frontend CORS origins and subdomain hosting.
 - Not supported: creating more Admins, manual company assignment, payment/refund tools, revenue reports, commission settings, general delivery-fee editing, notifications, data export and arbitrary database administration. Ask for specifications/backend APIs before adding them.
 
-Monorepo location: `apps/admin`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app folder is reserved with README only. Use the root npm workspace/lockfile when implementation is authorized; see [Monorepo](../MONOREPO.md).
+Monorepo location: `apps/admin`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
+
+## Current implementation
+
+React/Vite/TypeScript, Arabic RTL and memory-only sessions. See [portal design](../PORTAL-DESIGN.md) for identity and shared components. Order changes refresh through [Socket.IO](../REALTIME.md). No unsupported business actions were added.

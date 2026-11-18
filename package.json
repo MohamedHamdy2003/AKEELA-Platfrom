@@ -10,7 +10,10 @@
   "workspaces": [
     "apps/api",
     "apps/restaurant",
-    "packages/brand"
+    "packages/brand",
+    "packages/portal",
+    "apps/admin",
+    "apps/delivery"
   ],
   "scripts": {
     "build": "npm run build --workspace akeela-api --",
@@ -28,7 +31,7 @@
     "create:admin:prod": "npm run create:admin:prod --workspace akeela-api --",
     "smtp:check": "npm run smtp:check --workspace akeela-api --",
     "smtp:check:prod": "npm run smtp:check:prod --workspace akeela-api --",
-    "lint": "eslint apps/api/src apps/api/test scripts",
+    "lint": "eslint apps/api/src apps/api/test packages/portal/src packages/portal/test scripts",
     "format": "prettier --write apps packages scripts docs deploy README.md AGENTS.md *.json *.yml .github/workflows .prettierrc.json",
     "format:check": "prettier --check apps packages scripts docs deploy README.md AGENTS.md *.json *.yml .github/workflows .prettierrc.json",
     "docs:check": "node scripts/check-docs.mjs",
@@ -36,17 +39,24 @@
     "test:tools": "node --test scripts/*.test.mjs",
     "check:repo": "npm run lint && npm run format:check && npm run docs:check && npm run bruno:check && npm run test:tools",
     "check:api": "npm run typecheck && npm test && npm run build",
-    "check": "npm run check:repo && npm run check:api && npm run check:restaurant",
+    "check": "npm run check:repo && npm run check:api && npm run check:restaurant && npm run check:admin && npm run check:delivery",
     "check:restaurant": "npm run check --workspace @akeela/restaurant",
     "dev:restaurant": "npm run dev --workspace @akeela/restaurant",
     "setup:local": "node scripts/setup-local.mjs",
-    "smoke:production": "node scripts/smoke.mjs"
+    "smoke:production": "node scripts/smoke.mjs",
+    "check:admin": "npm run check --workspace @akeela/admin",
+    "check:delivery": "npm run check --workspace @akeela/delivery",
+    "dev:admin": "npm run dev --workspace @akeela/admin",
+    "dev:delivery": "npm run dev --workspace @akeela/delivery",
+    "audit:runtime": "node scripts/audit-runtime.mjs",
+    "prepare:production": "node scripts/prepare-production.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@usebruno/lang": "0.41.0",
     "eslint": "10.14.0",
     "prettier": "3.10.1",
-    "typescript-eslint": "8.72.2"
+    "typescript-eslint": "8.72.2",
+    "@playwright/test": "1.65.1"
   }
 }

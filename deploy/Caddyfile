@@ -4,4 +4,12 @@
 {$APP_DOMAIN} {
 	import /etc/caddy/routes.caddy
 }
-import /etc/caddy/sites-enabled/*.caddy
+{$ADMIN_DOMAIN} {
+	import /etc/caddy/frontend-routes.caddy admin
+}
+{$VENDOR_DOMAIN} {
+	import /etc/caddy/frontend-routes.caddy restaurant
+}
+{$DELIVERY_DOMAIN} {
+	import /etc/caddy/frontend-routes.caddy delivery
+}

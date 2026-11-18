@@ -1,3 +1,5 @@
+import { AuthModule } from '../auth/auth.module';
+import { OrderEventsGateway } from './order-events.gateway';
 import { UsersModule } from '../users/users.module';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { DeliveryModule } from '../delivery/delivery.module';
@@ -9,8 +11,14 @@ import { CartModule } from '../cart/cart.module';
 import { OrdersService } from './orders.service';
 import { CustomerOrdersController } from './customer-orders.controller';
 @Module({
-  imports: [CartModule, UsersModule, RestaurantsModule, DeliveryModule],
-  providers: [OrdersService],
+  imports: [
+    AuthModule,
+    CartModule,
+    UsersModule,
+    RestaurantsModule,
+    DeliveryModule,
+  ],
+  providers: [OrdersService, OrderEventsGateway],
   controllers: [
     CustomerOrdersController,
     RestaurantOrdersController,

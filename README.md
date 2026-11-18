@@ -1,24 +1,24 @@
 # AKEELA Ordering Platform
 
-Restaurant frontend is implemented locally in `apps/restaurant` (React/Vite, Arabic RTL). Start with `npm run dev:restaurant`; see the [Restaurant run guide](apps/restaurant/README.md) and [shared design system](docs/DESIGN-SYSTEM.md). Admin/Delivery remain reserved; no frontend is deployed. The API/migration baseline below is unchanged.
+Three React/Vite/TypeScript dashboards are implemented: Restaurant, Admin and Delivery Company, with Arabic RTL and memory-only sessions. Admin and Delivery have separate visual identities. [Run guides](docs/MONOREPO.md) · [Portal design](docs/PORTAL-DESIGN.md).
 
 AKEELA monorepo with a restaurant ordering backend using NestJS, PostgreSQL and TypeORM. One modular monolith, one database and four roles: Customer, Restaurant, Delivery_Company and Admin.
 
-Features 01-14 cover authentication, restaurant approval, catalog/addons/offers, customer addresses/cart/checkout, history and delivery. Features 15-16 add image uploads and health probes. Includes 81 Bruno requests, PostgreSQL integration tests, Docker/Caddy and GitHub CI/CD.
+Features 01-14 cover authentication, restaurant approval, catalog/addons/offers, customer addresses/cart/checkout, history and delivery. Features 15-16 add image uploads and health probes. Feature 17 adds authorized Socket.IO order notifications. Includes 81 Bruno requests, PostgreSQL integration tests, Docker/Caddy and GitHub CI/CD.
 
 ## Repository layout
 
 ```text
 apps/api/          NestJS API, tests and Dockerfile
-apps/restaurant/   Reserved vendor frontend
-apps/admin/        Reserved Admin frontend
-apps/delivery/     Reserved company frontend
+apps/restaurant/   Restaurant dashboard
+apps/admin/        Admin dashboard
+apps/delivery/     Company dispatcher dashboard
 docs/              Shared architecture and frontend specifications
 deploy/            Caddy, VPS preparation and release assets
 bruno/AKEELA/      Maintained API collection
 ```
 
-Only the API is implemented. Frontend folders contain README instructions, with no application scaffold or frontend deployment. Use npm workspaces and the single root lockfile; read [MONOREPO.md](docs/MONOREPO.md).
+API and all three browser applications are implemented. Use npm workspaces and the single root lockfile; read [MONOREPO.md](docs/MONOREPO.md).
 
 ## Start locally
 
@@ -30,6 +30,7 @@ npm run setup:local
 docker compose up -d
 npm run migration:run
 npm run start:dev
+# Separate terminals: dev:restaurant (5173), dev:admin (5174), dev:delivery (5175)
 ```
 
 Run these commands from the repository root. Local API secrets live in `apps/api/.env`; setup preserves an existing file. Review configuration before migrations. API: `http://localhost:3000/api/v1`. Health: `/api/v1/health/ready`. Images: `http://localhost:3000/images/<filename>`. Mailpit: `http://localhost:18025`.
@@ -48,6 +49,7 @@ Every agent/developer must read [AGENTS.md](AGENTS.md) and relevant documentatio
 | [Features](AKEELA-Features.md)                     | Scope, rules and routes                       |
 | [Requests/Responses](AKEELA-Responses-Requests.md) | API payloads/results                          |
 | [Flows](AKEELA-Flows.md)                           | Role journeys                                 |
+| [Realtime orders](docs/REALTIME.md)                | Socket.IO contract and mobile integration     |
 | [Images](docs/IMAGES.md)                           | Uploads, URLs and persistence                 |
 | [Hostinger deployment](docs/DEPLOYMENT.md)         | VPS setup, Docker/Caddy, secrets and recovery |
 | [GitHub flow](docs/GITHUB-FLOW.md)                 | Feature PR → dev → owner-approved main        |
@@ -64,8 +66,8 @@ Integration tests require dedicated local PostgreSQL TEST_DATABASE_URL ending in
 
 ## Deployment
 
-Target: one Hostinger Ubuntu 24.04 VPS with Caddy HTTPS, non-root API and private PostgreSQL containers. Volumes preserve database, images and certificates. CI checks PRs; main releases publish GHCR images and optionally deploy immutable digests through pinned SSH.
+Target: purchased Hostinger KVM 2 VPS (2.25.12.243), Ubuntu 26.04.1 LTS with Caddy HTTPS, non-root API and private PostgreSQL containers. Volumes preserve database, images and certificates. CI checks PRs; main releases publish GHCR images and optionally deploy immutable digests through pinned SSH.
 
-VPS/domain are not configured yet. Deployment stays disabled until DEPLOY_ENABLED and server settings are added. Local TLS/persistence are tested; public certificates and production email need server verification. Backup automation is deferred.
+Domain: akeelaonline.tech, with api/admin/restaurant/delivery subdomains. Docker/private configuration and public DNS are ready. Public TLS and actual application rollout await the reviewed release. Deployment stays disabled until DEPLOY_ENABLED and server settings are added. Local TLS/persistence are tested; public certificates and production email need server verification. Backup automation is deferred.
 
-API image builds use `docker build -f apps/api/Dockerfile -t akeela-api:local .` from the root. Caddy frontend site templates are disabled until their applications and DNS are ready. API CI/build/publication responds to API/shared-file changes; future frontend build/release jobs must be added with their applications.
+Build images from root using each apps/<app>/Dockerfile. Production Compose starts PostgreSQL, migrations/idempotent Admin initialization, API, three static frontends and Caddy in one command; see [deployment](docs/DEPLOYMENT.md). Restart never resets an existing Admin.

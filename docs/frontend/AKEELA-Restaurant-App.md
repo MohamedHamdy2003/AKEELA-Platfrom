@@ -2,14 +2,14 @@
 
 Implementation update (2026-11-14): the local React/Vite Arabic RTL client now implements the supported screens below. See [run guide](../../apps/restaurant/README.md) and [design system](../DESIGN-SYSTEM.md). The owner chose memory-only browser tokens; refresh/reload requires login. The planning statements below describe the original baseline; no public hosting or live authenticated integration verification is implied.
 
-Frontend design scope for **vendor.akeela.com**. Login role: `Restaurant`.
-This application is planned; the APIs below already exist. DNS and frontend hosting are not configured by this document.
+Frontend design scope for **restaurant.akeelaonline.tech**. Login role: `Restaurant`.
+This application is implemented locally. Production hosting requires the tested release and valid DNS; see [deployment](../DEPLOYMENT.md).
 
 ## Read First
 
 Read root [AGENTS.md](../../AGENTS.md) and [this app's instructions](../../apps/restaurant/AGENTS.md) for the scoped reading path. Use this guide for screens and permissions; consult only the matching canonical API sections/models for the feature in progress. Do not read other app guides or the full backend for orientation. Existing root specifications remain authoritative; this guide adds no backend features.
 
-All API paths below omit `/api/v1`. Configure the full API base URL; the backend domain is not decided here. The vendor domain is a frontend origin, not an API prefix.
+All API paths below omit `/api/v1`. Configure the full API base URL; the API domain is api.akeelaonline.tech. The vendor domain is a frontend origin, not an API prefix.
 
 ## Screens and Features
 
@@ -126,10 +126,14 @@ All API paths below omit `/api/v1`. Configure the full API base URL; the backend
 
 - Include loading, empty, success, validation, forbidden, not-found and retry states. Map `error.fields` to form inputs. On activation denial, refetch profile/dashboard and lock management.
 - Read paginated `data` and `meta`; keep IDs, money and coordinates as strings. Display EGP and Cairo time. Do not present page totals as all-time analytics.
-- JWT access goes in Authorization. Refresh tokens currently travel in JSON; browser persistence/remember-me is undecided. Coordinate refreshes and never loop retries. Do not assume SSO across subdomains or put secrets in frontend configuration.
-- Orders/status use REST refresh; no WebSocket/push API exists. Polling interval, if wanted, is a design decision.
+- JWT access goes in Authorization. Refresh tokens travel in JSON and stay in memory; reload requires login. Coordinate refreshes and never loop retries. Do not assume SSO across subdomains or put secrets in frontend configuration.
+- Orders use REST reads with Socket.IO invalidation notifications; see [realtime](../REALTIME.md).
 - Proposed build order: auth → activation/profile → categories/products → addons → offers/images → orders → error/responsive checks.
 - Before implementation, agree on framework, Arabic/English and RTL, branding, app setup in apps/restaurant, browser token storage and refresh strategy. DNS/Caddy hosting and exact CORS origins need a separate deployment change.
 - Out of scope: payments/refunds, revenue reports, notifications, driver tracking, staff accounts, multiple restaurants per owner and new backend endpoints. This file authorizes documentation, not their implementation.
 
-Monorepo location: `apps/restaurant`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app folder is reserved with README only. Use the root npm workspace/lockfile when implementation is authorized; see [Monorepo](../MONOREPO.md).
+Monorepo location: `apps/restaurant`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
+
+## Current implementation
+
+React/Vite/TypeScript, Arabic RTL and memory-only sessions. The existing Restaurant identity is preserved. Order changes refresh through [Socket.IO](../REALTIME.md). No unsupported business actions were added.

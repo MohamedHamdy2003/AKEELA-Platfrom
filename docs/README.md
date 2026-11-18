@@ -70,3 +70,8 @@ The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery`
 3. Update the relevant source document and architecture/conventions when an approved decision changes them.
 4. Update implementation status and checks. All unimplemented features must remain labeled as planned.
 5. Run `npm run docs:check`; keep endpoint method/path inventories aligned in the two API documents.
+
+- [Realtime orders](REALTIME.md): Socket.IO connection, permissions, payload and REST recovery.
+- [Admin/Delivery design](PORTAL-DESIGN.md): identity, shared components and checks.
+
+- [Security maintenance](SECURITY.md): reviewed dependency exception and expiry.

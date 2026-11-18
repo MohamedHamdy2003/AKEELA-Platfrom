@@ -9,8 +9,8 @@
 work
 bruno
 docs
-apps/admin
-apps/delivery
 apps/api/src
 apps/api/test
 apps/restaurant/test
+
+admin-credentials.local.txt

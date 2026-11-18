@@ -15,8 +15,8 @@ docs
 bruno
 scripts
 deploy
-apps/admin
-apps/restaurant
-apps/delivery
+**/test
 apps/api/test
 AKEELA-*.md
+
+admin-credentials.local.txt
