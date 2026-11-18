@@ -4,6 +4,7 @@
   justify-content: center;
   width: 30px;
   height: 30px;
+  padding: 0;
   flex-shrink: 0;
   border: 1px solid #cfc1a2;
   border-radius: 8px;
@@ -22,6 +23,27 @@
 .email-verification.unverified {
   color: #a12834;
   background: rgb(195 52 63 / 9%);
+}
+.email-verification.is-clickable {
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.email-verification.is-clickable:hover {
+  transform: translateY(-1px) scale(1.06);
+  box-shadow: 0 4px 10px rgb(0 0 0 / 12%);
+  border-color: currentColor;
+}
+.email-verification.is-clickable:active {
+  transform: translateY(0) scale(0.96);
+  box-shadow: none;
+}
+.email-verification.is-clickable:focus-visible {
+  outline: 2px solid var(--p-accent, #146044);
+  outline-offset: 2px;
 }
 .email-cell {
   display: flex;
