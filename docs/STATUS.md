@@ -8,6 +8,9 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
+- UI detail update: Admin user/company, restaurant and Delivery driver lists separate IDs from names. Admin verification labels use spaced green/red translucent pills in lists and details. Single-select arrows have a shared RTL/LTR inset across all three apps, including compact date controls; native selection/accessibility remains. Dev-only change, no API or deployment change.
+- Detail verification: root npm run check and all 46 Chromium scenarios passed (11 Admin, 5 Delivery, 30 Restaurant). Desktop/phone user lists verify separate IDs, both email states, badge spacing and working filters. Screenshots of those lists, compact dates, Restaurant product forms and Delivery assignment were reviewed. Browser plugin not available; existing Playwright with API fixtures used, without production data writes.
+
 - Browser refresh now restores verified sessions in all three dashboards using per-tab sessionStorage, server /me checks and existing refresh-token rotation. Logout/revocation still end the session. Network failures show retry; see AUTH.md for storage scope and limits. This supersedes the earlier memory-only decision and targets dev only.
 - Session verification: root npm run check and all 44 Chromium scenarios passed, including reload/route preservation, token rotation, logout, revoked/corrupt sessions and mobile retry after a temporary bootstrap failure. Unit tests cover all three clients, storage isolation/blocked storage and late-response races. Browser plugin not available; existing Playwright and local API fixtures used. No production sessions or database behavior were changed.
 

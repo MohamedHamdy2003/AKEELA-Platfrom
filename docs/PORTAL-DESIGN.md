@@ -10,6 +10,8 @@ Both apps use React, Vite, TypeScript, Arabic RTL and self-hosted IBM Plex Sans 
 - Desktop: 236px right sidebar, three real count cards, filters/table, optional left detail pane. Small screens use a keyboard-accessible drawer and stacked sections; tables scroll inside their panels.
 - Admin and Restaurant share typography tokens in packages/brand/tokens.css: 16px body/inputs, 14px tables/labels, 15px navigation/buttons, 13px captions, 19px section headings, and 26px desktop/22px phone page titles. Delivery keeps its existing 14px body/12px tables and identity. Original AKEELA logo is preserved. No generated logo or fictional data is shipped.
 - Use visible focus, native confirmation dialogs, safe errors, pending-write guards and reduced-motion support. Mutations use REST; realtime notifications only reload order reads.
+- User, restaurant and driver lists keep IDs in their own labelled column. Admin email verification uses a green/red translucent pill with an icon and clear text, separated from the email by an 8px gap; account/owner details reuse the same pill.
+- All three apps import packages/brand/forms.css for single-select arrows: 12px inset from the inline end (left in RTL) and reserved text padding. Native options, keyboard selection, focus and disabled behavior remain; forced-colors mode uses the system arrow. Keep new selects inside the existing field component.
 
 ## Code boundaries
 

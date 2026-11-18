@@ -13,6 +13,7 @@ import {
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
 import { ProfileDetails } from './profile-details';
+import { EmailVerification } from '../components/email-verification';
 const roles: Record<string, string> = {
   Customer: 'عميل',
   Restaurant: 'مطعم',
@@ -92,6 +93,7 @@ export function Users({
             <table>
               <thead>
                 <tr>
+                  <th>رقم المستخدم</th>
                   <th>الاسم</th>
                   <th>البريد الإلكتروني</th>
                   <th>الدور</th>
@@ -103,16 +105,16 @@ export function Users({
                 {resource.result?.data.map((row) => (
                   <tr key={row.user_id}>
                     <td>
-                      <strong>{row.full_name}</strong>
-                      <small>#{row.user_id}</small>
+                      <bdi>#{row.user_id}</bdi>
                     </td>
                     <td>
-                      <bdi>{row.email}</bdi>
-                      <small>
-                        {row.email_verified_at
-                          ? 'بريد موثّق'
-                          : 'بانتظار التوثيق'}
-                      </small>
+                      <strong>{row.full_name}</strong>
+                    </td>
+                    <td>
+                      <div className="email-cell">
+                        <bdi>{row.email}</bdi>
+                        <EmailVerification verified={!!row.email_verified_at} />
+                      </div>
                     </td>
                     <td>{roles[row.role]}</td>
                     <td>{row.is_active ? 'نشط' : 'غير نشط'}</td>

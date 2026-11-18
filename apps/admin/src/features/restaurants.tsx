@@ -10,6 +10,7 @@ import {
   useResource,
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
+import { EmailVerification } from '../components/email-verification';
 export function Restaurants() {
   const [page, setPage] = useState(1),
     [filter, setFilter] = useState(''),
@@ -61,6 +62,7 @@ export function Restaurants() {
             <table>
               <thead>
                 <tr>
+                  <th>رقم المطعم</th>
                   <th>المطعم</th>
                   <th>المالك</th>
                   <th>حالة التفعيل</th>
@@ -72,8 +74,10 @@ export function Restaurants() {
                 {resource.result?.data.map((row) => (
                   <tr key={row.profile.rest_id}>
                     <td>
+                      <bdi>#{row.profile.rest_id}</bdi>
+                    </td>
+                    <td>
                       <strong>{row.profile.rest_title}</strong>
-                      <small>#{row.profile.rest_id}</small>
                     </td>
                     <td>{row.owner?.full_name ?? 'غير متاح'}</td>
                     <td>{labels[row.profile.activation_status]}</td>
@@ -130,10 +134,14 @@ export function Restaurants() {
               <p>
                 <bdi>{item.owner?.phone}</bdi>
               </p>
-              <p>
-                البريد {item.owner?.email_verified_at ? 'موثّق' : 'غير موثّق'} ·
-                الحساب {item.owner?.is_active ? 'نشط' : 'غير نشط'}
-              </p>
+              <div className="account-meta">
+                {item.owner && (
+                  <EmailVerification
+                    verified={!!item.owner.email_verified_at}
+                  />
+                )}
+                <span>الحساب {item.owner?.is_active ? 'نشط' : 'غير نشط'}</span>
+              </div>
             </div>
           </div>
           <div className="actions">

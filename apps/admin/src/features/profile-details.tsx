@@ -1,5 +1,6 @@
 import type { User } from '@akeela/portal/models';
 import { dateTime } from '@akeela/portal/ui';
+import { EmailVerification } from '../components/email-verification';
 
 const restaurantFields = [
   ['rest_id', 'معرّف المطعم'],
@@ -29,10 +30,12 @@ export function ProfileDetails({ user }: { user: User }) {
         : null;
   return (
     <section aria-label="بيانات الملف">
-      <p>
-        معرّف الحساب: <bdi>#{user.user_id}</bdi> · البريد{' '}
-        {user.email_verified_at ? 'موثّق' : 'غير موثّق'}
-      </p>
+      <div className="account-meta">
+        <span>
+          معرّف الحساب: <bdi>#{user.user_id}</bdi>
+        </span>
+        <EmailVerification verified={!!user.email_verified_at} />
+      </div>
       {typeof image === 'string' && image && (
         <img
           className="profile-image"
