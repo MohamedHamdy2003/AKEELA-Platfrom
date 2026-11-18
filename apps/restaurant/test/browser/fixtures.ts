@@ -23,6 +23,26 @@ const orders = ['Pending', 'Accepted', 'Picked_Up', 'Delivered'].map(
   }),
 );
 export async function setup(page: Page, activation = 'Active') {
+  // UI fixtures must not open real API sockets with fixture-only JWTs.
+  // The production smoke suite covers the real Caddy/Socket.IO connection.
+  await page.routeWebSocket(/\/socket\.io\//, (socket) => {
+    socket.send(
+      '0' +
+        JSON.stringify({
+          sid: 'restaurant-fixture',
+          upgrades: [],
+          pingInterval: 25000,
+          pingTimeout: 20000,
+          maxPayload: 1024,
+        }),
+    );
+    socket.onMessage((message) => {
+      if (String(message).startsWith('40/orders,'))
+        socket.send(
+          '40/orders,' + JSON.stringify({ sid: 'restaurant-orders' }),
+        );
+    });
+  });
   const writes: { path: string; body: unknown }[] = [];
   let orderStatus = 'Pending';
   let serviceActive = true;
@@ -65,6 +85,15 @@ export async function setup(page: Page, activation = 'Active') {
           expires_in: 900,
           refresh_expires_in: 1000,
         },
+      };
+    else if (path === '/me' && method === 'GET')
+      data = {
+        user_id: '20',
+        full_name: 'مالك المطعم',
+        email: 'owner@example.com',
+        phone: '+201000000000',
+        role: 'Restaurant',
+        profile: { ...profile, activation_status: activation },
       };
     else if (path === '/restaurant/dashboard')
       data = {

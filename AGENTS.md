@@ -12,18 +12,18 @@ Read this file before work. It applies across the repository; app-level `AGENTS.
 
 ## Project map
 
-| Path                                        | Purpose                                                                  |
-| ------------------------------------------- | ------------------------------------------------------------------------ |
-| `apps/api`                                  | Implemented NestJS modular monolith, PostgreSQL, TypeORM; Features 01-16 |
-| `apps/restaurant`                           | Implemented React/Vite Restaurant frontend; `vendor.akeela.com`          |
-| `apps/admin`                                | Planned Admin frontend; `admin.akeela.com`                               |
-| `apps/delivery`                             | Planned Delivery_Company dispatcher frontend; `delivery.akeela.com`      |
-| `docs/frontend`                             | Per-app screens, APIs, permissions and unsupported features              |
-| `AKEELA-*.md` at root                       | Canonical data, features, request/response and role-flow specifications  |
-| `bruno/AKEELA`                              | Implemented API request collection                                       |
-| `deploy`, root Compose, `.github/workflows` | Docker/Caddy, VPS preparation and CI/CD                                  |
+| Path                                        | Purpose                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------ |
+| `apps/api`                                  | Implemented NestJS modular monolith, PostgreSQL, TypeORM; Features 01-17       |
+| `apps/restaurant`                           | Implemented React/Vite Restaurant frontend; `restaurant.akeelaonline.tech`     |
+| `apps/admin`                                | Implemented Admin frontend; `admin.akeelaonline.tech`                          |
+| `apps/delivery`                             | Implemented Delivery_Company dispatcher frontend; `delivery.akeelaonline.tech` |
+| `docs/frontend`                             | Per-app screens, APIs, permissions and unsupported features                    |
+| `AKEELA-*.md` at root                       | Canonical data, features, request/response and role-flow specifications        |
+| `bruno/AKEELA`                              | Implemented API request collection                                             |
+| `deploy`, root Compose, `.github/workflows` | Docker/Caddy, VPS preparation and CI/CD                                        |
 
-Restaurant is implemented locally; Admin and Delivery still have instructions/README only. Implement only the app/features authorized by the current task. One Git repository, npm workspaces, one root lockfile; no nested repositories or per-app lockfiles.
+Restaurant is implemented locally; Admin and Delivery are implemented React/Vite dashboards with distinct visual identities. Implement only the app/features authorized by the current task. One Git repository, npm workspaces, one root lockfile; no nested repositories or per-app lockfiles.
 
 ## Read on demand
 
@@ -67,3 +67,7 @@ Restaurant is implemented locally; Admin and Delivery still have instructions/RE
 - Docs-only edits: `npm run docs:check` and formatting checks for changed files; run `npm run bruno:check` when API tables/collection change. No database/container tests for prose-only edits.
 - Code changes: run `npm run check` plus the changed app's checks. Backend database behavior needs the dedicated PostgreSQL integration suite, not SQLite. Deployment changes need appropriate Compose/Caddy/container verification; see its guide.
 - Handoff briefly: scope/app, changed files, checks/results, remaining decisions and implementation limits. Do not claim unimplemented or untested behavior. A continuation note should name the next step and references, not repeat the full project history.
+
+## Dashboard/realtime additions
+
+Admin and Delivery use React/Vite/TypeScript, Arabic RTL and memory-only sessions. Read [portal design](docs/PORTAL-DESIGN.md) for shared packages/portal and [realtime](docs/REALTIME.md) for order notifications. All four production hostnames use akeelaonline.tech. Current VPS details and idempotent migration/Admin startup are in [deployment](docs/DEPLOYMENT.md).

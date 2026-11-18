@@ -1,3 +1,6 @@
+import { io, Socket } from 'socket.io-client';
+import { JwtService } from '@nestjs/jwt';
+import { AddressInfo } from 'node:net';
 import 'reflect-metadata';
 import { strict as assert } from 'node:assert';
 import { after, before, test } from 'node:test';
@@ -545,4 +548,166 @@ test('Features 13-14: restaurant acceptance and assigned delivery', async (t) =>
       );
     },
   );
+});
+
+test('Realtime orders: authenticated role isolation, committed events, revocation and expiry', async () => {
+  await db.query('UPDATE users SET is_active=true,email_verified_at=now()');
+  await db.query(
+    "UPDATE restaurant_profiles SET activation_status='Active',is_active=true",
+  );
+  config.set('DEFAULT_DELIVERY_COMPANY_ID', companies[0]);
+  await app.listen(0, '127.0.0.1');
+  const url =
+    'http://127.0.0.1:' +
+    (app.getHttpServer().address() as AddressInfo).port +
+    '/orders';
+  const clients: Socket[] = [];
+  const seen: Array<
+    Array<{
+      event: string;
+      data: { order_id: string; status: string; updated_at: string };
+    }>
+  > = [];
+  const waitFor = async (check: () => boolean) => {
+    const end = Date.now() + 3500;
+    while (!check()) {
+      if (Date.now() > end) throw Error('Realtime assertion timed out');
+      await new Promise((r) => setTimeout(r, 20));
+    }
+  };
+  const connect = async (token: string, origin?: string) => {
+    const socket = io(url, {
+      transports: ['websocket'],
+      auth: { token },
+      reconnection: false,
+      forceNew: true,
+      extraHeaders: origin ? { Origin: origin } : undefined,
+    });
+    clients.push(socket);
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(Error('Connection timed out')),
+        3500,
+      );
+      socket.once('connect', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      socket.once('connect_error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+    });
+    return socket;
+  };
+  try {
+    await assert.rejects(connect('invalid'), /UNAUTHENTICATED/);
+    await assert.rejects(
+      connect(tokens[5]!, 'https://untrusted.example'),
+      /ORIGIN_NOT_ALLOWED/,
+    );
+    const [stranger] = await db.query(
+      "INSERT INTO users(full_name,email,password_hash,phone_number,role,email_verified_at) SELECT 'Other customer',$1,password_hash,'+201222222222','Customer',now() FROM users WHERE user_id=$2 RETURNING user_id",
+      ['stranger-' + randomUUID() + '@example.com', users[0]],
+    );
+    await db.query('INSERT INTO customer_profiles(user_id) VALUES($1)', [
+      stranger.user_id,
+    ]);
+    const other = await api()
+      .post('/api/v1/auth/login')
+      .send({
+        email: (
+          await db.query('SELECT email FROM users WHERE user_id=$1', [
+            stranger.user_id,
+          ])
+        )[0].email,
+        password: 'TestPassword123',
+      })
+      .expect(200);
+    const allTokens = [...tokens, other.body.data.tokens.access_token];
+    const live: Socket[] = [];
+    for (const [index, token] of allTokens.entries()) {
+      const socket = await connect(token);
+      live.push(socket);
+      seen[index] = [];
+      for (const event of ['order.created', 'order.updated'])
+        socket.on(event, (data) => seen[index]!.push({ event, data }));
+    }
+    live[6]!.emit('join', { room: 'admin', order_id: '1' });
+    const id = await newOrder();
+    await waitFor(() =>
+      [0, 1, 5].every((index) =>
+        seen[index]!.some(
+          (item) => item.event === 'order.created' && item.data.order_id === id,
+        ),
+      ),
+    );
+    config.set('DEFAULT_DELIVERY_COMPANY_ID', null);
+    await accept(id).expect(409);
+    assert.equal(
+      seen[5]!.filter((item) => item.event === 'order.updated').length,
+      0,
+    );
+    config.set('DEFAULT_DELIVERY_COMPANY_ID', companies[0]);
+    await accept(id).expect(200);
+    await waitFor(() =>
+      seen[3]!.some((item) => item.data.status === 'Accepted'),
+    );
+    const acceptedEvents = seen[5]!.length;
+    await accept(id).expect(200);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    assert.equal(seen[5]!.length, acceptedEvents);
+    await assign(id).expect(200);
+    await pickup(id).expect(200);
+    await deliver(id).expect(200);
+    await waitFor(() =>
+      [0, 1, 3, 5].every((index) =>
+        seen[index]!.some((item) => item.data.status === 'Delivered'),
+      ),
+    );
+    for (const index of [2, 4, 6]) assert.deepEqual(seen[index], []);
+    assert.match(seen[5]![0]!.data.updated_at, /\+(02|03):00$/);
+    assert.deepEqual(Object.keys(seen[5]![0]!.data).sort(), [
+      'company_id',
+      'driver_id',
+      'order_id',
+      'status',
+      'updated_at',
+    ]);
+    const second = await newOrder();
+    await api()
+      .post('/api/v1/auth/logout')
+      .set('Authorization', auth(0))
+      .expect(200);
+    await accept(second).expect(200);
+    await waitFor(() => !live[0]!.connected);
+    assert.ok(
+      !seen[0]!.some(
+        (item) =>
+          item.data.order_id === second && item.event === 'order.updated',
+      ),
+    );
+    await db.query(
+      "UPDATE restaurant_profiles SET activation_status='Suspended' WHERE rest_id=$1",
+      [rests[0]],
+    );
+    await assign(second).expect(200);
+    await waitFor(() => !live[1]!.connected);
+    const payload = JSON.parse(
+      Buffer.from(tokens[5]!.split('.')[1]!, 'base64url').toString(),
+    ) as { sid: string };
+    const short = await new JwtService().signAsync(
+      { sub: users[5], sid: payload.sid },
+      {
+        secret: config.get('JWT_SECRET'),
+        issuer: config.get('JWT_ISSUER'),
+        audience: config.get('JWT_AUDIENCE'),
+        expiresIn: 1,
+      },
+    );
+    const expiring = await connect(short);
+    await waitFor(() => !expiring.connected);
+  } finally {
+    for (const socket of clients) socket.disconnect();
+  }
 });

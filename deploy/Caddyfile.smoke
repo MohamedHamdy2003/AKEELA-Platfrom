@@ -1,4 +1,25 @@
 https://localhost {
 	tls internal
+	handle_path /admin/* {
+		reverse_proxy admin:8080
+	}
+	handle_path /vendor/* {
+		reverse_proxy restaurant:8080
+	}
+	handle_path /delivery/* {
+		reverse_proxy delivery:8080
+	}
 	import /etc/caddy/routes.caddy
+}
+https://admin.localhost {
+	tls internal
+	import /etc/caddy/frontend-routes.caddy admin
+}
+https://vendor.localhost {
+	tls internal
+	import /etc/caddy/frontend-routes.caddy restaurant
+}
+https://delivery.localhost {
+	tls internal
+	import /etc/caddy/frontend-routes.caddy delivery
 }

@@ -85,6 +85,11 @@ export class ApiClient {
     this.setSession(result.data.tokens);
     return result.data.user;
   }
+  async tokenForRealtime(): Promise<string | null> {
+    if (!this.tokens) return null;
+    await this.request('/me');
+    return this.tokens?.access_token ?? null;
+  }
   private async refresh() {
     if (this.refreshing) return this.refreshing;
     const generation = this.generation;

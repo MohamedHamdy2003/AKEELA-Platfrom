@@ -1,5 +1,11 @@
 # Isolated test deployment. Never use this file or these credentials in production.
 services:
+  admin:
+    image: akeela-admin:smoke
+  restaurant:
+    image: akeela-restaurant:smoke
+  delivery:
+    image: akeela-delivery:smoke
   postgres:
     image: postgres:17
     environment:
@@ -14,7 +20,7 @@ services:
       retries: 30
   api:
     image: ${SMOKE_IMAGE:-akeela-api:smoke}
-    environment:
+    environment: &api-environment
       NODE_ENV: production
       TZ: Africa/Cairo
       DATABASE_URL: postgresql://smoke:smoke-only-password@postgres:5432/akeela_smoke_test
@@ -27,10 +33,12 @@ services:
       PUBLIC_BASE_URL: https://localhost
       IMAGE_STORAGE_PATH: /app/storage/images
       TRUST_PROXY: 'true'
+      CORS_ORIGINS: ${SMOKE_CORS_ORIGINS:-https://localhost}
+      DEFAULT_DELIVERY_COMPANY_ID: '1'
     volumes: [images:/app/storage/images]
     depends_on:
-      postgres:
-        condition: service_healthy
+      init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [
@@ -42,6 +50,19 @@ services:
       interval: 2s
       timeout: 5s
       retries: 30
+  init:
+    image: ${SMOKE_IMAGE:-akeela-api:smoke}
+    command:
+      ['sh', '-c', 'npm run migration:run:prod && npm run create:admin:prod']
+    environment:
+      <<: *api-environment
+      ADMIN_EMAIL: smoke@example.com
+      ADMIN_PASSWORD: SmokeOnlyPassword123
+      ADMIN_PHONE: '+201000000001'
+      ADMIN_FULL_NAME: Smoke Admin
+    depends_on:
+      postgres:
+        condition: service_healthy
   caddy:
     image: caddy:2
     environment:
@@ -56,12 +77,19 @@ services:
       - ./Caddyfile.smoke:/etc/caddy/Caddyfile:ro
       - ./Caddyfile:/etc/caddy/Caddyfile.production:ro
       - ./routes.caddy:/etc/caddy/routes.caddy:ro
+      - ./frontend-routes.caddy:/etc/caddy/frontend-routes.caddy:ro
       - ./sites-enabled:/etc/caddy/sites-enabled:ro
       - ./templates:/etc/caddy/templates:ro
       - images:/srv/images:ro
       - certificates:/data
     depends_on:
       api:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+      restaurant:
+        condition: service_healthy
+      delivery:
         condition: service_healthy
 volumes:
   database:

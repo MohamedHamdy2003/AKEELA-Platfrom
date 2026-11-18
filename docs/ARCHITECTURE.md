@@ -2,7 +2,7 @@
 
 ## Restaurant frontend
 
-The Restaurant client is now implemented in apps/restaurant with React/Vite/TypeScript, Arabic RTL, app-local feature components and a configurable HTTP client. packages/brand shares CSS tokens and identity assets. Browser tokens stay in memory only; frontend code never imports backend internals. Admin and Delivery folders remain reserved. See [design system](DESIGN-SYSTEM.md) and [Restaurant run guide](../apps/restaurant/README.md). Historical baseline sections below describe the API and monorepo preparation; this addition does not change backend architecture.
+The Restaurant client is now implemented in apps/restaurant with React/Vite/TypeScript, Arabic RTL, app-local feature components and a configurable HTTP client. packages/brand shares CSS tokens and identity assets. Browser tokens stay in memory only; frontend code never imports backend internals. Admin and Delivery are implemented. See [portal design](PORTAL-DESIGN.md) and [realtime](REALTIME.md). See [design system](DESIGN-SYSTEM.md) and [Restaurant run guide](../apps/restaurant/README.md). Historical baseline sections below describe the API and monorepo preparation; this addition does not change backend architecture.
 
 ## Scope and status
 
@@ -45,9 +45,9 @@ Host the single NestJS backend, PostgreSQL, and primary image files on one Hosti
 AKEELA/
   apps/
     api/                     # NestJS package, src/, test/, configs, Dockerfile
-    restaurant/              # reserved frontend; no implementation
-    admin/                   # reserved frontend; no implementation
-    delivery/                # reserved frontend; no implementation
+    restaurant/              # implemented React/Vite frontend
+    admin/                   # implemented React/Vite frontend
+    delivery/                # implemented React/Vite frontend
   docs/                      # shared architecture and frontend guides
   bruno/AKEELA/              # maintained API requests
   deploy/                    # Caddy and VPS/release assets
@@ -116,4 +116,12 @@ Images uses Sharp for byte validation/re-encoding and local persistent files. It
 
 ## Repository and deployment boundaries
 
-One monorepo contains independently owned app directories; only the API is implemented. Use npm workspaces with one lockfile. The API remains a modular monolith with one database. Frontends will consume HTTP APIs and never import backend repositories/entities. Frontend framework and browser-session storage remain open. See [MONOREPO.md](MONOREPO.md) for paths, environment migration, independent CI/release rules and reserved Caddy sites.
+One monorepo contains the implemented API and three independently owned browser apps. Use npm workspaces with one lockfile. The API remains a modular monolith with one database. Frontends consume HTTP APIs and never import backend repositories/entities. React/Vite/TypeScript, Arabic RTL and memory-only sessions are approved for all three browser apps. See [MONOREPO.md](MONOREPO.md) for paths, environment migration, coordinated CI/release rules and Caddy sites.
+
+## Dashboards, realtime and deployment — 2026-11-18
+
+Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and memory-only sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant imports only the realtime helper and keeps its UI. Root check and consolidated CI cover all workspaces.
+
+Socket.IO runs inside the single API process. Events invalidate authorized REST reads after order commits; no schema, microservice, Redis or durable event log is added. See [REALTIME](REALTIME.md) and [portal design](PORTAL-DESIGN.md).
+
+The owner purchased Hostinger KVM 2 at 2.25.12.243, France. SSH confirmed Ubuntu 26.04.1 LTS. Domain: akeelaonline.tech; API/admin/vendor/delivery subdomains. Production Compose includes all services plus one-off migrations and idempotent Admin initialization. Existing Admin values are never reset. See [DEPLOYMENT](DEPLOYMENT.md).

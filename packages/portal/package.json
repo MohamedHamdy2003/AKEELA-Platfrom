@@ -1,0 +1,19 @@
+{
+  "name": "@akeela/portal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api": "./src/api.ts",
+    "./models": "./src/models.ts",
+    "./realtime": "./src/realtime.ts",
+    "./ui": "./src/ui.tsx",
+    "./styles.css": "./src/styles.css",
+    "./screens": "./src/screens.tsx"
+  },
+  "dependencies": {
+    "socket.io-client": "4.8.4",
+    "react": "19.3.1",
+    "lucide-react": "1.73.0"
+  }
+}

@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { apiAffected } from './changed-apps.mjs';
+import { apiAffected, frontendsAffected } from './changed-apps.mjs';
 
 test('frontend-only and documentation changes do not rebuild the API', () => {
   assert.equal(
@@ -39,4 +39,13 @@ test('mixed changes and Windows paths cannot hide an API change', () => {
     true,
   );
   assert.equal(apiAffected([]), false);
+});
+test('frontend source/packaging needs image smoke, docs alone does not', () => {
+  assert.equal(frontendsAffected(['apps/admin/src/app.tsx']), true);
+  assert.equal(frontendsAffected(['apps\\delivery\\Dockerfile']), true);
+  assert.equal(
+    frontendsAffected(['apps/restaurant/README.md', 'docs/STATUS.md']),
+    false,
+  );
+  assert.equal(frontendsAffected(['packages/portal/src/ui.tsx']), true);
 });

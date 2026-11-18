@@ -1,9 +1,16 @@
-# Delivery company application (reserved)
+# AKEELA Delivery Company
 
-Planned origin: `https://delivery.akeela.com`. This is a dispatcher application, not driver login.
+Implemented React/Vite/TypeScript dashboard, Arabic RTL and memory-only sessions. Read [app instructions](AGENTS.md) and [design](../../docs/PORTAL-DESIGN.md).
 
-Read the root [AGENTS.md](../../AGENTS.md), local [app instructions](AGENTS.md) and [Delivery design guide](../../docs/frontend/AKEELA-Delivery-App.md) before work.
+From the repository root:
 
-No frontend source, dependencies, Docker image or deployment job exists yet. Use current-task decisions for framework, language/RTL and browser sessions. Resolve missing choices before the affected work; continue independent work.
+```powershell
+npm ci
+npm run dev:delivery
+npm run check:delivery
+npm run test:e2e --workspace @akeela/delivery
+```
 
-When implemented, register this npm workspace and add its own tests, Docker/static-build configuration, Caddy site and independent CI/release job. Use the root lockfile; do not introduce a nested Git repository or put database, SMTP or JWT signing secrets in frontend configuration.
+Local URL: http://127.0.0.1:5175. API default: /api/v1 through the Vite proxy to port 3000; the socket proxy uses /socket.io. Optional public VITE_API_BASE_URL only; never add secrets.
+
+Production: delivery.akeelaonline.tech via [Docker/Caddy deployment](../../docs/DEPLOYMENT.md). Build from the repository root with apps/delivery/Dockerfile.

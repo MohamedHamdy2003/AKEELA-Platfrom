@@ -2,7 +2,7 @@
 
 ## Authorized scope
 
-Backend Features 01-16 and monorepo preparation are implemented. Historical release approvals do not authorize a new main promotion; follow the current user request and GitHub flow. The VPS has not been purchased; real provisioning, DNS, certificates and deployment remain pending. Backup automation is deferred by the owner.
+Backend Features 01-17, three browser dashboards and Compose initialization are implemented. Historical release approvals do not authorize a new main promotion; follow the current user request and GitHub flow. The owner purchased a Hostinger VPS at public IPv4 2.25.12.243. Read-only SSH confirmed Ubuntu 26.04.1 LTS; domain is akeelaonline.tech. Docker provisioning and public DNS resolution are complete. Public HTTPS and application rollout remain pending. Backup automation is deferred by the owner.
 
 ## Implemented
 
@@ -31,13 +31,13 @@ Backend Features 01-16 and monorepo preparation are implemented. Historical rele
 
 ## Pending
 
-- Buy/provision VPS, choose domain, configure DNS/private environment/SSH secrets and DEPLOY_ENABLED, then verify real HTTPS/Gmail.
+- Complete the reviewed release, enable DEPLOY_ENABLED and verify public HTTPS/Gmail. Docker, private production configuration, deployment SSH secrets and the four A records are ready.
 - Backup/restore automation explicitly deferred. OpenAPI, future delivery-fee Admin API, image cleanup and load testing remain unimplemented. Restaurant sessions intentionally stay in memory only.
 - No application-database migrations/seeds run in this task. Tests truncate only the dedicated local `_test` database.
 
 ## Restaurant frontend
 
-- `apps/restaurant` implements the supported Restaurant screens with React/Vite/TypeScript and Arabic RTL. Shared tokens/assets live in `packages/brand`. Admin/Delivery remain reserved. See the [app guide](frontend/AKEELA-Restaurant-App.md), [run guide](../apps/restaurant/README.md) and [design system](DESIGN-SYSTEM.md).
+- `apps/restaurant` implements the supported Restaurant screens with React/Vite/TypeScript and Arabic RTL. Shared tokens/assets live in `packages/brand`. Admin/Delivery are implemented; see PORTAL-DESIGN.md. See the [app guide](frontend/AKEELA-Restaurant-App.md), [run guide](../apps/restaurant/README.md) and [design system](DESIGN-SYSTEM.md).
 - Access/refresh tokens stay in memory; reload requires login. Refresh coordinates concurrent requests. Activation/role gates, decimal strings, Cairo dates and server ownership checks remain authoritative. No persistent sessions/SSO, invented analytics, preparation statuses or unsupported APIs.
 - Registration labels the address “عنوان المطعم”, centers password controls and explains the known duplicate email/phone conflict without clearing input. Automatic browser location retains the best reported fix for up to 25 seconds, displays approximate accuracy and never guarantees true device position. The owner reported a wrong country in both the app and Google Maps on the laptop; the precise provider cause remains unresolved.
 - Registration/profile reuse Leaflet + OpenStreetMap. Automatic registration fixes appear directly; map click/tap, pin drag/arrow keys and coordinate inputs stay synchronized. Manual choices cancel acquisition, protecting against late fixes. Profile starts from saved coordinates; Pending/Suspended and in-flight saves disable selection, and failed saves retain the draft. No address search/geocoding or fabricated coordinates.
@@ -75,3 +75,17 @@ Backend Features 01-16 and monorepo preparation are implemented. Historical rele
 ## Current release authorization — 2026-11-14
 
 - Owner explicitly requested promotion of the completed Restaurant frontend and related documentation/workspace changes to main. Follow feature PR to dev with successful checks, then a merge-commit release PR from dev to main. This request authorizes this release only; actual VPS provisioning/deployment remains outside scope. Private environments and ignored cleanup leftovers are not included in Git.
+
+## Current work: dashboards, realtime and deployment
+
+Owner authorized Admin and Delivery Company dashboards, realtime order updates for all authorized clients, and Compose-managed initialization/startup before deploying to the purchased VPS. Approved: React/Vite/TypeScript, Arabic RTL and memory-only sessions; only visual identity differs. Socket.IO notifications are approved. SSH confirmed the server OS; provisioning is complete and no application has been started yet. The Admin CLI is idempotent: existing Admin accounts are preserved, first creation uses private environment values, and concurrent initialization is serialized.
+
+### Current implementation / verification
+
+- Admin: restaurant activation/review, user activity/details, company account creation, order monitoring/failure, own account/auth. Delivery: owned order lists/details, active owned driver assignment, pickup/delivery, driver CRUD without delete, company/account forms. Real REST integration; no fake production data or unsupported reports.
+- Socket.IO emits minimal order invalidations after commit with role/ownership/live-session/activation checks; clients resynchronize through REST. Browser notifications are integrated in all three dashboards; mobile client work remains external.
+- Compose init serializes migrations/Admin setup; an existing Admin is preserved. All three static images, Caddy same-origin API/socket proxies and a coherent four-image release are included. See REALTIME.md, PORTAL-DESIGN.md and DEPLOYMENT.md.
+- Private production template created locally and excluded from Git. Owner-filled Admin/ACME fields and SMTP passed private preflight. Public DNS resolves api/admin/restaurant/delivery to the VPS. Docker 29.10.0 and Compose 5.8.0 are installed; deployment user/key and GitHub production secrets are configured. Public TLS/application startup still await the reviewed release.
+
+- Verification: root check passed; all 113 dedicated PostgreSQL/Mailpit cases passed. Admin/Delivery browser suites passed (4 scenarios), Restaurant browser suite passed (27 scenarios). Docker production smoke passed all four image builds, Caddy config/local trusted TLS, static frontends, persistence and repeated Admin initialization. A real browser/API order lifecycle passed checkout → restaurant accept → driver create/assign → pickup → delivery, including live Admin and Restaurant updates with no HTTP mocks or runtime/CSP errors.
+- Runtime audit passes with the owner-approved, expiring picomatch advisory exception only; see SECURITY.md. No zero-vulnerability claim. CI workflow/actionlint and Bash syntax checks passed.

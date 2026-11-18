@@ -4,6 +4,7 @@ import https from 'node:https';
 import http from 'node:http';
 import { Buffer } from 'node:buffer';
 import { setTimeout } from 'node:timers';
+import { smokePortals } from './smoke-portals.mjs';
 const project = `akeela-smoke-${randomUUID()}`;
 const image = process.env.SMOKE_IMAGE ?? 'akeela-api:smoke';
 const env = { ...process.env, SMOKE_IMAGE: image };
@@ -57,16 +58,31 @@ try {
       },
     );
   docker(['up', '-d', '--wait', '--wait-timeout', '90', 'postgres']);
-  docker([
-    'run',
-    '--rm',
-    '--no-deps',
-    'api',
-    'npm',
-    'run',
-    'migration:run:prod',
-  ]);
+  for (const app of ['admin', 'restaurant', 'delivery'])
+    if (process.env.SMOKE_SKIP_BUILD !== 'true')
+      execFileSync(
+        'docker',
+        [
+          'build',
+          '-f',
+          `apps/${app}/Dockerfile`,
+          '-t',
+          `akeela-${app}:smoke`,
+          '.',
+        ],
+        { stdio: 'inherit', timeout: 600000 },
+      );
   docker(['up', '-d', '--wait', '--wait-timeout', '90', 'api']);
+  docker([
+    'up',
+    '-d',
+    '--wait',
+    '--wait-timeout',
+    '90',
+    'admin',
+    'restaurant',
+    'delivery',
+  ]);
   for (const config of [
     '/etc/caddy/Caddyfile.production',
     '/etc/caddy/templates/frontends.caddy',
@@ -112,11 +128,47 @@ try {
     ),
   );
   const base = `https://localhost:${port}`;
+  env.SMOKE_CORS_ORIGINS = [
+    'localhost',
+    'admin.localhost',
+    'vendor.localhost',
+    'delivery.localhost',
+  ]
+    .map((host) => `https://${host}:${port}`)
+    .join(',');
   await retry(async () => {
     const r = await get(`${base}/api/v1/health/ready`, ca);
     if (r.status !== 200) throw Error('Readiness failed');
   });
   const redirect = await get(`http://localhost:${httpPort}/api/v1/health/live`);
+  for (const app of ['admin', 'vendor', 'delivery']) {
+    const page = await get(`${base}/${app}/`, ca);
+    if (
+      page.status !== 200 ||
+      !page.body.toString().includes('<div id="root">')
+    )
+      throw Error('Frontend serving failed: ' + app);
+  }
+  const admins = () =>
+    docker(
+      [
+        'exec',
+        '-T',
+        'postgres',
+        'psql',
+        '-U',
+        'smoke',
+        '-d',
+        'akeela_smoke_test',
+        '-Atc',
+        "SELECT count(*) FROM users WHERE role='Admin'",
+      ],
+      true,
+    ).trim();
+  if (admins() !== '1') throw Error('Initial Admin bootstrap failed');
+  docker(['run', '--rm', '--no-deps', 'init']);
+  if (admins() !== '1')
+    throw Error('Repeated Admin bootstrap created duplicates');
   if (
     redirect.status !== 308 ||
     !redirect.headers.location?.startsWith('https://')
@@ -154,6 +206,7 @@ try {
   const second = await get(`${base}/images/${filename}`, ca);
   if (second.status !== 200 || !first.body.equals(second.body))
     throw Error('Image persistence failed');
+  await smokePortals({ docker, port });
   console.log(
     'Smoke passed: trusted local TLS, HTTP redirect, proxy readiness, public images and persistence after API recreation.',
   );

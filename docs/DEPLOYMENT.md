@@ -1,75 +1,71 @@
-# Hostinger VPS Deployment
+# Deployment
 
-Restaurant packaging update: apps/restaurant/Dockerfile builds its static client and serves port 8080; an independent workflow checks and publishes a commit-tagged image on future approved main changes. This does not enable a Caddy site or deploy a service. Set its build-time public API URL/CORS or a same-origin proxy in a separate reviewed deployment change. See [Restaurant README](../apps/restaurant/README.md). Admin/Delivery are still reserved.
+## Target and services
 
-One Hostinger VPS runs Caddy, NestJS and PostgreSQL in separate Docker containers. The VPS has not been purchased or provisioned. Real DNS, certificates, capacity and SMTP delivery need verification on that server. Backup automation is deferred by the owner.
+Hostinger KVM 2, France; hostname akeela-prod, IPv4 2.25.12.243. Read-only SSH confirmed Ubuntu **26.04.1 LTS** (the earlier 24.04 description was incorrect). Initial access uses root/port 22 and the owner's existing trusted Ed25519 key. Never commit private keys or production environments.
 
-## Layout
+| Service                                      | Public hostname              | Internal port |
+| -------------------------------------------- | ---------------------------- | ------------- |
+| API, mobile REST/Socket.IO and public images | api.akeelaonline.tech        | 3000          |
+| Admin                                        | admin.akeelaonline.tech      | 8080          |
+| Restaurant                                   | restaurant.akeelaonline.tech | 8080          |
+| Delivery Company                             | delivery.akeelaonline.tech   | 8080          |
+| PostgreSQL                                   | Private Docker network only  | 5432          |
 
-```text
-Internet :80/:443 -> Caddy -> api:3000 -> postgres:5432
-                      |
-                  /images/*
-                      |
-                images volume (read-only for Caddy)
+One API process, one database, three static Nginx frontends and Caddy. Only Caddy publishes TCP 80/443 and UDP 443. PostgreSQL, images and Caddy certificates use persistent named volumes. Backups are deferred; volumes are not backups.
+
+## First server setup
+
+1. Point all four hostname A records to 2.25.12.243. Use AAAA only with working IPv6. Confirm public DNS and provider firewall access for SSH and web ports before starting ACME. The bare domain is not an application in this release.
+2. Review/run deploy/bootstrap-vps.sh as root. It supports Ubuntu 24.04/26.04, installs Docker from its official repository, sets Africa/Cairo and creates trusted deploy user akeela with /opt/akeela/releases. Docker group access is root-equivalent. The script does not change SSH/firewall rules.
+3. Install the approved deployment public key for akeela, with a private .ssh directory and mode 600 authorized_keys. Verify a fresh connection before changing administrative access. Do not disable root access automatically.
+4. Run npm run prepare:production locally to validate the ignored configuration, populate only missing SMTP fields from apps/api/.env, and quote values safely for Compose without printing secrets. Prepare /opt/akeela/.env.production (mode 600, owner akeela). Locally, .env.production.local is ignored and contains independently generated JWT/OTP/database secrets. The owner fills ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_FULL_NAME, ADMIN_PHONE and ACME_EMAIL. Gmail settings come from the approved private API configuration. Never print docker compose config or environment values; use config --quiet.
+5. Use the same database password in POSTGRES_PASSWORD and the URL-encoded DATABASE_URL. Host is postgres. See [Gmail](GMAIL.md) and [images](IMAGES.md). Never reuse smoke-test credentials.
+
+## One-command startup
+
+From a prepared release directory, with four built/pulled image references and private configuration:
+
+```bash
+docker compose -p akeela --env-file /opt/akeela/.env.production --env-file /opt/akeela/images.env -f compose.production.yml up -d --wait --wait-timeout 180
 ```
 
-Only Caddy publishes application ports. PostgreSQL uses an internal network. Named volumes preserve database data, images and Caddy certificates. Never use `docker compose down --volumes` on production. Only the randomly named smoke-test project removes its own test volumes.
+Compose waits for PostgreSQL health, runs the one-off init service (all pending migrations, then Admin bootstrap), starts the API after successful init, and starts Caddy after the API and three frontend healthchecks pass. Do not use --wait for public certificate proof; check public HTTPS separately. No synchronize/dropSchema/automatic TypeORM startup migrations are enabled.
 
-## Prepare the new VPS
+Admin bootstrap is idempotent and transactional, guarded by an advisory lock. If any Admin already exists it leaves that account/password/verification untouched, even if provisioning values change or are removed. Only a missing Admin requires valid ADMIN_* values. Init failure prevents API startup. Password reset remains the supported account recovery flow. No company, driver, menu or sample account is seeded.
 
-1. Buy an x86-64 Ubuntu 24.04 LTS VPS. Size memory for PostgreSQL and the API; confirm capacity with traffic measurements. Build images in GitHub, not on the VPS.
-2. Review/copy `deploy/bootstrap-vps.sh`, then run `sudo bash bootstrap-vps.sh akeela` on the new server. It installs Docker from the official repository, creates the deploy user and `/opt/akeela/releases`, and sets Africa/Cairo. It does not deploy an application, change SSH authentication or enable a firewall.
-3. Add the deployment public key to `/home/akeela/.ssh/authorized_keys` (owner akeela, mode 600). The Docker group grants this trusted user root-equivalent access.
-4. Allow SSH from administration/runner sources and TCP 80/443 plus UDP 443 through Hostinger's firewall. Never expose 3000/5432. Docker-published ports need provider/host firewall rules; do not rely on UFW alone.
-5. Point the API domain A record to the VPS. Add AAAA only with working IPv6. Public HTTPS needs reachable ports and correct DNS.
-6. Copy `.env.production.example` to `/opt/akeela/.env.production`, owned by akeela, mode 600. Enter real values there, never in Git. Use independent random JWT/OTP keys. URL-encode the database password in DATABASE_URL and use the same raw password in POSTGRES_PASSWORD. DATABASE_URL host is `postgres`.
-7. Configure Gmail App Password SMTP through [GMAIL.md](GMAIL.md). Set DEFAULT_DELIVERY_COMPANY_ID to the verified company profile ID before accepting orders. Deployment never seeds a company/Admin.
+After Admin login, create the real company, verify its email and set DEFAULT_DELIVERY_COMPANY_ID to its **company profile ID**, then recreate the API. Missing company configuration prevents restaurant acceptance while leaving the order Pending. Do not guess an ID.
 
-## GitHub CI/CD
+Local compose.yml remains the developer PostgreSQL/Mailpit setup. Production uses compose.production.yml; do not expose local Mailpit in production. Build images from the repository root with apps/<app>/Dockerfile. Frontend VITE_API_BASE_URL defaults to /api/v1 and contains no secret.
 
-[GitHub flow](GITHUB-FLOW.md) keeps feature PRs on dev and requires owner approval for main. CI checks PRs/dev with root npm ci, repository lint/format/docs/Bruno/tool tests and runtime audit. API/shared deployment/tooling changes also run API types/unit/build, actual PostgreSQL/Mailpit integration and Docker/Caddy smoke tests. CI has no production secrets.
+## Caddy and realtime
 
-Main releases run these checks and, when the API path is affected, build and publish `ghcr.io/mohamedhamdy2003/akeela-platfrom:<commit>`, then optionally deploy its immutable SHA256 digest. Publication requires Actions/package permissions. Configure these after the server is ready:
+Production Caddy explicitly serves the four domains. Each frontend proxies /api/* and /socket.io/* to the API, serves /images/* from the read-only image volume, and sends remaining requests to its static frontend. The API domain proxies the API/socket paths directly. Caddy handles WebSocket upgrades and automatic HTTPS. Frontend CSP allows its own WebSocket host. No DNS record, live certificate or deployment is implied by a validated Caddyfile.
 
-| Setting         | Location                      | Value                                                       |
-| --------------- | ----------------------------- | ----------------------------------------------------------- |
-| DEPLOY_ENABLED  | Repository variable           | `true` enables deployment; unset skips it                   |
-| VPS_HOST        | Repository variable           | Server hostname or IPv4                                     |
-| VPS_USER        | Repository variable           | `akeela`                                                    |
-| VPS_PORT        | Repository variable           | SSH port, normally `22`                                     |
-| VPS_SSH_KEY     | Production environment secret | Private deployment key                                      |
-| VPS_KNOWN_HOSTS | Production environment secret | Verified host-key line; use `[host]:port` for a custom port |
+The old sites-enabled/templates files are legacy preparation, not production imports. See [realtime](REALTIME.md) for mobile/browser connections, session expiry and REST recovery. Run one API instance; no Redis adapter or event replay exists.
 
-Create GitHub environment `production`; add reviewer protection if desired. Verify the SSH fingerprint through Hostinger's console. The workflow requires a pinned key, never accepts an unknown key automatically, and uses a temporary GitHub token for GHCR over SSH, logging out afterward.
+## CI/CD and release
 
-Release assets go to `/opt/akeela/releases/<commit>`. `deploy/release.sh` locks deployments, pulls the immutable image, starts PostgreSQL, explicitly runs migrations, validates Caddy, replaces API/Caddy and checks public HTTPS readiness. It records current/previous successful releases. Credentials stay in `/opt/akeela/.env.production`.
+Feature PRs target dev; main promotion needs the owner's explicit current approval. CI installs once from the root lockfile, checks repository/docs/Bruno, API and all three frontend workspaces, runs PostgreSQL integration and Chromium browser suites, audits runtime packages, and verifies the Docker/Caddy smoke stack for API/shared changes.
 
-After the first deployment, manually provision the only Admin with `create:admin:prod`; see [AUTH.md](AUTH.md). Run `smtp:check:prod`, then verify inbox delivery with your own account. These are manual tasks, not CI seeds.
+A main release publishes four images from the same commit to GHCR: the API repository plus -admin, -restaurant and -delivery suffixes. Deployment uses all four immutable digests together. The consolidated release workflow replaces the former independent Restaurant publish workflow.
 
-## Images and health
+| GitHub production setting                | Purpose                                              |
+| ---------------------------------------- | ---------------------------------------------------- |
+| DEPLOY_ENABLED variable                  | true enables SSH deployment; keep unset before setup |
+| VPS_HOST / VPS_USER / VPS_PORT variables | 2.25.12.243 / akeela / 22                            |
+| VPS_SSH_KEY secret                       | Dedicated private deployment key                     |
+| VPS_KNOWN_HOSTS secret                   | Verified pinned server host-key lines                |
 
-Read [IMAGES.md](IMAGES.md). Compose sets PUBLIC_BASE_URL from `https://${APP_DOMAIN}` and IMAGE_STORAGE_PATH to `/app/storage/images`. Caddy serves `/images/*` through its read-only volume; other requests reach the API. Local API serves the same image path. Existing external HTTP(S) image URLs remain supported; no server-side download occurs.
+Workflow secrets belong to the production environment. Configuration/credentials stay on the VPS. deploy/release.sh locks releases, validates all digest arguments, pulls images, runs init, validates Caddy, replaces services, and verifies public API HTTPS readiness before recording current/previous release. It records all image references in /opt/akeela/images.env. Deploy assets live in /opt/akeela/releases/<commit>. Failed releases never delete data or automatically revert schema.
 
-Public `/api/v1/health/live` checks the process. `/api/v1/health/ready` also runs SELECT 1 and returns 503 without database details on failure. Compose and Caddy use readiness.
+## Verify and recover
 
-## Verification and recovery
+- npm run smoke:production uses a random disposable Docker project/test database. It builds all images and checks migrations/idempotent Admin bootstrap, local trusted TLS, redirects, static frontends, readiness, public images and image persistence after API recreation. Local CA tests do not prove public ACME issuance.
+- Run smtp:check:prod without revealing credentials, then verify inbox delivery with the owner's account. DNS, public TLS and real account flows must be verified after the release.
+- For code rollback, inspect schema compatibility and use the previous release with its four recorded image digests. No automatic migration rollback. Preserve persistent volumes; never use production down --volumes.
+- Future migrations must remain compatible with the previous running API. Breaking/data-heavy schema changes require a separate plan. No backups, restore tests, load tests or high availability are implemented.
 
-- `npm run smoke:production` builds an isolated deployment, runs migrations on its own test database, trusts Caddy's local CA, verifies HTTPS/redirect/proxy/images, recreates the API and verifies image persistence. This does not prove public ACME issuance.
-- Inspect workflow logs and Compose logs on the VPS. Never publish secrets or environment dumps.
-- Failed releases stop without marking success. No automatic migration rollback or data deletion occurs. Inspect the failure before retrying.
-- Code rollback: verify schema compatibility, authenticate to GHCR with a temporary read-packages credential if needed, then run the previous release script with its recorded digest/commit. Migration rollback needs a reviewed recovery plan; never revert automatically.
-- Backups, restore tests, load tests and high availability are unimplemented. Persistent volumes are not backups; backup work is explicitly deferred.
+References: [Docker Ubuntu installation](https://docs.docker.com/engine/install/ubuntu/), [Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/), [Caddy HTTPS](https://caddyserver.com/docs/automatic-https).
 
-References: [Caddy HTTPS](https://caddyserver.com/docs/automatic-https), [file serving](https://caddyserver.com/docs/caddyfile/directives/file_server), [Docker Ubuntu installation](https://docs.docker.com/engine/install/ubuntu/), [GitHub image publishing](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images).
-
-Schema migrations run before replacing the API. Keep them compatible with the previous running version; plan separate maintenance for any future breaking/data-heavy migration. Database statements have a 10-second timeout and connection acquisition a 5-second timeout; review these for future long-running migrations.
-
-## Monorepo and future frontends
-
-- Build locally with `docker build -f apps/api/Dockerfile -t akeela-api:local .` from the root. Production Compose uses prebuilt images, without a local build fallback. Runtime cwd is `/app/apps/api`; the image volume remains `/app/storage/images` and existing named volumes are preserved.
-- Local API secrets are now in apps/api/.env; server .env.production remains in /opt/akeela. Shared root package-lock.json drives all workspace installs. See [MONOREPO.md](MONOREPO.md).
-- Frontend locations: apps/admin, apps/restaurant and apps/delivery. They contain documentation only. No frontend images, services, sites or release jobs are active.
-- Caddy imports only deploy/sites-enabled/*.caddy, initially empty. deploy/templates/frontends.caddy is disabled preparation for ADMIN_DOMAIN, VENDOR_DOMAIN and DELIVERY_DOMAIN; validation does not enable sites or issue their certificates. Future frontend releases must add tested site files/services after DNS and the chosen framework are ready.
-- Production environment examples contain the three exact CORS origins. CORS does not create DNS or host an application; keep its values aligned with real frontend domains.
-- Current deploy assets include sites-enabled. Enabling a frontend site must ship its corresponding service/static artifact in the same reviewed release, not through API-only deployment.
+Current verification: all four A records resolve to 2.25.12.243. Docker/Compose and a dedicated deploy user/key are installed; the owner's existing root SSH settings were preserved. Private configuration is installed mode 600. Application startup, public ACME and Gmail connectivity from the VPS will be recorded in STATUS.md after rollout.
