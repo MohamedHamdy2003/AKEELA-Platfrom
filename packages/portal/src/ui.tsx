@@ -22,11 +22,11 @@ import {
   ClipboardList,
   Building2,
   UserRound,
+  UserRoundCog,
   Home,
   LogOut,
   Menu,
   RefreshCw,
-  ShieldCheck,
   Truck,
   Users,
   Utensils,
@@ -719,7 +719,7 @@ export function AuthPage({
             {theme === 'delivery' ? (
               <Truck size={26} aria-hidden="true" />
             ) : (
-              <ShieldCheck size={25} aria-hidden="true" />
+              <UserRoundCog size={26} aria-hidden="true" />
             )}
           </span>
           <h1>
