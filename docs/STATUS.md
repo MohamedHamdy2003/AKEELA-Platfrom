@@ -104,3 +104,5 @@ Order detail panels show all authorized participant references, saved unit price
 - Verified trusted public TLS and HTTP→HTTPS for api/admin/restaurant/delivery.akeelaonline.tech. Chromium verified all three frontend assets/login pages with zero runtime/CSP errors. Real Admin login, all permitted read screens, authenticated WSS and logout passed. Verification created no business records.
 - Gmail authenticated successfully from the production API after correcting a differing SMTP_USER to the approved, locally verified account. Credentials were never printed/committed. No email was sent; OTP inbox delivery remains a user-flow check.
 - The final support-detail patch is covered by 32 browser scenarios total (27 Restaurant, 3 Admin, 2 Delivery), including bounded restaurant images and mobile drawer focus. It adds no REST endpoint, permission or migration.
+
+- Production storage access was checked without uploading test files: the image directory is writable and the database contains exactly one Admin. Delivery actions precede reference-only metadata in the detail pane so driver assignment remains visible on the tested desktop viewport.

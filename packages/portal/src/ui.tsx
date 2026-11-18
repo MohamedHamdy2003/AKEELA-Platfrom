@@ -769,7 +769,13 @@ export function AuthPage({
     </div>
   );
 }
-export function OrderFacts({ order }: { order: Order }) {
+export function OrderFacts({
+  order,
+  actions,
+}: {
+  order: Order;
+  actions?: ReactNode;
+}) {
   return (
     <>
       <div className="detail-status">
@@ -817,6 +823,7 @@ export function OrderFacts({ order }: { order: Order }) {
         </bdi>
         {order.notes && <p className="order-note">{order.notes}</p>}
       </section>
+      {actions}
       <section className="detail-section">
         <div className="key-value">
           <span>رسوم التوصيل</span>
