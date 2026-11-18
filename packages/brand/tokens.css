@@ -19,6 +19,16 @@
   --brand-disabled: #eef2ef;
   --brand-focus: #00a66b;
   --brand-font: 'IBM Plex Sans Arabic', sans-serif;
+  --dashboard-type-body: 16px;
+  --dashboard-type-page: 26px;
+  --dashboard-type-page-mobile: 22px;
+  --dashboard-type-section: 19px;
+  --dashboard-type-label: 14px;
+  --dashboard-type-table: 14px;
+  --dashboard-type-navigation: 15px;
+  --dashboard-type-button: 15px;
+  --dashboard-type-control: 16px;
+  --dashboard-type-caption: 13px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;

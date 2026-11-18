@@ -1156,3 +1156,74 @@ dialog p {
     scroll-behavior: auto !important;
   }
 }
+
+/* Admin and Restaurant share a readable scale; Delivery keeps its current scale. */
+.portal[data-portal='admin'] {
+  font-size: var(--dashboard-type-body);
+}
+.portal[data-portal='admin'] h1,
+.portal[data-portal='admin'] .auth-card h1,
+.portal[data-portal='admin'] .auth-identity h2 {
+  font-size: var(--dashboard-type-page);
+}
+.portal[data-portal='admin'] h2,
+.portal[data-portal='admin'] .detail-head h2,
+.portal[data-portal='admin'] .dialog-head h2 {
+  font-size: var(--dashboard-type-section);
+}
+.portal[data-portal='admin'] h3,
+.portal[data-portal='admin'] .detail-section h3,
+.portal[data-portal='admin'] .empty h3 {
+  font-size: var(--dashboard-type-navigation);
+}
+.portal[data-portal='admin'] .sidebar nav button {
+  font-size: var(--dashboard-type-navigation);
+}
+.portal[data-portal='admin'] .button,
+.portal[data-portal='admin'] .button.compact {
+  font-size: var(--dashboard-type-button);
+}
+.portal[data-portal='admin'] th,
+.portal[data-portal='admin'] td {
+  font-size: var(--dashboard-type-table);
+}
+.portal[data-portal='admin'] .field > span,
+.portal[data-portal='admin'] .page-title p,
+.portal[data-portal='admin'] .auth-card > p,
+.portal[data-portal='admin'] .metric > div > span,
+.portal[data-portal='admin'] .breadcrumb,
+.portal[data-portal='admin'] .account-name,
+.portal[data-portal='admin'] .auth-links,
+.portal[data-portal='admin'] .auth-links button,
+.portal[data-portal='admin'] .text-button,
+.portal[data-portal='admin'] .detail-status,
+.portal[data-portal='admin'] .detail-section p,
+.portal[data-portal='admin'] .order-item,
+.portal[data-portal='admin'] .key-value,
+.portal[data-portal='admin'] .notice,
+.portal[data-portal='admin'] .empty p,
+.portal[data-portal='admin'] .profile-data {
+  font-size: var(--dashboard-type-label);
+}
+.portal[data-portal='admin'] small,
+.portal[data-portal='admin'] .cell-stack small,
+.portal[data-portal='admin'] .order-item small,
+.portal[data-portal='admin'] .detail-section small,
+.portal[data-portal='admin'] .detail-section > bdi,
+.portal[data-portal='admin'] .badge,
+.portal[data-portal='admin'] .connection,
+.portal[data-portal='admin'] .pager,
+.portal[data-portal='admin'] .auth-note {
+  font-size: var(--dashboard-type-caption);
+}
+.portal[data-portal='admin'] .field input,
+.portal[data-portal='admin'] .field select,
+.portal[data-portal='admin'] .field textarea {
+  font-size: var(--dashboard-type-control);
+}
+@media (max-width: 680px) {
+  .portal[data-portal='admin'] h1,
+  .portal[data-portal='admin'] .auth-card h1 {
+    font-size: var(--dashboard-type-page-mobile);
+  }
+}

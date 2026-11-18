@@ -4,7 +4,7 @@
 
 The owner requested a brighter, more vibrant modern Restaurant interface, smaller typography and more visible interaction motion. Fresh Kitchen replaces the muted Garden Kitchen treatment: near-white warm canvas, white operational surfaces, saturated emerald, orange action emphasis and crisp ink text. [Dashboard concept](design/restaurant/home-v2.png) and [login concept](design/restaurant/login-v2.png) guide palette, hierarchy and component treatment.
 
-The implementation follows the owner's explicit compact-type request rather than the generated images' oversized lettering. Original identity assets, supported copy, real data formatting and all API/permission rules remain authoritative. Only Restaurant is implemented; future products may consume the shared brand tokens without inheriting its workflows.
+The implementation follows the owner's explicit compact-type request rather than the generated images' oversized lettering. Original identity assets, supported copy, real data formatting and all API/permission rules remain authoritative. Restaurant, Admin and Delivery are implemented; each keeps its own workflows and identity.
 
 ## Identity and assets
 
@@ -35,7 +35,7 @@ Use white/mint table surfaces, visible status colors and emerald selection. The 
 
 ## Compact Arabic typography
 
-Self-hosted IBM Plex Sans Arabic remains at 400/500/600/700; no font dependency or identity replacement. Desktop body 15px, page title 30px, login title 32px, section headings 22px, navigation 16px, table text 14px, captions 12–14px. Phone page titles are 24px/login 28px; phone inputs stay 16px to avoid browser zoom. Keep Arabic line height generous and never add letter spacing. IDs/money remain decimal strings with bidi isolation.
+Self-hosted IBM Plex Sans Arabic remains at 400/500/600/700; no font dependency or identity replacement. Admin and Restaurant now share the readable dashboard scale: body/inputs 16px, page/login titles 26px, section headings 19px, navigation/buttons 15px, tables/labels 14px and captions 13px. Phone page/login titles are 22px. The values live in packages/brand/tokens.css; form inputs remain 16px to avoid browser zoom. Keep Arabic line height generous and never add letter spacing. IDs/money remain decimal strings with bidi isolation.
 
 Lucide navigation icons are 20px with the original metaphor/stroke system. Meaningful status icons remain larger. Active navigation combines white text/icons, emerald background, an orange edge indicator and a soft shadow. Status text is always present; color alone is not the state.
 

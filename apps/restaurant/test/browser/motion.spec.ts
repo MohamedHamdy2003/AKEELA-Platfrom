@@ -327,7 +327,7 @@ test('fresh palette and compact typography retain contrast, visible motion and r
   }));
   expect(sizes.heading).toBeLessThanOrEqual(32);
   expect(sizes.heading).toBeGreaterThanOrEqual(24);
-  expect(sizes.body).toBe(15);
+  expect(sizes.body).toBe(16);
   expect(sizes.navigation).toBeLessThanOrEqual(16);
   expect(sizes.table).toBeLessThanOrEqual(15);
   const active = page.locator('.sidebar nav [aria-current="page"]');
