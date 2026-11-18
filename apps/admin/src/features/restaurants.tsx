@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { query } from '@akeela/portal/api';
 import type { RestaurantReview } from '@akeela/portal/models';
 import {
-  Confirm,
+  Failure,
   Field,
   Pager,
   PageTitle,
@@ -11,23 +12,71 @@ import {
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
 import { EmailVerification } from '../components/email-verification';
+import './restaurants.css';
+
 export function Restaurants() {
   const [page, setPage] = useState(1),
     [filter, setFilter] = useState(''),
-    [selected, setSelected] = useState<string | null>(null);
+    [selected, setSelected] = useState<string | null>(null),
+    [confirmAction, setConfirmAction] = useState<'Active' | 'Suspended' | null>(
+      null,
+    ),
+    [actionBusy, setActionBusy] = useState(false),
+    [actionError, setActionError] = useState<unknown>(null);
+
+  const confirmDialogRef = useRef<HTMLDialogElement>(null);
+
   const resource = useResource<RestaurantReview[]>(
     api,
     '/admin/restaurants' +
       query({ page, per_page: 10, activation_status: filter }),
   );
+
   const item = resource.result?.data.find(
     (row) => row.profile.rest_id === selected,
   );
+
   const labels = {
     Pending: 'بانتظار التفعيل',
     Active: 'مفعّل',
     Suspended: 'معلّق',
   };
+
+  useEffect(() => {
+    const dialog = confirmDialogRef.current;
+    if (confirmAction) {
+      setActionError(null);
+      if (dialog && !dialog.open) {
+        dialog.showModal();
+      }
+    } else {
+      if (dialog && dialog.open) {
+        dialog.close();
+      }
+    }
+  }, [confirmAction]);
+
+  const executeStatusChange = async () => {
+    if (!confirmAction || !item) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      await api.request(
+        '/admin/restaurants/' + item.profile.rest_id + '/activation',
+        {
+          method: 'PATCH',
+          body: { activation_status: confirmAction },
+        },
+      );
+      setConfirmAction(null);
+      resource.reload();
+    } catch (cause) {
+      setActionError(cause);
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
   return (
     <>
       <PageTitle
@@ -80,7 +129,14 @@ export function Restaurants() {
                       <strong>{row.profile.rest_title}</strong>
                     </td>
                     <td>{row.owner?.full_name ?? 'غير متاح'}</td>
-                    <td>{labels[row.profile.activation_status]}</td>
+                    <td>
+                      <span
+                        className={`status-pill activation-${row.profile.activation_status.toLowerCase()}`}
+                      >
+                        <i className="status-dot" aria-hidden="true" />
+                        {labels[row.profile.activation_status]}
+                      </span>
+                    </td>
                     <td>{row.profile.is_active ? 'مفتوح' : 'متوقف'}</td>
                     <td>
                       <button
@@ -100,7 +156,15 @@ export function Restaurants() {
       </ResourceState>
       {item && (
         <section className="panel panel-pad">
-          <h2>{item.profile.rest_title}</h2>
+          <div className="restaurant-detail-title-wrap">
+            <h2>{item.profile.rest_title}</h2>
+            <span
+              className={`status-pill activation-${item.profile.activation_status.toLowerCase()}`}
+            >
+              <i className="status-dot" aria-hidden="true" />
+              {labels[item.profile.activation_status]}
+            </span>
+          </div>
           <div className="form-grid">
             <div>
               <h3>بيانات المطعم</h3>
@@ -146,42 +210,126 @@ export function Restaurants() {
           </div>
           <div className="actions">
             {item.profile.activation_status !== 'Active' && (
-              <Confirm
-                label="تفعيل المطعم"
-                description="سيسمح التفعيل للمطعم بإدارة قائمته وطلباته، بشرط نشاط حسابه وتوثيق البريد."
-                run={() =>
-                  api.request(
-                    '/admin/restaurants/' +
-                      item.profile.rest_id +
-                      '/activation',
-                    { method: 'PATCH', body: { activation_status: 'Active' } },
-                  )
-                }
-                done={resource.reload}
-              />
+              <button
+                type="button"
+                className="button primary"
+                onClick={() => setConfirmAction('Active')}
+              >
+                تفعيل المطعم
+              </button>
             )}
             {item.profile.activation_status !== 'Suspended' && (
-              <Confirm
-                label="تعليق المطعم"
-                danger
-                description="سيتم منع عمليات المطعم والتعديلات. ستظل قراءة البيانات وحالة التفعيل متاحة."
-                run={() =>
-                  api.request(
-                    '/admin/restaurants/' +
-                      item.profile.rest_id +
-                      '/activation',
-                    {
-                      method: 'PATCH',
-                      body: { activation_status: 'Suspended' },
-                    },
-                  )
-                }
-                done={resource.reload}
-              />
+              <button
+                type="button"
+                className="button danger"
+                onClick={() => setConfirmAction('Suspended')}
+              >
+                تعليق المطعم
+              </button>
             )}
           </div>
         </section>
       )}
+
+      {/* Confirmation Dialog for Restaurant Activation / Suspension */}
+      <dialog
+        ref={confirmDialogRef}
+        className="restaurant-confirm-dialog"
+        onClose={() => setConfirmAction(null)}
+        aria-labelledby="confirm-dialog-title"
+      >
+        {confirmAction && item && (
+          <div className="confirm-dialog-content">
+            <div className="dialog-head">
+              <div className="dialog-title-group">
+                <span
+                  className={`dialog-badge ${confirmAction === 'Active' ? 'badge-activate' : 'badge-suspend'}`}
+                >
+                  {confirmAction === 'Active' ? (
+                    <CheckCircle2 size={20} aria-hidden="true" />
+                  ) : (
+                    <AlertTriangle size={20} aria-hidden="true" />
+                  )}
+                </span>
+                <h2 id="confirm-dialog-title">
+                  {confirmAction === 'Active'
+                    ? 'تأكيد تفعيل المطعم'
+                    : 'تأكيد تعليق المطعم'}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="dialog-close-btn"
+                aria-label="إغلاق"
+                disabled={actionBusy}
+                onClick={() => setConfirmAction(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="confirm-body">
+              <div className="confirm-target-summary">
+                <div className="confirm-target-row">
+                  <span className="label">اسم المطعم:</span>
+                  <span className="value">{item.profile.rest_title}</span>
+                </div>
+                <div className="confirm-target-row">
+                  <span className="label">رقم المطعم:</span>
+                  <span className="value">
+                    <bdi>#{item.profile.rest_id}</bdi>
+                  </span>
+                </div>
+                <div className="confirm-target-row">
+                  <span className="label">المالك:</span>
+                  <span className="value">
+                    {item.owner?.full_name ?? 'غير متاح'}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                className={`confirm-explanation ${confirmAction === 'Active' ? 'explain-activate' : 'explain-suspend'}`}
+              >
+                <strong>
+                  {confirmAction === 'Active'
+                    ? 'ماذا يعني تفعيل المطعم؟'
+                    : 'ماذا يعني تعليق المطعم؟'}
+                </strong>
+                <p>
+                  {confirmAction === 'Active'
+                    ? 'سيسمح التفعيل للمطعم بالظهور للعملاء في التطبيق واستقبال طلبات الزبائن، وإدارة الأصناف وقائمة الطعام، بشرط نشاط حسابه وتوثيق البريد.'
+                    : 'سيتم تعليق المطعم وإيقاف استقباله للطلبات فوراً ومنع أي تعديلات على حسابه. ستظل قراءة البيانات وسجل الطلبات السابقة متاحة للمراجعة.'}
+                </p>
+              </div>
+
+              {!!actionError && <Failure error={actionError} />}
+
+              <div className="confirm-dialog-actions">
+                <button
+                  type="button"
+                  className={
+                    'button ' +
+                    (confirmAction === 'Active' ? 'primary' : 'danger')
+                  }
+                  disabled={actionBusy}
+                  onClick={() => void executeStatusChange()}
+                >
+                  {actionBusy ? 'جارٍ التنفيذ…' : 'تأكيد'}
+                </button>
+                <button
+                  type="button"
+                  className="button"
+                  disabled={actionBusy}
+                  onClick={() => setConfirmAction(null)}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </dialog>
     </>
   );
 }

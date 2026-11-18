@@ -8,7 +8,10 @@
     "./forms.css": "./forms.css",
     "./sidebar.css": "./sidebar.css",
     "./logo.png": "./assets/logo.png",
+    "./logo.webp": "./assets/logo.webp",
     "./icon.png": "./assets/icon.png",
-    "./botanical.png": "./assets/botanical.png"
+    "./icon.webp": "./assets/icon.webp",
+    "./botanical.png": "./assets/botanical.png",
+    "./botanical.webp": "./assets/botanical.webp"
   }
 }
