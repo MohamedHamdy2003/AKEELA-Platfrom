@@ -49,7 +49,15 @@ const navigation = [
   { key: 'account', label: 'حسابي', icon: UserRound },
 ];
 function currentRoute() {
-  const key = window.location.hash.slice(2);
+  if (typeof window === 'undefined') return 'home';
+  if (window.location.hash.startsWith('#/')) {
+    const hashKey = window.location.hash.slice(2);
+    if (hashKey) {
+      window.history.replaceState(null, '', '/' + hashKey);
+      return navigation.some((item) => item.key === hashKey) ? hashKey : 'home';
+    }
+  }
+  const key = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/')[0];
   return navigation.some((item) => item.key === key) ? key : 'home';
 }
 class ErrorBoundary extends Component<
@@ -133,7 +141,10 @@ function Workspace() {
   const menuTrigger = useRef<HTMLButtonElement>(null);
   const [initialOrder, setInitialOrder] = useState<string | null>(null);
   const navigate = useCallback((key: string) => {
-    window.location.hash = '/' + key;
+    const target = '/' + key;
+    if (window.location.pathname !== target) {
+      window.history.pushState(null, '', target);
+    }
     setRoute(key);
     setMobile(false);
   }, []);
@@ -195,12 +206,16 @@ function Workspace() {
     return () => window.removeEventListener('focus', onFocus);
   }, [user, refreshStatus]);
   useEffect(() => {
-    const onHash = () => {
+    const onLocationChange = () => {
       setRoute(currentRoute());
       setMobile(false);
     };
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    window.addEventListener('popstate', onLocationChange);
+    window.addEventListener('hashchange', onLocationChange);
+    return () => {
+      window.removeEventListener('popstate', onLocationChange);
+      window.removeEventListener('hashchange', onLocationChange);
+    };
   }, []);
   useEffect(() => {
     document.title = `AKEELA - المطعم - ${user ? (navigation.find((item) => item.key === route)?.label ?? 'لوحة المطعم') : 'تسجيل الدخول'}`;
@@ -208,6 +223,8 @@ function Workspace() {
   async function logout() {
     await api.request('/auth/logout', { method: 'POST' });
     api.clearSession();
+    window.history.replaceState(null, '', '/');
+    setRoute('home');
   }
   if (restoring || restoreError)
     return (
