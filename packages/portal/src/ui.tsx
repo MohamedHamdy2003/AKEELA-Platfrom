@@ -30,8 +30,11 @@ import {
   Users,
   Utensils,
   X,
+  PanelRightClose,
+  PanelRightOpen,
 } from 'lucide-react';
 import logo from '@akeela/brand/logo.png';
+import brandIcon from '@akeela/brand/icon.png';
 import { ApiClient, ApiError, errorMessage } from './api';
 import {
   statuses,
@@ -376,6 +379,19 @@ export function Shell({
   children: ReactNode;
 }) {
   const [drawer, setDrawer] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [compact, setCompact] = useState(
+    () => window.matchMedia('(max-width: 960px)').matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 960px)');
+    const update = () => {
+      setCompact(media.matches);
+      setDrawer(false);
+    };
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   const drawerRef = useRef<HTMLElement>(null);
   const [logoutBusy, setLogoutBusy] = useState(false);
   useEffect(() => {
@@ -383,7 +399,9 @@ export function Shell({
     const old = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    drawerRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    drawerRef.current
+      ?.querySelector<HTMLButtonElement>('.drawer-close')
+      ?.focus();
     const escape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setDrawer(false);
       if (event.key === 'Tab') {
@@ -412,7 +430,11 @@ export function Shell({
     };
   }, [drawer]);
   return (
-    <div className="portal" data-portal={theme}>
+    <div
+      className="portal portal-shell"
+      data-portal={theme}
+      data-sidebar-collapsed={collapsed}
+    >
       <button
         className="skip-link"
         onClick={() => document.getElementById('main-content')?.focus()}
@@ -426,10 +448,21 @@ export function Shell({
           onClick={() => setDrawer(false)}
         />
       )}
-      <aside ref={drawerRef} className={'sidebar ' + (drawer ? 'open' : '')}>
+      <aside
+        ref={drawerRef}
+        className={'sidebar ' + (drawer ? 'open' : '')}
+        inert={compact && !drawer}
+        aria-hidden={compact && !drawer ? true : undefined}
+      >
         <div className="wordmark">
-          <img src={logo} alt="AKEELA" />
-          <small>{appName}</small>
+          <img className="sidebar-wordmark" src={logo} alt="AKEELA" />
+          <img
+            className="sidebar-mark"
+            src={brandIcon}
+            alt=""
+            aria-hidden="true"
+          />
+          <small className="brand-label">{appName}</small>
         </div>
         <button
           className="drawer-close"
@@ -438,7 +471,24 @@ export function Shell({
         >
           <X />
         </button>
-        <nav aria-label="القائمة الرئيسية">
+        <button
+          className="sidebar-toggle"
+          aria-label={
+            collapsed ? 'توسيع القائمة الجانبية' : 'طي القائمة الجانبية'
+          }
+          aria-expanded={!collapsed}
+          aria-controls="portal-navigation"
+          title={collapsed ? 'توسيع القائمة الجانبية' : 'طي القائمة الجانبية'}
+          onClick={() => setCollapsed((value) => !value)}
+        >
+          {collapsed ? (
+            <PanelRightOpen size={19} aria-hidden="true" />
+          ) : (
+            <PanelRightClose size={19} aria-hidden="true" />
+          )}
+          <span className="nav-label">طي القائمة</span>
+        </button>
+        <nav id="portal-navigation" aria-label="القائمة الرئيسية">
           {navigation.map(([key, label]) => {
             const Icon = navIcons[key] ?? Home;
             return (
@@ -446,13 +496,15 @@ export function Shell({
                 key={key}
                 aria-current={route === key ? 'page' : undefined}
                 className={route === key ? 'active' : ''}
+                aria-label={label}
+                title={collapsed && !compact ? label : undefined}
                 onClick={() => {
                   navigate(key);
                   setDrawer(false);
                 }}
               >
-                <Icon size={19} />
-                {label}
+                <Icon size={19} aria-hidden="true" />
+                <span className="nav-label">{label}</span>
               </button>
             );
           })}
@@ -462,12 +514,14 @@ export function Shell({
           <span>مساحة آمنة · AKEELA</span>
         </div>
       </aside>
-      <div className="workspace">
+      <div className="workspace" inert={compact && drawer}>
         <header className="topbar">
           <div className="breadcrumb">
             <button
               className="mobile-menu"
               aria-label="فتح القائمة"
+              aria-expanded={drawer}
+              aria-controls="portal-navigation"
               onClick={() => setDrawer(true)}
             >
               <Menu size={21} />

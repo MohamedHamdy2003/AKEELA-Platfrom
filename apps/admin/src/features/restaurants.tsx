@@ -128,18 +128,18 @@ export function Restaurants() {
             <div>
               <h3>بيانات المالك</h3>
               <p>{item.owner?.full_name}</p>
-              <p>
+              <p className="email-cell">
                 <bdi>{item.owner?.email}</bdi>
-              </p>
-              <p>
-                <bdi>{item.owner?.phone}</bdi>
-              </p>
-              <div className="account-meta">
                 {item.owner && (
                   <EmailVerification
                     verified={!!item.owner.email_verified_at}
                   />
                 )}
+              </p>
+              <p>
+                <bdi>{item.owner?.phone}</bdi>
+              </p>
+              <div className="account-meta">
                 <span>الحساب {item.owner?.is_active ? 'نشط' : 'غير نشط'}</span>
               </div>
             </div>

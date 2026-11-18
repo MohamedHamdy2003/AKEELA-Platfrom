@@ -43,6 +43,7 @@ Lucide navigation icons are 20px with the original metaphor/stroke system. Meani
 ## Layout and components
 
 - Desktop right sidebar 248px (240px below 1250px), 64px topbar and 32px main gutters. Below 960px the sidebar becomes a dismissible drawer; phone forms stack below 680px.
+- Desktop collapse uses an 80px icon rail, accessible toggle/route names, hover titles and a 280ms eased grid transition from packages/brand/sidebar.css. The mark replaces the wordmark; reduced motion removes transitions. Mobile retains the full-width drawer and activation/keyboard guards. Collapse state is not persisted across reloads.
 - The sidebar logo is smaller and the navigation rows are 46px tall. The login form is capped at 440px, registration at 640px; a small wordmark anchors the white form. The brand panel retains room for the original botanical artwork.
 - Open headings/status strips lead into white rounded tables. Compact type does not reduce touch targets: ordinary controls stay approximately 46–50px tall, compact actions remain at least 38px. Tables preserve their columns and scroll inside their region on phones.
 - Two-column labeled forms retain normal native inputs/selects; focused fields use an emerald border and soft ring. Password controls remain centered against the actual input. Native dialogs keep keyboard focus, Escape and immediate dismissal guards.

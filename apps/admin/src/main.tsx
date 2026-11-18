@@ -6,6 +6,7 @@ import '@fontsource/ibm-plex-sans-arabic/600.css';
 import '@akeela/brand/tokens.css';
 import '@akeela/portal/styles.css';
 import '@akeela/brand/forms.css';
+import '@akeela/brand/sidebar.css';
 import { App } from './app';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

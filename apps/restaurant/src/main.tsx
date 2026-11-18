@@ -7,6 +7,7 @@ import '@fontsource/ibm-plex-sans-arabic/700.css';
 import '@akeela/brand/tokens.css';
 import './styles.css';
 import '@akeela/brand/forms.css';
+import '@akeela/brand/sidebar.css';
 import { App } from './app';
 
 createRoot(document.getElementById('root')!).render(
