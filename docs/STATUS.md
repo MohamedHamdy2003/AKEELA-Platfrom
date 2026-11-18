@@ -89,3 +89,7 @@ Owner authorized Admin and Delivery Company dashboards, realtime order updates f
 
 - Verification: root check passed; all 113 dedicated PostgreSQL/Mailpit cases passed. Admin/Delivery browser suites passed (4 scenarios), Restaurant browser suite passed (27 scenarios). Docker production smoke passed all four image builds, Caddy config/local trusted TLS, static frontends, persistence and repeated Admin initialization. A real browser/API order lifecycle passed checkout → restaurant accept → driver create/assign → pickup → delivery, including live Admin and Restaurant updates with no HTTP mocks or runtime/CSP errors.
 - Runtime audit passes with the owner-approved, expiring picomatch advisory exception only; see SECURITY.md. No zero-vulnerability claim. CI workflow/actionlint and Bash syntax checks passed.
+
+### Release approval
+
+The owner explicitly approved promotion of PR #17 through dev to main and deployment after CI passes. This approval covers the dashboards/realtime/startup release and its necessary verification fixes only. The personal root SSH key remains local; CI uses a separate Ed25519 deployment key.

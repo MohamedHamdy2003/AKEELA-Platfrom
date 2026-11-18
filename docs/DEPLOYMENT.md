@@ -69,3 +69,5 @@ Workflow secrets belong to the production environment. Configuration/credentials
 References: [Docker Ubuntu installation](https://docs.docker.com/engine/install/ubuntu/), [Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/), [Caddy HTTPS](https://caddyserver.com/docs/automatic-https).
 
 Current verification: all four A records resolve to 2.25.12.243. Docker/Compose and a dedicated deploy user/key are installed; the owner's existing root SSH settings were preserved. Private configuration is installed mode 600. Application startup, public ACME and Gmail connectivity from the VPS will be recorded in STATUS.md after rollout.
+
+VENDOR_DOMAIN is retained as a compatible configuration key, but its value is restaurant.akeelaonline.tech. Do not create or switch to a vendor DNS record. The current owner approved main promotion and deployment after CI succeeds.

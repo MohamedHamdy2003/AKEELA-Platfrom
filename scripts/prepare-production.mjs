@@ -2,6 +2,10 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  parsePrivateEnvironment,
+  renderPrivateEnvironment,
+} from './production-env.mjs';
 const require = createRequire(
   new URL('../apps/api/package.json', import.meta.url),
 );
@@ -9,7 +13,7 @@ const { parse } = require('dotenv');
 const { isEmail } = require('class-validator');
 try {
   const target = new URL('../.env.production.local', import.meta.url);
-  const values = parse(readFileSync(target));
+  const values = parsePrivateEnvironment(readFileSync(target, 'utf8'), parse);
   const local = parse(
     readFileSync(new URL('../apps/api/.env', import.meta.url)),
   );
@@ -76,12 +80,7 @@ try {
   if (Object.values(values).some((value) => /[\r\n\0]/.test(value)))
     throw new Error('Environment fields must be single-line values.');
   // Compose single quotes prevent $ expansion. Escape apostrophes; retain literal backslashes.
-  const content =
-    '# PRIVATE production configuration. Never commit or print.\n' +
-    Object.entries(values)
-      .map(([key, value]) => `${key}='${value.replaceAll("'", "\\'")}'`)
-      .join('\n') +
-    '\n';
+  const content = renderPrivateEnvironment(values);
   writeFileSync(target, content, { mode: 0o600 });
   const result = spawnSync(
     'docker',
