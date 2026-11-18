@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import type { User } from '@akeela/portal/models';
 import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
 import { AccountScreen, OrdersBoard } from '@akeela/portal/screens';
-import { AuthPage, Shell } from '@akeela/portal/ui';
+import { AuthPage, Failure, Loading, Shell } from '@akeela/portal/ui';
+import { useSessionRestore } from '@akeela/portal/use-session-restore';
 import { api, base } from './lib/api';
 import { Home } from './features/home';
 import { Drivers } from './features/drivers';
@@ -24,6 +25,10 @@ export function App() {
     [route, setRoute] = useState(currentRoute),
     [revision, setRevision] = useState(0),
     [status, setStatus] = useState<RealtimeStatus>('connecting');
+  const { restoring, restoreError, retryRestore } = useSessionRestore(
+    api,
+    setUser,
+  );
   useEffect(() => {
     const change = () => setRoute(currentRoute());
     window.addEventListener('hashchange', change);
@@ -45,6 +50,23 @@ export function App() {
   const navigate = (key: string) => {
     location.hash = '/' + key;
   };
+  if (restoring || restoreError)
+    return (
+      <main
+        className="portal session-recovery"
+        data-portal="delivery"
+        aria-label="استعادة الجلسة"
+      >
+        <section className="session-recovery-panel">
+          <h1>{restoring ? 'جارٍ استعادة الجلسة' : 'تعذّر استعادة الجلسة'}</h1>
+          {restoring ? (
+            <Loading />
+          ) : (
+            <Failure error={restoreError} retry={retryRestore} />
+          )}
+        </section>
+      </main>
+    );
   if (!user)
     return (
       <AuthPage

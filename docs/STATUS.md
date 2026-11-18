@@ -8,6 +8,9 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
+- Browser refresh now restores verified sessions in all three dashboards using per-tab sessionStorage, server /me checks and existing refresh-token rotation. Logout/revocation still end the session. Network failures show retry; see AUTH.md for storage scope and limits. This supersedes the earlier memory-only decision and targets dev only.
+- Session verification: root npm run check and all 44 Chromium scenarios passed, including reload/route preservation, token rotation, logout, revoked/corrupt sessions and mobile retry after a temporary bootstrap failure. Unit tests cover all three clients, storage isolation/blocked storage and late-response races. Browser plugin not available; existing Playwright and local API fixtures used. No production sessions or database behavior were changed.
+
 - Browser tabs: all three dashboards have distinct same-origin SVG favicons (Admin shield, Restaurant storefront, Delivery truck) and `AKEELA - <Arabic app name>` titles. Restaurant preserves its current page suffix. These changes target dev only; production needs a separate owner-authorized release.
 - Tab verification: root npm run check and all 35 Chromium UI scenarios passed. A local browser check verified all three titles, one SVG favicon per app, correct SVG responses and reload behavior without page errors; icons were visually reviewed at 16/32/64px. Browser plugin not available; existing Playwright used. No VPS changes.
 
@@ -19,7 +22,7 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 | 15: Customer/restaurant/product/offer images and public URLs          | Implemented                                                                                            |
 | 16: Public liveness/readiness                                         | Implemented                                                                                            |
 | PostgreSQL                                                            | Twenty table mappings, one history view, eight reversible migrations; no schema change in this release |
-| Restaurant frontend                                                   | React/Vite/TypeScript, Arabic RTL, memory-only sessions, Leaflet location picker                       |
+| Restaurant frontend                                                   | React/Vite/TypeScript, Arabic RTL, tab-scoped sessionStorage sessions, Leaflet location picker         |
 | API collection                                                        | 81 routes in specifications and matching Bruno folders                                                 |
 | Docker/Caddy                                                          | Persistent images/database/certificates, private API/database; local TLS smoke verified                |
 | CI/CD                                                                 | PR checks, main GHCR publication, optional pinned-SSH deployment; deployment disabled until configured |
@@ -37,13 +40,13 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 ## Pending
 
 - Create/verify the real Delivery_Company account through Admin and set its company profile ID in DEFAULT_DELIVERY_COMPANY_ID before accepting customer orders. No company is seeded automatically.
-- Backup/restore automation explicitly deferred. OpenAPI, future delivery-fee Admin API, image cleanup and load testing remain unimplemented. Restaurant sessions intentionally stay in memory only.
+- Backup/restore automation explicitly deferred. OpenAPI, future delivery-fee Admin API, image cleanup and load testing remain unimplemented. Browser sessions now survive refresh; see AUTH.md.
 - The owner-authorized production init applied all eight migrations and provisioned the single Admin. No test/customer/restaurant/company/driver/catalog data was seeded on production. Tests truncate only dedicated test databases.
 
 ## Restaurant frontend
 
 - `apps/restaurant` implements the supported Restaurant screens with React/Vite/TypeScript and Arabic RTL. Shared tokens/assets live in `packages/brand`. Admin/Delivery are implemented; see PORTAL-DESIGN.md. See the [app guide](frontend/AKEELA-Restaurant-App.md), [run guide](../apps/restaurant/README.md) and [design system](DESIGN-SYSTEM.md).
-- Access/refresh tokens stay in memory; reload requires login. Refresh coordinates concurrent requests. Activation/role gates, decimal strings, Cairo dates and server ownership checks remain authoritative. No persistent sessions/SSO, invented analytics, preparation statuses or unsupported APIs.
+- Access/refresh tokens use tab-scoped sessionStorage; reload checks /me before opening the workspace. Refresh coordinates concurrent requests. Activation/role gates, decimal strings, Cairo dates and server ownership checks remain authoritative. No cross-subdomain SSO, invented analytics, preparation statuses or unsupported APIs.
 - Registration labels the address “عنوان المطعم”, centers password controls and explains the known duplicate email/phone conflict without clearing input. Automatic browser location retains the best reported fix for up to 25 seconds, displays approximate accuracy and never guarantees true device position. The owner reported a wrong country in both the app and Google Maps on the laptop; the precise provider cause remains unresolved.
 - Registration/profile reuse Leaflet + OpenStreetMap. Automatic registration fixes appear directly; map click/tap, pin drag/arrow keys and coordinate inputs stay synchronized. Manual choices cancel acquisition, protecting against late fixes. Profile starts from saved coordinates; Pending/Suspended and in-flight saves disable selection, and failed saves retain the draft. No address search/geocoding or fabricated coordinates.
 - Standard OSM tile loading preserves attribution/referrer/caching, with public build-time tile URL/attribution overrides and manual fallback/reload. CSP allows data: images for Leaflet’s transparent tile-cancellation placeholder; script/style restrictions are unchanged. No Google billing/key or public deployment.
@@ -83,7 +86,7 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Current work: dashboards, realtime and deployment
 
-Owner authorized Admin and Delivery Company dashboards, realtime order updates for all authorized clients, and Compose-managed initialization/startup before deploying to the purchased VPS. Approved: React/Vite/TypeScript, Arabic RTL and memory-only sessions; only visual identity differs. Socket.IO notifications are approved. SSH confirmed the server OS; provisioning and the initial application rollout are complete. The Admin CLI is idempotent: existing Admin accounts are preserved, first creation uses private environment values, and concurrent initialization is serialized.
+Owner authorized Admin and Delivery Company dashboards, realtime order updates for all authorized clients, and Compose-managed initialization/startup before deploying to the purchased VPS. Approved: React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions; only visual identity differs. Socket.IO notifications are approved. SSH confirmed the server OS; provisioning and the initial application rollout are complete. The Admin CLI is idempotent: existing Admin accounts are preserved, first creation uses private environment values, and concurrent initialization is serialized.
 
 ### Current implementation / verification
 

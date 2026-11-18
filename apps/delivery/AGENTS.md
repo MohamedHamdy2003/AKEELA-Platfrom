@@ -8,4 +8,4 @@ Follow the root [AGENTS.md](../../AGENTS.md) first. Work in `apps/delivery`; rol
 
 Key limits: this is the company/dispatcher app, not driver login. Admin creates the account; company signup is unsupported. Drivers must be active and owned; assignment/change stops after pickup. Only assigned orders are visible. Pickup moves Accepted to Picked_Up; delivery moves Picked_Up to Delivered. No tracking, payouts, proof-of-delivery upload or company failure action exists.
 
-This is an implemented React/Vite/TypeScript app with Arabic RTL and memory-only sessions. Read [portal design](../../docs/PORTAL-DESIGN.md) and [realtime](../../docs/REALTIME.md) for affected work. Run its own check and browser suite. Shared packages/portal changes affect both apps; Restaurant uses its realtime helper.
+This is an implemented React/Vite/TypeScript app with Arabic RTL and tab-scoped sessionStorage sessions. Read [portal design](../../docs/PORTAL-DESIGN.md) and [realtime](../../docs/REALTIME.md) for affected work. Run its own check and browser suite. Shared packages/portal changes affect both apps; Restaurant also shares its realtime and session helpers.

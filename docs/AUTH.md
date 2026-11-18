@@ -17,13 +17,23 @@ Implemented scope: the 12 routes in Feature 01 of the root API documents. Featur
 | Rate limits       | 60 requests/IP and 10/account per 900 seconds on auth routes; configurable, bounded in-memory counters      |
 | Images            | Image URL fields plus Feature 15 uploads; see IMAGES.md                                                     |
 
-Lifetimes and request/OTP limits are environment settings. Password length and six-digit OTP format are part of the API contract. Refresh tokens are currently JSON request/response values, not cookies. Browser storage/CSRF design must be revisited before changing that transport.
+Lifetimes and request/OTP limits are environment settings. Password length and six-digit OTP format are part of the API contract. Refresh tokens are currently JSON request/response values, not cookies. Browser sessions use the tab-scoped storage policy below; cookies/CSRF remain a separate transport decision.
 
 Rate limits apply across auth actions and across IPs for the same normalized email. The counters are process-local and reset on restart; this is an explicit single-process initial deployment choice. Persistent OTP attempt/cooldown checks remain in PostgreSQL. Multiple API instances require shared rate-limit storage before scaling. Never log codes or raw tokens.
 
 Auth uses a global APP_GUARD with a common PublicRoute opt-out and CurrentActor decorator. Request context contains only user/session IDs; protected routes do not need reverse module imports or carry password hashes.
 
 ## Persistence and transaction behavior
+
+### Browser reloads
+
+The owner now requires login to survive refresh in Admin, Restaurant and Delivery. This replaces the earlier memory-only browser choice; the backend/mobile JSON contract is unchanged.
+
+- Each app saves only its token pair in sessionStorage, keyed by role and API base URL. It is scoped to the origin and tab, not shared SSO or a remember-me across browser sessions. Do not save passwords, OTPs or account/profile data. Existing CSP and same-origin assets remain required; sessionStorage is JavaScript-accessible, not an HttpOnly cookie.
+- Startup shows a loading state, checks /me and validates the role before rendering the workspace. Expired access uses the existing single-flight refresh; rotated tokens replace the saved pair before retries. The hash route is preserved. No new server session or extended expiry is created by reload.
+- Logout, password change and confirmed 401/403 session failure clear the saved pair. Logout during a request cannot restore the old session or clear a newer login. Transient network/5xx failures retain the pair and show retry instead of silently logging out.
+- Blocked storage falls back to memory-only behavior; malformed saved data is removed safely. Closing a tab normally ends its storage lifetime; browser restore/duplicate-tab features can copy it. Tokens remain governed by server expiry/revocation. Simultaneous refresh of a duplicated session across tabs is not coordinated and may require login in one tab; no cross-tab session sharing is promised. A lost response during server token rotation can also require login.
+- Shared storage/bootstrap helpers live in packages/portal; both HTTP clients implement the same lifecycle. Do not move tokens to localStorage, cookies or a shared domain without a new decision.
 
 The initial migration creates only seven business/auth tables: users, customer_profiles, restaurant_profiles, delivery_company_profiles, admin_profiles, auth_challenges, and auth_sessions, plus TypeORM's migration tracking table. Company/Admin profiles support the shared `/me` response; their public creation endpoints do not exist.
 

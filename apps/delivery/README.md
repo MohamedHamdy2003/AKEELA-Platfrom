@@ -1,6 +1,6 @@
 # AKEELA Delivery Company
 
-Implemented React/Vite/TypeScript dashboard, Arabic RTL and memory-only sessions. Read [app instructions](AGENTS.md) and [design](../../docs/PORTAL-DESIGN.md).
+Implemented React/Vite/TypeScript dashboard, Arabic RTL and tab-scoped sessionStorage sessions. Read [app instructions](AGENTS.md) and [design](../../docs/PORTAL-DESIGN.md).
 
 From the repository root:
 

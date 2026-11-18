@@ -144,6 +144,7 @@ test('dashboard native and server field feedback is Arabic; authentication remai
   await expect(page.locator('.field-error')).not.toContainText(
     'regular expression',
   );
+  await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
   await page.reload();
   await expect(
     page.getByRole('heading', { name: 'مرحبًا بعودتك' }),

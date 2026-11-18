@@ -5,7 +5,7 @@
 - Owner approved an embedded Leaflet + OpenStreetMap registration picker: automatic browser coordinates are shown directly, and manual map selection updates existing decimal-string fields. Leaflet is bundled; standard OSM tiles load directly with attribution/referrer/caching per provider policy. Public tile URL/attribution can be overridden at build time. The tile service has no availability guarantee. Production img-src permits data: images for Leaflet’s transparent tile-cancellation placeholder; other CSP directives remain unchanged.
 
 - Current owner request authorizes React + Vite + strict TypeScript in apps/restaurant, Arabic-first RTL and the current Fresh Kitchen visual refresh (replacing the initial Garden Kitchen direction). See [design system](DESIGN-SYSTEM.md).
-- Owner explicitly chose memory-only browser tokens; reload requires login. JSON transport stays unchanged; no persistence/cookies/cross-subdomain SSO. Concurrent refreshes share one rotation with one retry.
+- The owner requires login to survive reload. All three apps implement this with tab-scoped sessionStorage tokens (supersedes the earlier memory-only choice); see [AUTH](AUTH.md). JSON transport stays unchanged; no localStorage/cookies/cross-subdomain SSO. Concurrent refreshes within one page share one rotation with one retry.
 - packages/brand contains shared CSS tokens and raster identity assets as requested for the ecosystem. React UI remains app-local until another implemented app needs it.
 - Existing REST contracts define the supported screens. No analytics, staff, branches, preparation statuses or backend changes are introduced. Hosting remains disabled pending a separately approved release/configuration.
 
@@ -90,7 +90,7 @@ Official references used for foundation choices: [Nest modules](https://docs.nes
 
 ## Dashboards, realtime and deployment — 2026-11-18
 
-Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and memory-only sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant imports only the realtime helper and keeps its UI. Root check and consolidated CI cover all workspaces.
+Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and tab-scoped sessionStorage sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant shares the realtime, session-storage and bootstrap helpers and keeps its own HTTP/UI implementation. Root check and consolidated CI cover all workspaces.
 
 Socket.IO runs inside the single API process. Events invalidate authorized REST reads after order commits; no schema, microservice, Redis or durable event log is added. See [REALTIME](REALTIME.md) and [portal design](PORTAL-DESIGN.md).
 

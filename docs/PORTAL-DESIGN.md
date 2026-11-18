@@ -1,6 +1,6 @@
 # Admin and Delivery UI
 
-Both apps use React, Vite, TypeScript, Arabic RTL and self-hosted IBM Plex Sans Arabic. Session tokens stay in memory; reloading requires login. No cross-domain SSO, localStorage tokens or remember-me behavior is implemented.
+Both apps use React, Vite, TypeScript, Arabic RTL and self-hosted IBM Plex Sans Arabic. Session tokens survive refresh through tab-scoped sessionStorage; current account data is fetched from /me before rendering the workspace. No cross-domain SSO, localStorage tokens or remember-me behavior is implemented.
 
 ## Visual identity
 

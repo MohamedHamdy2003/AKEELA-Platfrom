@@ -5,7 +5,7 @@ import {
   portalFixture,
   login,
 } from '../../../../packages/portal/test/browser-fixtures';
-test('admin reviews, fails an order, receives realtime updates and keeps sessions in memory', async ({
+test('admin reviews, fails an order, receives realtime updates and restores the session after reload', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -70,8 +70,9 @@ test('admin reviews, fails an order, receives realtime updates and keeps session
     page.getByRole('button', { name: 'تعطيل الحساب' }),
   ).toBeVisible();
   await page.reload();
+  await expect(page.getByRole('navigation')).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: 'مرحبًا بعودتك' }),
+    page.getByRole('heading', { name: 'المستخدمون', exact: true }),
   ).toBeVisible();
   expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([]);
   expect(errors).toEqual([]);

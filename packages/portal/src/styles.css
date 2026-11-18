@@ -23,6 +23,22 @@
   --p-gold: #12b0bd;
   --p-text: #183444;
 }
+.portal.session-recovery {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.session-recovery-panel {
+  width: min(100%, 420px);
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--p-line);
+  border-radius: 16px;
+}
+.session-recovery-panel h1 {
+  margin: 0 0 20px;
+  font-size: 19px;
+}
 * {
   box-sizing: border-box;
 }
