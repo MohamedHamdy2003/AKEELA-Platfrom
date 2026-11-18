@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { ApiError, query } from '@akeela/portal/api';
 import type { User } from '@akeela/portal/models';
 import {
@@ -14,6 +14,7 @@ import {
 import { api } from '../lib/api';
 import { ProfileDetails } from './profile-details';
 import { EmailVerification } from '../components/email-verification';
+import { EmailVerificationDialog } from '../components/email-verification-dialog';
 const roles: Record<string, string> = {
   Customer: 'عميل',
   Restaurant: 'مطعم',
@@ -27,10 +28,12 @@ export function Users({
   companyOnly?: boolean;
   revision?: number;
 }) {
+  const resendDeadlines = useRef(new Map<string, number>());
   const [page, setPage] = useState(1),
     [role, setRole] = useState(''),
     [active, setActive] = useState(''),
     [id, setId] = useState<string | null>(null),
+    [verifyTarget, setVerifyTarget] = useState<User | null>(null),
     [tick, setTick] = useState(0);
   const resource = useResource<User[]>(
       api,
@@ -113,7 +116,14 @@ export function Users({
                     <td>
                       <div className="email-cell">
                         <bdi>{row.email}</bdi>
-                        <EmailVerification verified={!!row.email_verified_at} />
+                        <EmailVerification
+                          verified={!!row.email_verified_at}
+                          onClick={
+                            row.role === 'Delivery_Company'
+                              ? () => setVerifyTarget(row)
+                              : undefined
+                          }
+                        />
                       </div>
                     </td>
                     <td>{roles[row.role]}</td>
@@ -146,6 +156,11 @@ export function Users({
                     <bdi>{selected.email}</bdi>
                     <EmailVerification
                       verified={!!selected.email_verified_at}
+                      onClick={
+                        selected.role === 'Delivery_Company'
+                          ? () => setVerifyTarget(selected)
+                          : undefined
+                      }
                     />
                   </span>
                   <bdi>{selected.phone}</bdi>
@@ -169,8 +184,10 @@ export function Users({
                       <bdi>{String(selected.profile.company_id)}</bdi>
                     </p>
                     <Notice>
-                      البريد يحتاج إلى التوثيق قبل دخول الشركة. رقم الشركة
-                      يُستخدم في إعداد إسناد الطلبات على الخادم.
+                      {selected.email_verified_at
+                        ? 'بريد تسجيل الدخول موثّق. '
+                        : 'البريد يحتاج إلى التوثيق قبل دخول الشركة. '}
+                      رقم الشركة يُستخدم في إعداد إسناد الطلبات على الخادم.
                     </Notice>
                   </>
                 )}
@@ -199,6 +216,18 @@ export function Users({
             )}
           </ResourceState>
         </section>
+      )}
+      {verifyTarget && (
+        <EmailVerificationDialog
+          key={verifyTarget.user_id}
+          user={verifyTarget}
+          retryAt={resendDeadlines.current.get(verifyTarget.email) ?? 0}
+          onRetryAt={(deadline) =>
+            resendDeadlines.current.set(verifyTarget.email, deadline)
+          }
+          onClose={() => setVerifyTarget(null)}
+          onVerified={() => setTick((value) => value + 1)}
+        />
       )}
     </>
   );
