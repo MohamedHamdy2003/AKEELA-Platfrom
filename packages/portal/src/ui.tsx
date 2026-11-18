@@ -35,7 +35,9 @@ import {
   PanelRightOpen,
 } from 'lucide-react';
 import logo from '@akeela/brand/logo.png';
+import logoWebp from '@akeela/brand/logo.webp';
 import brandIcon from '@akeela/brand/icon.png';
+import brandIconWebp from '@akeela/brand/icon.webp';
 import { ApiClient, ApiError, errorMessage } from './api';
 import {
   statuses,
@@ -458,13 +460,29 @@ export function Shell({
         aria-hidden={compact && !drawer ? true : undefined}
       >
         <div className="wordmark">
-          <img className="sidebar-wordmark" src={logo} alt="AKEELA" />
-          <img
-            className="sidebar-mark"
-            src={brandIcon}
-            alt=""
-            aria-hidden="true"
-          />
+          <picture>
+            <source srcSet={logoWebp} type="image/webp" />
+            <img
+              className="sidebar-wordmark"
+              src={logo}
+              alt="AKEELA"
+              width="92"
+              height="92"
+              decoding="async"
+            />
+          </picture>
+          <picture>
+            <source srcSet={brandIconWebp} type="image/webp" />
+            <img
+              className="sidebar-mark"
+              src={brandIcon}
+              alt=""
+              aria-hidden="true"
+              width="38"
+              height="38"
+              decoding="async"
+            />
+          </picture>
           <small className="brand-label">{appName}</small>
         </div>
         <button
@@ -670,7 +688,16 @@ export function AuthPage({
   return (
     <div className="portal auth-page" data-portal={theme}>
       <section className="auth-identity">
-        <img src={logo} alt="AKEELA" />
+        <picture>
+          <source srcSet={logoWebp} type="image/webp" />
+          <img
+            src={logo}
+            alt="AKEELA"
+            width="135"
+            height="123"
+            decoding="async"
+          />
+        </picture>
         <div>
           <span className="identity-line" />
           <h2>

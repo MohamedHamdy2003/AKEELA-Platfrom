@@ -23,6 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import logo from '@akeela/brand/logo.png';
+import logoWebp from '@akeela/brand/logo.webp';
 import { watchOrders } from '@akeela/portal/realtime';
 import { api } from './lib/api';
 import type { CatalogKind, Dashboard, Profile, User } from './lib/models';
@@ -36,6 +37,7 @@ import { Failure, Loading, Notice } from './components/ui';
 import { Presence } from './components/presence';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import brandIcon from '@akeela/brand/icon.png';
+import brandIconWebp from '@akeela/brand/icon.webp';
 import { useSessionRestore } from '@akeela/portal/use-session-restore';
 
 const navigation = [
@@ -292,7 +294,10 @@ function Workspace() {
         انتقل إلى المحتوى
       </a>
       <div className="mobile-top" inert={mobile}>
-        <img src={logo} alt="أكيلة" />
+        <picture>
+          <source srcSet={logoWebp} type="image/webp" />
+          <img src={logo} alt="أكيلة" width="70" height="64" decoding="async" />
+        </picture>
         <button
           ref={menuTrigger}
           className="icon-button"
@@ -320,13 +325,29 @@ function Workspace() {
         aria-hidden={compactNavigation && !mobile ? true : undefined}
       >
         <div className="sidebar-brand">
-          <img className="sidebar-wordmark" src={logo} alt="أكيلة — AKEELA" />
-          <img
-            className="sidebar-mark"
-            src={brandIcon}
-            alt=""
-            aria-hidden="true"
-          />
+          <picture>
+            <source srcSet={logoWebp} type="image/webp" />
+            <img
+              className="sidebar-wordmark"
+              src={logo}
+              alt="أكيلة — AKEELA"
+              width="92"
+              height="92"
+              decoding="async"
+            />
+          </picture>
+          <picture>
+            <source srcSet={brandIconWebp} type="image/webp" />
+            <img
+              className="sidebar-mark"
+              src={brandIcon}
+              alt=""
+              aria-hidden="true"
+              width="38"
+              height="38"
+              decoding="async"
+            />
+          </picture>
           <button
             className="icon-button mobile-close"
             aria-label="إغلاق القائمة"
