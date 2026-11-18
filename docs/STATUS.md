@@ -2,6 +2,8 @@
 
 ## Authorized scope
 
+Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.
+
 Backend Features 01-17, three browser dashboards and Compose initialization are implemented. Historical release approvals do not authorize a new main promotion; follow the current user request and GitHub flow. The owner purchased a Hostinger VPS at public IPv4 2.25.12.243. Read-only SSH confirmed Ubuntu 26.04.1 LTS; domain is akeelaonline.tech. Docker provisioning and public DNS resolution are complete. Public HTTPS and the first application rollout are verified. Backup automation is deferred by the owner.
 
 ## Implemented
@@ -112,3 +114,11 @@ Order detail panels show all authorized participant references, saved unit price
 Owner requested slightly larger Admin text and matching Restaurant typography, while keeping titles compact. Both now use shared 16px body/inputs, 14px tables/labels, 15px navigation/buttons, 13px captions, 19px sections and 26px desktop/22px phone page titles. Restaurant titles shrink from their previous 30–32px sizes. Colors, layouts, permissions, sessions and Delivery typography are preserved. This update is included in the owner's continued deployment request.
 
 Verification: repository checks and Admin/Restaurant workspace checks passed; all 32 browser scenarios passed, including unchanged Delivery. Computed desktop sizes match in both apps (16px body, 26px title, 14px table, 15px navigation). Desktop/mobile screenshots were inspected; no API, database or persistence changes are involved.
+
+### Admin Arabic fields — 2026-11-18
+
+Admin order-date filters use Arabic day/month/year controls, Gregorian Arabic month names and Arabic display digits, independent of browser language. Arabic and Latin year digits are accepted; only complete valid YYYY-MM-DD values reach the existing API. Changing the start date clears an earlier end date; incomplete/invalid dates never send malformed filters.
+
+Admin workspace field feedback and browser validation messages are Arabic; auth pages keep their existing behavior. Actual user content and email/phone/password/ID formats are preserved. Delivery/Restaurant controls and API contracts are unchanged. The shared order board accepts an app-owned date-field renderer; shared field messages default to their previous behavior outside the Admin provider. No dependency, endpoint, schema or timezone change. This work targets dev only; no main promotion or server deployment is authorized.
+
+Verification: root check passed; six Admin Chromium scenarios and two Delivery scenarios passed. Arabic controls were exercised at 1536px/390px in an en-US browser, including ISO query values, leap days, range resets, clearing, native/server field messages and the auth-page exception. Screenshots were inspected with no overflow/runtime errors. Browser plugin not available; existing Playwright was used. No production account/data writes or server commands were run.

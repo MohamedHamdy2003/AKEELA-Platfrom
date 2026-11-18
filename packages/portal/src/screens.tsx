@@ -24,18 +24,24 @@ import {
   useResource,
   X,
 } from './ui';
+export type OrderDateFilters = { date_from: string; date_to: string };
 export function OrdersBoard({
   api,
   prefix,
   revision,
   delivery = false,
   actions,
+  dateFields,
 }: {
   api: ApiClient;
   prefix: string;
   revision: number;
   delivery?: boolean;
   actions: (order: Order, refresh: () => void) => ReactNode;
+  dateFields?: (
+    value: OrderDateFilters,
+    change: (value: OrderDateFilters) => void,
+  ) => ReactNode;
 }) {
   const [page, setPage] = useState(1),
     [filters, setFilters] = useState({
@@ -128,27 +134,39 @@ export function OrdersBoard({
               ))}
             </select>
           </Field>
-          <Field label="من تاريخ">
-            <input
-              type="date"
-              value={filters.date_from}
-              onChange={(event) => {
-                setFilters({ ...filters, date_from: event.target.value });
+          {dateFields ? (
+            dateFields(
+              { date_from: filters.date_from, date_to: filters.date_to },
+              (dates) => {
+                setFilters((current) => ({ ...current, ...dates }));
                 setPage(1);
-              }}
-            />
-          </Field>
-          <Field label="إلى تاريخ">
-            <input
-              type="date"
-              min={filters.date_from}
-              value={filters.date_to}
-              onChange={(event) => {
-                setFilters({ ...filters, date_to: event.target.value });
-                setPage(1);
-              }}
-            />
-          </Field>
+              },
+            )
+          ) : (
+            <>
+              <Field label="من تاريخ">
+                <input
+                  type="date"
+                  value={filters.date_from}
+                  onChange={(event) => {
+                    setFilters({ ...filters, date_from: event.target.value });
+                    setPage(1);
+                  }}
+                />
+              </Field>
+              <Field label="إلى تاريخ">
+                <input
+                  type="date"
+                  min={filters.date_from}
+                  value={filters.date_to}
+                  onChange={(event) => {
+                    setFilters({ ...filters, date_to: event.target.value });
+                    setPage(1);
+                  }}
+                />
+              </Field>
+            </>
+          )}
         </div>
         <ResourceState
           resource={list}
