@@ -535,16 +535,48 @@ fieldset {
 }
 .logout {
   margin-top: auto;
-  padding: 22px 16px 6px;
-  background: none;
-  border: 0;
-  border-top: 1px solid var(--brand-border);
+  min-height: 46px;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--brand-error), transparent 92%);
+  border: 1px solid color-mix(in srgb, var(--brand-error), transparent 78%);
+  border-radius: 10px;
   font-size: 15px;
-  color: var(--brand-accent);
+  font-weight: 600;
+  color: var(--brand-error);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 15px;
+  gap: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+.logout svg {
+  flex-shrink: 0;
+}
+@media (hover: hover) {
+  .logout:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--brand-error), transparent 82%);
+    border-color: color-mix(in srgb, var(--brand-error), transparent 55%);
+    color: #9f1f29;
+    box-shadow: 0 4px 14px
+      color-mix(in srgb, var(--brand-error), transparent 75%);
+    transform: translateY(-1px);
+  }
+}
+.logout:active:not(:disabled) {
+  background: color-mix(in srgb, var(--brand-error), transparent 74%);
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
+}
+.logout:focus-visible {
+  outline: 2px solid var(--brand-error);
+  outline-offset: 2px;
 }
 .workspace {
   margin-right: 248px;
@@ -1104,6 +1136,44 @@ td .numeric {
     padding: 8px 24px;
     background: white;
     border-bottom: 1px solid var(--brand-border);
+  }
+  .mobile-top .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--brand-primary), transparent 91%);
+    border: 1px solid color-mix(in srgb, var(--brand-primary), transparent 78%);
+    color: var(--brand-primary);
+    cursor: pointer;
+    transition:
+      background-color 160ms var(--ease-out),
+      border-color 160ms var(--ease-out),
+      color 160ms var(--ease-out),
+      box-shadow 160ms var(--ease-out),
+      transform 160ms var(--ease-out);
+  }
+  .mobile-top .icon-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--brand-primary), transparent 82%);
+    border-color: color-mix(in srgb, var(--brand-primary), transparent 62%);
+    color: var(--brand-primary-hover);
+    box-shadow: 0 2px 8px
+      color-mix(in srgb, var(--brand-primary), transparent 82%);
+    transform: translateY(-1px);
+  }
+  .mobile-top .icon-button:active:not(:disabled) {
+    background: color-mix(in srgb, var(--brand-primary), transparent 74%);
+    transform: translateY(0) scale(0.96);
+    box-shadow: none;
+  }
+  .mobile-top .icon-button:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
   }
   .mobile-top img {
     width: 54px;
