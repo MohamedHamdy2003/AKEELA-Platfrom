@@ -33,6 +33,8 @@ import { Orders } from './features/orders';
 import { Account, RestaurantProfile } from './features/settings';
 import { ButtonContent, Failure, Loading, Notice } from './components/ui';
 import { Presence } from './components/presence';
+import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import brandIcon from '@akeela/brand/icon.png';
 import { useSessionRestore } from '@akeela/portal/use-session-restore';
 
 const navigation = [
@@ -95,6 +97,7 @@ function Workspace() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [route, setRoute] = useState(currentRoute);
   const [mobile, setMobile] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 960px)');
     const update = () => {
@@ -272,7 +275,7 @@ function Workspace() {
       <Catalog key={route} kind={route as CatalogKind} />
     );
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-sidebar-collapsed={collapsed}>
       <a className="skip-link" href="#main-content" inert={mobile}>
         انتقل إلى المحتوى
       </a>
@@ -304,7 +307,13 @@ function Workspace() {
         aria-hidden={compactNavigation && !mobile ? true : undefined}
       >
         <div className="sidebar-brand">
-          <img src={logo} alt="أكيلة — AKEELA" />
+          <img className="sidebar-wordmark" src={logo} alt="أكيلة — AKEELA" />
+          <img
+            className="sidebar-mark"
+            src={brandIcon}
+            alt=""
+            aria-hidden="true"
+          />
           <button
             className="icon-button mobile-close"
             aria-label="إغلاق القائمة"
@@ -313,27 +322,54 @@ function Workspace() {
             <X />
           </button>
         </div>
-        <nav>
+        <button
+          className="sidebar-toggle"
+          aria-label={
+            collapsed ? 'توسيع القائمة الجانبية' : 'طي القائمة الجانبية'
+          }
+          aria-expanded={!collapsed}
+          aria-controls="restaurant-navigation"
+          title={collapsed ? 'توسيع القائمة الجانبية' : 'طي القائمة الجانبية'}
+          onClick={() => setCollapsed((value) => !value)}
+        >
+          {collapsed ? (
+            <PanelRightOpen size={19} aria-hidden="true" />
+          ) : (
+            <PanelRightClose size={19} aria-hidden="true" />
+          )}
+          <span className="nav-label">طي القائمة</span>
+        </button>
+        <nav id="restaurant-navigation">
           {navigation.map((item) => (
             <button
               key={item.key}
               aria-current={route === item.key ? 'page' : undefined}
+              aria-label={item.label}
+              title={collapsed && !compactNavigation ? item.label : undefined}
               disabled={
                 !manageable &&
                 !['home', 'profile', 'account'].includes(item.key)
               }
               onClick={() => navigate(item.key)}
             >
-              <item.icon size={25} strokeWidth={1.7} />
-              <span>{item.label}</span>
+              <item.icon size={25} strokeWidth={1.7} aria-hidden="true" />
+              <span className="nav-label">{item.label}</span>
             </button>
           ))}
         </nav>
-        <button className="logout" disabled={loggingOut} onClick={logout}>
-          <LogOut size={23} strokeWidth={1.7} />
-          <ButtonContent busy={loggingOut} pending="جارٍ الخروج…">
-            تسجيل الخروج
-          </ButtonContent>
+        <button
+          className="logout"
+          disabled={loggingOut}
+          onClick={logout}
+          aria-label={loggingOut ? 'جارٍ الخروج…' : 'تسجيل الخروج'}
+          title={collapsed ? 'تسجيل الخروج' : undefined}
+        >
+          <LogOut size={23} strokeWidth={1.7} aria-hidden="true" />
+          <span className="nav-label">
+            <ButtonContent busy={loggingOut} pending="جارٍ الخروج…">
+              تسجيل الخروج
+            </ButtonContent>
+          </span>
         </button>
       </aside>
       <main id="main-content" className="workspace" inert={mobile}>

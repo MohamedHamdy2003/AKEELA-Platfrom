@@ -1,10 +1,12 @@
 .email-verification {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 9px;
-  border: 1px solid;
-  border-radius: 999px;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid #cfc1a2;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
   line-height: 1.6;
@@ -16,18 +18,20 @@
 .email-verification.verified {
   color: #176541;
   background: rgb(0 134 87 / 9%);
-  border-color: rgb(0 134 87 / 16%);
 }
 .email-verification.unverified {
   color: #a12834;
   background: rgb(195 52 63 / 9%);
-  border-color: rgb(195 52 63 / 16%);
 }
 .email-cell {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
+}
+.user-id-column {
+  width: 1%;
+  white-space: nowrap;
+  padding-inline: 14px;
 }
 .account-meta {
   display: flex;

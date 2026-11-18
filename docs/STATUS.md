@@ -4,9 +4,14 @@
 
 Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.
 
+Current one-time release authorization: the owner requested the icon-only verification indicators, narrower user ID column and collapsible sidebars in all dashboards, then VPS deployment. This authorizes promoting the completed dev changes (including earlier unreleased tab, Arabic-field and session fixes) to main and deploying after successful checks. Later work returns to the dev-only default. Actual rollout state is recorded by the [Release workflow](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/workflows/release.yml), not inferred from authorization.
+
 Backend Features 01-17, three browser dashboards and Compose initialization are implemented. Historical release approvals do not authorize a new main promotion; follow the current user request and GitHub flow. The owner purchased a Hostinger VPS at public IPv4 2.25.12.243. Read-only SSH confirmed Ubuntu 26.04.1 LTS; domain is akeelaonline.tech. Docker provisioning and public DNS resolution are complete. Public HTTPS and the first application rollout are verified. Backup automation is deferred by the owner.
 
 ## Implemented
+
+- Current UI: verification is an icon-only green/red shield adjacent to email, with accessible state/hover title and the account-action border shape. User IDs take a compact column. All three desktop sidebars collapse to an 80px icon rail with keyboard-accessible routes, active-state markers and reduced-motion support; mobile keeps its full drawer. No backend/schema changes.
+- Current UI verification: root npm run check and all 52 Chromium scenarios passed (13 Admin, 7 Delivery, 32 Restaurant). Tests cover icon-only states/borders, narrow IDs, collapse/expand, keyboard navigation, viewport changes, mobile focus return and reduced motion. Expanded/rail/mobile screenshots were reviewed. Browser plugin not available; existing Playwright fixtures used. Live rollout verification belongs to the owner-authorized release above.
 
 - UI detail update: Admin user/company, restaurant and Delivery driver lists separate IDs from names. Admin verification labels use spaced green/red translucent pills in lists and details. Single-select arrows have a shared RTL/LTR inset across all three apps, including compact date controls; native selection/accessibility remains. Dev-only change, no API or deployment change.
 - Detail verification: root npm run check and all 46 Chromium scenarios passed (11 Admin, 5 Delivery, 30 Restaurant). Desktop/phone user lists verify separate IDs, both email states, badge spacing and working filters. Screenshots of those lists, compact dates, Restaurant product forms and Delivery assignment were reviewed. Browser plugin not available; existing Playwright with API fixtures used, without production data writes.

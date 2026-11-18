@@ -93,7 +93,7 @@ export function Users({
             <table>
               <thead>
                 <tr>
-                  <th>رقم المستخدم</th>
+                  <th className="user-id-column">الرقم</th>
                   <th>الاسم</th>
                   <th>البريد الإلكتروني</th>
                   <th>الدور</th>
@@ -104,7 +104,7 @@ export function Users({
               <tbody>
                 {resource.result?.data.map((row) => (
                   <tr key={row.user_id}>
-                    <td>
+                    <td className="user-id-column">
                       <bdi>#{row.user_id}</bdi>
                     </td>
                     <td>
@@ -141,11 +141,15 @@ export function Users({
               <>
                 <h2>{selected.full_name}</h2>
                 <ProfileDetails user={selected} />
-                <p>
-                  <bdi>
-                    {selected.email} · {selected.phone}
-                  </bdi>
-                </p>
+                <div className="account-meta">
+                  <span className="email-cell">
+                    <bdi>{selected.email}</bdi>
+                    <EmailVerification
+                      verified={!!selected.email_verified_at}
+                    />
+                  </span>
+                  <bdi>{selected.phone}</bdi>
+                </div>
                 <p>
                   {roles[selected.role]} ·{' '}
                   {selected.is_active ? 'نشط' : 'غير نشط'}
