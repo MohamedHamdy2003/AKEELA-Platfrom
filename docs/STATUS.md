@@ -10,6 +10,8 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
+- Mobile sidebar toggle button styling: In Admin, Delivery, and Restaurant dashboards, the mobile menu toggle button (displayed when screen shrinks to mobile <= 960px and sidebar hides into a drawer) features a themed translucent tinted surface, matching border, smooth lift, glow shadow on hover, and tactile active-press feedback matching each app's visual identity (translucent emerald green for Admin, oceanic teal for Delivery, fresh green for Restaurant). Dev-only change; main promotion deferred per owner instruction.
+
 - Current UI: verification is an icon-only green/red shield adjacent to email, with accessible state/hover title and the account-action border shape. User IDs take a compact column. All three desktop sidebars collapse to an 80px icon rail with keyboard-accessible routes, active-state markers and reduced-motion support; mobile keeps its full drawer. No backend/schema changes.
 - Current UI verification: root npm run check and all 52 Chromium scenarios passed (13 Admin, 7 Delivery, 32 Restaurant). Tests cover icon-only states/borders, narrow IDs, collapse/expand, keyboard navigation, viewport changes, mobile focus return and reduced motion. Expanded/rail/mobile screenshots were reviewed. Browser plugin not available; existing Playwright fixtures used. Live rollout verification belongs to the owner-authorized release above.
 
