@@ -106,3 +106,9 @@ Order detail panels show all authorized participant references, saved unit price
 - The final support-detail patch is covered by 32 browser scenarios total (27 Restaurant, 3 Admin, 2 Delivery), including bounded restaurant images and mobile drawer focus. It adds no REST endpoint, permission or migration.
 
 - Production storage access was checked without uploading test files: the image directory is writable and the database contains exactly one Admin. Delivery actions precede reference-only metadata in the detail pane so driver assignment remains visible on the tested desktop viewport.
+
+### Readability update — 2026-11-18
+
+Owner requested slightly larger Admin text and matching Restaurant typography, while keeping titles compact. Both now use shared 16px body/inputs, 14px tables/labels, 15px navigation/buttons, 13px captions, 19px sections and 26px desktop/22px phone page titles. Restaurant titles shrink from their previous 30–32px sizes. Colors, layouts, permissions, sessions and Delivery typography are preserved. This update is included in the owner's continued deployment request.
+
+Verification: repository checks and Admin/Restaurant workspace checks passed; all 32 browser scenarios passed, including unchanged Delivery. Computed desktop sizes match in both apps (16px body, 26px title, 14px table, 15px navigation). Desktop/mobile screenshots were inspected; no API, database or persistence changes are involved.
