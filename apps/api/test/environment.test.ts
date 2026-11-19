@@ -12,6 +12,7 @@ const input = {
 test('environment defaults and explicit settings are parsed', () => {
   const defaults = validateEnvironment(input);
   assert.equal(defaults.PORT, 3000);
+  assert.equal(defaults.SWAGGER_ENABLED, true);
   assert.equal(defaults.DATABASE_SSL, false);
   assert.deepEqual(defaults.CORS_ORIGINS, []);
   const explicit = validateEnvironment({
@@ -23,6 +24,7 @@ test('environment defaults and explicit settings are parsed', () => {
     CORS_ORIGINS: 'https://example.com, http://localhost:5173',
   });
   assert.equal(explicit.PORT, 4000);
+  assert.equal(explicit.SWAGGER_ENABLED, false);
   assert.equal(explicit.DATABASE_SSL, true);
   assert.deepEqual(explicit.CORS_ORIGINS, [
     'https://example.com',
@@ -39,6 +41,7 @@ for (const [name, values] of Object.entries({
   'invalid port': { ...input, PORT: '3000abc' },
   'out-of-range port': { ...input, PORT: '65536' },
   'invalid SSL flag': { ...input, DATABASE_SSL: 'yes' },
+  'invalid Swagger flag': { ...input, SWAGGER_ENABLED: 'yes' },
   'wildcard CORS': { ...input, CORS_ORIGINS: '*' },
   'CORS with path': { ...input, CORS_ORIGINS: 'https://example.com/app' },
 })) {
@@ -53,6 +56,27 @@ test('invalid database input is never echoed in validation errors', () => {
     (error: unknown) =>
       error instanceof Error && !error.message.includes('secret-password'),
   );
+});
+
+test('Swagger can be explicitly enabled or disabled independently of mode', () => {
+  assert.equal(
+    validateEnvironment({ ...input, SWAGGER_ENABLED: 'false' }).SWAGGER_ENABLED,
+    false,
+  );
+  assert.equal(
+    validateEnvironment({
+      ...input,
+      NODE_ENV: 'production',
+      PUBLIC_BASE_URL: 'https://api.example.com',
+      SWAGGER_ENABLED: 'true',
+    }).SWAGGER_ENABLED,
+    true,
+  );
+  for (const value of [true, false, '1', 'TRUE', '']) {
+    assert.throws(() =>
+      validateEnvironment({ ...input, SWAGGER_ENABLED: value }),
+    );
+  }
 });
 
 test('database options prevent automatic schema changes and unsafe TLS', () => {

@@ -110,7 +110,7 @@ Customer and restaurant registration return unverified accounts without tokens. 
 | POST | `/admin/users` | Create a Delivery_Company account and profile. | Body: `{"full_name":"Company Owner","email":"company@example.com","password":"ExamplePassword!2026","phone":"+201000000020","role":"Delivery_Company","profile":{"company_name":"Local Delivery","company_phone":"+201000000020","company_email":"office@example.com","company_address":"5 Main Street, Ismailia","is_active":true}}` | `201` · User |
 | PATCH | `/admin/users/{user_id}/activity` | Enable or disable login for an account. | Body: `{"is_active":false}` | `200` · User |
 | GET | `/admin/restaurants` | List restaurant owners and profiles; filter by activation status for review. | Query: `page=1&per_page=20&activation_status=Pending` | `200` · List<RestaurantReview> |
-| PATCH | `/admin/restaurants/{rest_id}/activation` | Activate, suspend, or reactivate a restaurant. | Body: `{"activation_status":"Active"}` | `200` · RestaurantProfile |
+| PATCH | `/admin/restaurants/{rest_id}/activation` | Activate, suspend, or reactivate a restaurant. | Body: `{"activation_status":"Active"}` | `200` · RestaurantProfile (also includes `user_id` and `profile_role`) |
 
 Create-user accepts a Delivery_Company account with one nested profile object, as shown above. Creating an Admin through this API returns `409 CONFLICT`; the only Admin is created through the CLI.
 
@@ -411,6 +411,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 {
   "company_id": "20",
   "company_name": "Local Delivery",
+  "user_id": "20",
   "company_phone": "+201000000020",
   "company_email": "office@example.com",
   "company_address": "5 Main Street, Ismailia",

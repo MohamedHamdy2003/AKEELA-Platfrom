@@ -37,6 +37,8 @@ Run these commands from the repository root. Local API secrets live in `apps/api
 
 Open `bruno/AKEELA` in Bruno and select Local; see [BRUNO.md](docs/BRUNO.md). Keep credentials/tokens outside Git. Provision the only Admin using `npm run create:admin` with private CLI inputs from [AUTH.md](docs/AUTH.md). Restaurants register themselves and need Admin activation before modifications/operations.
 
+Swagger: `http://localhost:3000/api/v1/docs`. OpenAPI JSON: `http://localhost:3000/api/v1/docs-json`. All 81 REST endpoints include input/response schemas, examples, JWT authorization and mobile integration rules. See [SWAGGER.md](docs/SWAGGER.md). Try it out sends real requests to the selected API.
+
 ## Documentation
 
 Every agent/developer must read [AGENTS.md](AGENTS.md) and relevant documentation first. Documentation is the source of truth.

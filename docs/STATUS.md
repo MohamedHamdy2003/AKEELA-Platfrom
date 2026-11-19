@@ -4,6 +4,10 @@
 
 Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.
 
+Current one-time authorization: publish Swagger for the mobile developer on the VPS after successful CI, promoting the reviewed Swagger changes from dev to main. `SWAGGER_ENABLED` makes production access temporary and removable without deleting code or data; disable it only when the owner finishes testing and asks. This is not standing permission for later main releases.
+
+Release scope is Swagger only. Dev also contains unreleased UI/asset improvements, so this one-time release uses a branch from current main with only the reviewed Swagger commits; those frontend changes remain on dev. Review the scoped main PR rather than promoting all dev changes.
+
 Current release: the owner requested clean URL path-based routing (HTML5 History API) across all three portals, replacing hash-based routing (#/route → /route), with matching nginx SPA fallback and browser Back/Forward support. Owner explicitly authorized promotion to main and VPS deployment. This is a one-time release authorization after successful checks; later work returns to the dev-only default. Actual rollout state is recorded by the Release workflow, not inferred from authorization.
 
 Current one-time release authorization: the owner requested the icon-only verification indicators, narrower user ID column and collapsible sidebars in all dashboards, then VPS deployment. This authorizes promoting the completed dev changes (including earlier unreleased tab, Arabic-field and session fixes) to main and deploying after successful checks. Later work returns to the dev-only default. Actual rollout state is recorded by the [Release workflow](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/workflows/release.yml), not inferred from authorization.
@@ -11,6 +15,11 @@ Current one-time release authorization: the owner requested the icon-only verifi
 Backend Features 01-17, three browser dashboards and Compose initialization are implemented. Historical release approvals do not authorize a new main promotion; follow the current user request and GitHub flow. The owner purchased a Hostinger VPS at public IPv4 2.25.12.243. Read-only SSH confirmed Ubuntu 26.04.1 LTS; domain is akeelaonline.tech. Docker provisioning and public DNS resolution are complete. Public HTTPS and the first application rollout are verified. Backup automation is deferred by the owner.
 
 ## Implemented
+
+- Temporary Swagger switch: validated `SWAGGER_ENABLED`, enabled by default outside production and disabled by default in production/Compose. False registers no UI, JSON or Swagger asset routes; ordinary APIs remain active. Tests cover both switch values, invalid configuration and disabled HTTP routes. The owner approved publishing this Swagger release; actual live verification is recorded by the Release workflow and release handoff.
+
+- Swagger/OpenAPI covers all 81 implemented REST endpoints at `/api/v1/docs` and `/api/v1/docs-json`, grouped by the 16 HTTP features. Includes validated DTO inputs, synthetic request/response examples, public response models, nullability/enums, JWT Authorize, role/activation/ownership rules, pagination, errors, uploads, Cairo time and mobile token/checkout/Socket.IO guidance. Documentation assets are self-hosted; authorization is not persisted. No business logic, entity, migration or deployment change. See [SWAGGER.md](SWAGGER.md).
+- Swagger verification: root `npm run check` passed; API tests include controller/spec/OpenAPI inventory parity, actual DTO validation, auth metadata, local references, conditional requests and served UI/JSON/assets. Isolated Chromium QA passed at 1440×1000 and 390×844 (Browser plugin not available; Playwright fallback): feature/endpoint expansion, request editor, Authorize dialog, reload and zero console errors, external validator or business requests. Runtime audit passed. PostgreSQL/SMTP were not used for documentation tests; CI owns the existing integration checks. Initially delivered on dev; see the current one-time Swagger release authorization above.
 
 - Admin login header icon: In the Admin login page (`AuthPage`), the generic shield icon above 'مرحبًا بعودتك' was replaced with `UserRoundCog` (person silhouette with gear/cog), styled inside a translucent green tinted badge with soft glow matching the Admin brand identity. Verified with Playwright tests.
 
