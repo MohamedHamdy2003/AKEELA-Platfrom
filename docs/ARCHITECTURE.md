@@ -12,6 +12,8 @@ The user approved the foundation and authorized Features 01-16, local tests, CI/
 
 ## Runtime structure
 
+The API serves Swagger at `/api/v1/docs` and OpenAPI JSON at `/api/v1/docs-json`. `apps/api/src/documentation` owns presentation-only metadata; controllers/validated DTOs supply the route/input structure. No new business module, entity, database access or separate service. See [SWAGGER.md](SWAGGER.md).
+
 ```mermaid
 flowchart TD
     HTTP[HTTP client] --> APP[NestJS application /api/v1]

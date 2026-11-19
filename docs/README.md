@@ -32,6 +32,8 @@ Deployment and image-storage work: read [DEPLOYMENT.md](DEPLOYMENT.md) for the a
 
 API testing: [BRUNO.md](BRUNO.md) explains the collection inside this repository and private test values. Email setup: [GMAIL.md](GMAIL.md) explains Gmail App Passwords and the real SMTP connectivity check.
 
+Interactive API reference: [SWAGGER.md](SWAGGER.md) explains UI/OpenAPI JSON, mobile usage and keeping every endpoint documented.
+
 Features 13-14: [ORDER-DELIVERY.md](ORDER-DELIVERY.md). Features 11-12: [CART-ORDERS.md](CART-ORDERS.md). Feature 10: [DELIVERY.md](DELIVERY.md). Review findings: [REVIEW.md](REVIEW.md).
 
 ## Canonical business specifications
