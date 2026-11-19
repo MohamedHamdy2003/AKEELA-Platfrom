@@ -731,12 +731,16 @@ td .numeric {
   background: var(--brand-secondary);
   color: var(--brand-primary);
   font-weight: 600;
+  cursor: help;
 }
 .status-Pending {
   color: var(--brand-warning);
   background: var(--brand-warning-bg);
 }
-.status-Accepted,
+.status-Accepted {
+  color: #0a6c74;
+  background: #e0f7f6;
+}
 .status-Delivered {
   color: var(--brand-success);
   background: var(--brand-success-bg);
@@ -745,8 +749,11 @@ td .numeric {
   color: var(--brand-info);
   background: var(--brand-info-bg);
 }
-.status-Failed,
 .status-Rejected {
+  color: #be123c;
+  background: #ffe4e6;
+}
+.status-Failed {
   color: var(--brand-error);
   background: var(--brand-error-bg);
 }

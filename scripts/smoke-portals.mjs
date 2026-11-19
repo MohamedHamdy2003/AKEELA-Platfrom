@@ -176,13 +176,6 @@ export async function smokePortals({ docker, port }) {
       .getByRole('button', { name: 'إسناد السائق', exact: true })
       .click();
     await delivery
-      .getByRole('button', { name: 'تأكيد الاستلام من المطعم', exact: true })
-      .click();
-    await delivery
-      .getByRole('dialog')
-      .getByRole('button', { name: 'تأكيد', exact: true })
-      .click();
-    await delivery
       .getByRole('button', { name: 'تأكيد تسليم الطلب', exact: true })
       .click();
     await delivery

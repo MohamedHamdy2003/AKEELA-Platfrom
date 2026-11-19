@@ -153,7 +153,10 @@ export async function portalFixture(
           : path.endsWith('/pickup')
             ? 'Picked_Up'
             : 'Delivered';
-      if (method === 'PUT') order.driver_id = body.driver_id;
+      if (method === 'PUT') {
+        order.driver_id = body.driver_id;
+        order.status = 'Picked_Up';
+      }
       data = order;
     } else if (path === '/admin/restaurants') {
       data = [

@@ -30,16 +30,6 @@ test('dispatcher assigns, picks up and delivers, then sees live changes', async 
   await page.getByLabel('السائق', { exact: true }).selectOption('11');
   await page.getByRole('button', { name: 'إسناد السائق', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: 'تأكيد الاستلام من المطعم', exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole('button', { name: 'تأكيد الاستلام من المطعم', exact: true })
-    .click();
-  await page
-    .getByRole('dialog')
-    .getByRole('button', { name: 'تأكيد', exact: true })
-    .click();
-  await expect(
     page.getByRole('button', { name: 'تأكيد تسليم الطلب', exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel('السائق', { exact: true })).toHaveCount(0);
@@ -58,7 +48,6 @@ test('dispatcher assigns, picks up and delivers, then sees live changes', async 
   ).toEqual(
     expect.arrayContaining([
       '/delivery-company/orders/1248/driver',
-      '/delivery-company/orders/1248/pickup',
       '/delivery-company/orders/1248/deliver',
     ]),
   );

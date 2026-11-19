@@ -31,6 +31,7 @@ import {
   Users,
   Utensils,
   X,
+  XCircle,
   PanelRightClose,
   PanelRightOpen,
 } from 'lucide-react';
@@ -41,6 +42,7 @@ import brandIconWebp from '@akeela/brand/icon.webp';
 import { ApiClient, ApiError, errorMessage } from './api';
 import {
   statuses,
+  statusDescriptions,
   type Envelope,
   type Meta,
   type Order,
@@ -137,8 +139,40 @@ export function Field({
 }
 export function Badge({ status }: { status: OrderStatus }) {
   return (
-    <span className={'badge ' + status}>
-      <Circle size={10} />
+    <span
+      className={'badge ' + status}
+      title={statusDescriptions[status] ?? statuses[status]}
+    >
+      {status === 'Delivered' ? (
+        <svg
+          width={12}
+          height={12}
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="11" fill="currentColor" />
+          <path
+            d="M18 6 7 17l-5-5"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="m22 10-7.5 7.5L13 16"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : status === 'Cancelled' ? (
+        <XCircle size={11} aria-hidden="true" />
+      ) : (
+        <Circle size={10} aria-hidden="true" />
+      )}
       {statuses[status]}
     </span>
   );
@@ -969,14 +1003,38 @@ export function OrderFacts({
 export function Metrics({
   items,
 }: {
-  items: Array<{ label: string; value: number | null; icon?: ReactNode }>;
+  items: Array<{
+    label: string;
+    value: number | null;
+    icon?: ReactNode;
+    status?: OrderStatus;
+    active?: boolean;
+    onClick?: () => void;
+  }>;
 }) {
   return (
     <div className="metrics">
       {items.map((item) => (
-        <div className="metric" key={item.label}>
+        <div
+          className={`metric${item.active ? ' active' : ''}${item.onClick ? ' clickable' : ''}`}
+          key={item.label}
+          data-status={item.status}
+          onClick={item.onClick}
+          role={item.onClick ? 'button' : undefined}
+          tabIndex={item.onClick ? 0 : undefined}
+          onKeyDown={
+            item.onClick
+              ? (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    item.onClick!();
+                  }
+                }
+              : undefined
+          }
+        >
           <span className="metric-icon">
-            {item.icon ?? <Check size={23} />}
+            {item.icon ?? <Check size={20} />}
           </span>
           <div>
             <span>{item.label}</span>

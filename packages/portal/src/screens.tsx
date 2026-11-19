@@ -1,5 +1,14 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { Clock, Truck, CheckCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  Ban,
+  Check,
+  CheckCheck,
+  CheckCircle,
+  Clock,
+  Truck,
+  XCircle,
+} from 'lucide-react';
 import { ApiClient, ApiError, query } from './api';
 import {
   statuses,
@@ -61,26 +70,144 @@ export function OrdersBoard({
     id ? prefix + '/orders/' + id : null,
     revision + tick,
   );
-  const a = useResource<OrderSummary[]>(
+  const pending = useResource<OrderSummary[]>(
       api,
-      prefix +
-        '/orders?per_page=1&status=' +
-        (delivery ? 'Accepted' : 'Pending'),
+      !delivery ? prefix + '/orders?per_page=1&status=Pending' : null,
       revision + tick,
     ),
-    b = useResource<OrderSummary[]>(
+    accepted = useResource<OrderSummary[]>(
+      api,
+      prefix + '/orders?per_page=1&status=Accepted',
+      revision + tick,
+    ),
+    pickedUp = useResource<OrderSummary[]>(
       api,
       prefix + '/orders?per_page=1&status=Picked_Up',
       revision + tick,
     ),
-    c = useResource<unknown[]>(
+    delivered = useResource<OrderSummary[]>(
       api,
-      delivery
-        ? '/delivery-company/drivers?per_page=1&is_active=true'
-        : prefix + '/orders?per_page=1&status=Accepted',
+      prefix + '/orders?per_page=1&status=Delivered',
+      revision + tick,
+    ),
+    rejected = useResource<OrderSummary[]>(
+      api,
+      !delivery ? prefix + '/orders?per_page=1&status=Rejected' : null,
+      revision + tick,
+    ),
+    cancelled = useResource<OrderSummary[]>(
+      api,
+      !delivery ? prefix + '/orders?per_page=1&status=Cancelled' : null,
+      revision + tick,
+    ),
+    failed = useResource<OrderSummary[]>(
+      api,
+      !delivery ? prefix + '/orders?per_page=1&status=Failed' : null,
+      revision + tick,
+    ),
+    activeDrivers = useResource<unknown[]>(
+      api,
+      delivery ? '/delivery-company/drivers?per_page=1&is_active=true' : null,
       revision + tick,
     );
   const refresh = () => setTick((value) => value + 1);
+  const toggleStatus = (target: string) => {
+    setFilters((current) => ({
+      ...current,
+      status: current.status === target ? '' : target,
+    }));
+    setPage(1);
+  };
+  const metricItems = delivery
+    ? [
+        {
+          label: 'الطلبات المقبولة',
+          value: accepted.result?.meta?.total ?? null,
+          icon: <Clock size={20} />,
+          status: 'Accepted' as OrderStatus,
+          active: filters.status === 'Accepted',
+          onClick: () => toggleStatus('Accepted'),
+        },
+        {
+          label: 'قيد التوصيل',
+          value: pickedUp.result?.meta?.total ?? null,
+          icon: <Truck size={20} />,
+          status: 'Picked_Up' as OrderStatus,
+          active: filters.status === 'Picked_Up',
+          onClick: () => toggleStatus('Picked_Up'),
+        },
+        {
+          label: 'تم التسليم',
+          value: delivered.result?.meta?.total ?? null,
+          icon: <CheckCheck size={20} />,
+          status: 'Delivered' as OrderStatus,
+          active: filters.status === 'Delivered',
+          onClick: () => toggleStatus('Delivered'),
+        },
+        {
+          label: 'السائقون النشطون',
+          value: activeDrivers.result?.meta?.total ?? null,
+          icon: <CheckCircle size={20} />,
+        },
+      ]
+    : [
+        {
+          label: statuses.Pending,
+          value: pending.result?.meta?.total ?? null,
+          icon: <Clock size={20} />,
+          status: 'Pending' as OrderStatus,
+          active: filters.status === 'Pending',
+          onClick: () => toggleStatus('Pending'),
+        },
+        {
+          label: statuses.Accepted,
+          value: accepted.result?.meta?.total ?? null,
+          icon: <Check size={20} />,
+          status: 'Accepted' as OrderStatus,
+          active: filters.status === 'Accepted',
+          onClick: () => toggleStatus('Accepted'),
+        },
+        {
+          label: statuses.Picked_Up,
+          value: pickedUp.result?.meta?.total ?? null,
+          icon: <Truck size={20} />,
+          status: 'Picked_Up' as OrderStatus,
+          active: filters.status === 'Picked_Up',
+          onClick: () => toggleStatus('Picked_Up'),
+        },
+        {
+          label: statuses.Delivered,
+          value: delivered.result?.meta?.total ?? null,
+          icon: <CheckCheck size={20} />,
+          status: 'Delivered' as OrderStatus,
+          active: filters.status === 'Delivered',
+          onClick: () => toggleStatus('Delivered'),
+        },
+        {
+          label: statuses.Rejected,
+          value: rejected.result?.meta?.total ?? null,
+          icon: <Ban size={20} />,
+          status: 'Rejected' as OrderStatus,
+          active: filters.status === 'Rejected',
+          onClick: () => toggleStatus('Rejected'),
+        },
+        {
+          label: statuses.Cancelled,
+          value: cancelled.result?.meta?.total ?? null,
+          icon: <XCircle size={20} />,
+          status: 'Cancelled' as OrderStatus,
+          active: filters.status === 'Cancelled',
+          onClick: () => toggleStatus('Cancelled'),
+        },
+        {
+          label: statuses.Failed,
+          value: failed.result?.meta?.total ?? null,
+          icon: <AlertTriangle size={20} />,
+          status: 'Failed' as OrderStatus,
+          active: filters.status === 'Failed',
+          onClick: () => toggleStatus('Failed'),
+        },
+      ];
   return (
     <div className={id ? 'workspace-columns' : ''}>
       <section>
@@ -98,25 +225,7 @@ export function OrdersBoard({
             </button>
           }
         />
-        <Metrics
-          items={[
-            {
-              label: delivery ? 'الطلبات المقبولة' : 'الطلبات المعلقة',
-              value: a.result?.meta?.total ?? null,
-              icon: <Clock size={23} />,
-            },
-            {
-              label: 'قيد التوصيل',
-              value: b.result?.meta?.total ?? null,
-              icon: <Truck size={23} />,
-            },
-            {
-              label: delivery ? 'السائقون النشطون' : 'الطلبات المقبولة',
-              value: c.result?.meta?.total ?? null,
-              icon: <CheckCircle size={23} />,
-            },
-          ]}
-        />
+        <Metrics items={metricItems} />
         <div className="filters">
           <Field label="حالة الطلب">
             <select
@@ -193,10 +302,7 @@ export function OrdersBoard({
                           <bdi>#{order.order_id}</bdi>
                         </strong>
                       </td>
-                      <td className="cell-stack">
-                        {dateTime(order.created_at)}
-                        <small>بتوقيت مصر</small>
-                      </td>
+                      <td>{dateTime(order.created_at)}</td>
                       <td>
                         <Badge status={order.status} />
                       </td>
