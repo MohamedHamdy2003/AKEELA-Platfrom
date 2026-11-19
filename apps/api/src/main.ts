@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { configureApplication } from './bootstrap';
 import { Environment } from './config/environment';
+import { configureSwagger } from './documentation/swagger';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -15,6 +16,7 @@ async function bootstrap(): Promise<void> {
     config.get('TRUST_PROXY', { infer: true }),
     config.get('IMAGE_STORAGE_PATH', { infer: true }),
   );
+  configureSwagger(app);
   try {
     await app.listen(config.get('PORT', { infer: true }));
   } catch (error) {

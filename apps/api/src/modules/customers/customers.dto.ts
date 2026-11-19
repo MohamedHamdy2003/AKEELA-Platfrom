@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
@@ -16,6 +17,14 @@ const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
 
 export class CreateAddressDto {
+  @ApiProperty({
+    type: 'string',
+    description: 'address title.',
+    minLength: 1,
+    maxLength: 100,
+    example: 'Home',
+    required: true,
+  })
   @Transform(trim)
   @IsString({ message: 'Enter the address title as text.' })
   @Length(1, 100, {
@@ -23,6 +32,14 @@ export class CreateAddressDto {
   })
   address_title!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'address line.',
+    minLength: 1,
+    maxLength: 2000,
+    example: '12 Main Street, Ismailia',
+    required: true,
+  })
   @Transform(trim)
   @IsString({ message: 'Enter the address line as text.' })
   @Length(1, 2000, {
@@ -30,6 +47,13 @@ export class CreateAddressDto {
   })
   address_line!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Longitude as a decimal string, -180 to 180, at most 7 decimal places.',
+    example: '32.2723000',
+    required: true,
+  })
   @IsString({ message: 'Enter longitude as text, for example "32.2800".' })
   @IsLongitude({ message: 'Longitude must be between -180 and 180.' })
   @Matches(/^-?\d{1,3}(\.\d{1,7})?$/, {
@@ -37,6 +61,13 @@ export class CreateAddressDto {
   })
   longitude!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Latitude as a decimal string, -90 to 90, at most 7 decimal places.',
+    example: '30.5965000',
+    required: true,
+  })
   @IsString({ message: 'Enter latitude as text, for example "30.6000".' })
   @IsLatitude({ message: 'Latitude must be between -90 and 90.' })
   @Matches(/^-?\d{1,2}(\.\d{1,7})?$/, {
@@ -44,12 +75,26 @@ export class CreateAddressDto {
   })
   latitude!: string;
 
+  @ApiProperty({
+    type: 'boolean',
+    description: 'is default.',
+    nullable: true,
+    required: false,
+  })
   @IsOptional()
   @IsBoolean({ message: 'is_default must be true or false.' })
   is_default?: boolean;
 }
 
 export class UpdateAddressDto {
+  @ApiProperty({
+    type: 'string',
+    description: 'address title.',
+    minLength: 1,
+    maxLength: 100,
+    example: 'Home',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @Transform(trim)
   @IsString({ message: 'Enter the address title as text.' })
@@ -58,6 +103,14 @@ export class UpdateAddressDto {
   })
   address_title?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'address line.',
+    minLength: 1,
+    maxLength: 2000,
+    example: '12 Main Street, Ismailia',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @Transform(trim)
   @IsString({ message: 'Enter the address line as text.' })
@@ -66,6 +119,13 @@ export class UpdateAddressDto {
   })
   address_line?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Longitude as a decimal string, -180 to 180, at most 7 decimal places.',
+    example: '32.2723000',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsString({ message: 'Enter longitude as text, for example "32.2800".' })
   @IsLongitude({ message: 'Longitude must be between -180 and 180.' })
@@ -74,6 +134,13 @@ export class UpdateAddressDto {
   })
   longitude?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Latitude as a decimal string, -90 to 90, at most 7 decimal places.',
+    example: '30.5965000',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsString({ message: 'Enter latitude as text, for example "30.6000".' })
   @IsLatitude({ message: 'Latitude must be between -90 and 90.' })
@@ -82,6 +149,7 @@ export class UpdateAddressDto {
   })
   latitude?: string;
 
+  @ApiProperty({ type: 'boolean', description: 'is default.', required: false })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsBoolean({ message: 'is_default must be true or false.' })
   is_default?: boolean;

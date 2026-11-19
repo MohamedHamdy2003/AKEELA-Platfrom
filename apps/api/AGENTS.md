@@ -9,4 +9,5 @@ Follow the root [AGENTS.md](../../AGENTS.md). Backend source/tests/config are in
 - Backend changes require root `npm run check`; database behavior additionally requires `npm run test:integration` against a dedicated local PostgreSQL database ending in `_test`. Tests truncate that database; never substitute the application database or SQLite.
 - Do not run migrations, seed real users, send real email or deploy without authorization. Integration tests use Mailpit; real Gmail work requires its guide.
 - Keep matching Bruno requests and concise docs updated with implemented API changes. Read [BRUNO](../../docs/BRUNO.md) before collection changes. No secrets or runtime tokens in committed requests.
+- HTTP contract changes also update Swagger DTO annotations and `src/documentation`; read [SWAGGER](../../docs/SWAGGER.md). Every REST route needs documented inputs, access, success/error models and synthetic examples. `npm test` checks controller/spec/OpenAPI coverage.
 - Local .env is private to this workspace. Root command shortcuts set the API working directory; compiled output stays here. See [MONOREPO](../../docs/MONOREPO.md).
