@@ -93,6 +93,16 @@ export const statuses = {
   Cancelled: 'ملغي',
   Failed: 'تعذّر التوصيل',
 } as const;
+export const statusDescriptions: Record<OrderStatus, string> = {
+  Pending: 'بانتظار القبول: تم استلام الطلب من العميل وفي انتظار قبول المطعم.',
+  Accepted: 'مقبول: وافق المطعم على الطلب، وجارٍ تحضيره وإسناده للتوصيل.',
+  Picked_Up:
+    'قيد التوصيل: استلم السائق الطلب من المطعم وهو في الطريق إلى العميل.',
+  Delivered: 'تم التوصيل: تم توصيل الطلب بنجاح إلى العميل واكتمال الدورة.',
+  Rejected: 'مرفوض: اعتذر المطعم عن قبول الطلب لعدم توفر الأصناف أو ضغط العمل.',
+  Cancelled: 'ملغي: قام العميل بإلغاء الطلب قبل بدء المطعم في تحضيره.',
+  Failed: 'تعذّر التوصيل: تعذر إكمال الطلب لعائق تشغيلي.',
+};
 export type OrderStatus = keyof typeof statuses;
 export interface OrderSummary {
   order_id: string;

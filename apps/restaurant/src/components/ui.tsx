@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { ApiError, errorMessage } from '../lib/api';
 import type { Meta, OrderStatus } from '../lib/models';
-import { statuses } from '../lib/models';
+import { statuses, statusDescriptions } from '../lib/models';
 import { Presence, useExiting } from './presence';
 
 export function Notice({
@@ -267,7 +267,10 @@ export function Failure({
 }
 export function Badge({ status }: { status: OrderStatus }) {
   return (
-    <span className={`badge status-${status}`}>
+    <span
+      className={`badge status-${status}`}
+      title={statusDescriptions[status] ?? statuses[status]}
+    >
       <span className="badge-label" key={status}>
         {statuses[status] ?? status}
       </span>

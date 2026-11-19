@@ -42,6 +42,7 @@ import brandIconWebp from '@akeela/brand/icon.webp';
 import { ApiClient, ApiError, errorMessage } from './api';
 import {
   statuses,
+  statusDescriptions,
   type Envelope,
   type Meta,
   type Order,
@@ -138,7 +139,10 @@ export function Field({
 }
 export function Badge({ status }: { status: OrderStatus }) {
   return (
-    <span className={'badge ' + status}>
+    <span
+      className={'badge ' + status}
+      title={statusDescriptions[status] ?? statuses[status]}
+    >
       {status === 'Delivered' ? (
         <svg
           width={12}

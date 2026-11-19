@@ -731,6 +731,7 @@ td .numeric {
   background: var(--brand-secondary);
   color: var(--brand-primary);
   font-weight: 600;
+  cursor: help;
 }
 .status-Pending {
   color: var(--brand-warning);
