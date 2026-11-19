@@ -16,6 +16,7 @@ Restaurant uses React/Vite/strict TypeScript in apps/restaurant and shared CSS v
 ## HTTP contracts
 
 - Follow the existing `/api/v1` routes, methods, request names, status codes, envelopes, and pagination from the API specifications.
+- Keep Swagger in sync with each HTTP contract change: DTO annotations, operation metadata, public response schemas and synthetic examples. See [SWAGGER.md](SWAGGER.md). Never expose persistence entities or secrets in schemas/examples.
 - Unknown DTO fields produce 422; convert query values explicitly, not with broad implicit conversion. Define limits when the relevant feature is authorized.
 - Write simple English validation messages that explain how to fix the input. Set explicit DTO validator messages; never expose regular expressions or validator internals. Keep field keys, error codes, and status codes unchanged.
 - Preserve decimal money/coordinate values as strings in JSON; use decimal-safe arithmetic or PostgreSQL numeric operations, never binary floating point for prices.

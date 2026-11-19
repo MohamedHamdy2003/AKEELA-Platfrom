@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
@@ -23,6 +24,14 @@ const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
 
 export class CreateCategoryDto {
+  @ApiProperty({
+    type: 'string',
+    description: 'cat title.',
+    minLength: 1,
+    maxLength: 150,
+    example: 'Sandwiches',
+    required: true,
+  })
   @Transform(trim)
   @IsString({ message: 'Enter the category title as text.' })
   @Length(1, 150, {
@@ -30,17 +39,39 @@ export class CreateCategoryDto {
   })
   cat_title!: string;
 
+  @ApiProperty({
+    type: 'integer',
+    description: 'display order.',
+    nullable: true,
+    minimum: 0,
+    example: 0,
+    required: false,
+  })
   @IsOptional()
   @IsInt({ message: 'display_order must be an integer.' })
   @Min(0, { message: 'display_order must be 0 or greater.' })
   display_order?: number;
 
+  @ApiProperty({
+    type: 'boolean',
+    description: 'is active.',
+    nullable: true,
+    required: false,
+  })
   @IsOptional()
   @IsBoolean({ message: 'is_active must be true or false.' })
   is_active?: boolean;
 }
 
 export class UpdateCategoryDto {
+  @ApiProperty({
+    type: 'string',
+    description: 'cat title.',
+    minLength: 1,
+    maxLength: 150,
+    example: 'Sandwiches',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @Transform(trim)
   @IsString({ message: 'Enter the category title as text.' })
@@ -49,11 +80,19 @@ export class UpdateCategoryDto {
   })
   cat_title?: string;
 
+  @ApiProperty({
+    type: 'integer',
+    description: 'display order.',
+    minimum: 0,
+    example: 0,
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsInt({ message: 'display_order must be an integer.' })
   @Min(0, { message: 'display_order must be 0 or greater.' })
   display_order?: number;
 
+  @ApiProperty({ type: 'boolean', description: 'is active.', required: false })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsBoolean({ message: 'is_active must be true or false.' })
   is_active?: boolean;
@@ -90,6 +129,14 @@ export function serializeCategory(c: Category): CategoryResponse {
 }
 
 export class CreateProductDto {
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Positive PostgreSQL BIGINT ID as a decimal string (maximum 9223372036854775807).',
+    pattern: '^[1-9]\\d{0,18}$',
+    example: '1',
+    required: true,
+  })
   @Transform(trim)
   @IsString({ message: 'Enter the category ID as text.' })
   @Matches(/^[1-9]\d{0,18}$/, {
@@ -97,6 +144,14 @@ export class CreateProductDto {
   })
   cat_id!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'prod name.',
+    minLength: 1,
+    maxLength: 150,
+    example: 'Burger',
+    required: true,
+  })
   @Transform(trim)
   @IsString({ message: 'Enter the product name as text.' })
   @Length(1, 150, {
@@ -104,6 +159,13 @@ export class CreateProductDto {
   })
   prod_name!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'prod description.',
+    nullable: true,
+    maxLength: 10000,
+    required: false,
+  })
   @IsOptional()
   @IsString({ message: 'Enter the product description as text.' })
   @MaxLength(10000, {
@@ -111,6 +173,14 @@ export class CreateProductDto {
   })
   prod_description?: string | null;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'prod image url.',
+    nullable: true,
+    format: 'uri',
+    maxLength: 2048,
+    required: false,
+  })
   @IsOptional()
   @IsUrl(
     { protocols: ['http', 'https'], require_protocol: true },
@@ -119,6 +189,14 @@ export class CreateProductDto {
   @MaxLength(2048, { message: 'Image link must be 2,048 characters or fewer.' })
   prod_image_url?: string | null;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'EGP amount as a decimal string, up to 10 whole digits and 2 decimal places. Never use floating-point arithmetic for money.',
+    pattern: '^\\d{1,10}(\\.\\d{1,2})?$',
+    example: '100.00',
+    required: true,
+  })
   @IsString({ message: 'Enter price as text, for example "100.00".' })
   @Matches(/^\d{1,10}(\.\d{1,2})?$/, {
     message:
@@ -126,12 +204,26 @@ export class CreateProductDto {
   })
   price!: string;
 
+  @ApiProperty({
+    type: 'boolean',
+    description: 'is active.',
+    nullable: true,
+    required: false,
+  })
   @IsOptional()
   @IsBoolean({ message: 'is_active must be true or false.' })
   is_active?: boolean;
 }
 
 export class UpdateProductDto {
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Positive PostgreSQL BIGINT ID as a decimal string (maximum 9223372036854775807).',
+    pattern: '^[1-9]\\d{0,18}$',
+    example: '1',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @Transform(trim)
   @IsString({ message: 'Enter the category ID as text.' })
@@ -140,6 +232,14 @@ export class UpdateProductDto {
   })
   cat_id?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'prod name.',
+    minLength: 1,
+    maxLength: 150,
+    example: 'Burger',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @Transform(trim)
   @IsString({ message: 'Enter the product name as text.' })
@@ -148,6 +248,13 @@ export class UpdateProductDto {
   })
   prod_name?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'prod description.',
+    nullable: true,
+    maxLength: 10000,
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined && value !== null)
   @IsString({ message: 'Enter the product description as text.' })
   @MaxLength(10000, {
@@ -155,6 +262,14 @@ export class UpdateProductDto {
   })
   prod_description?: string | null;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'prod image url.',
+    nullable: true,
+    format: 'uri',
+    maxLength: 2048,
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined && value !== null)
   @IsUrl(
     { protocols: ['http', 'https'], require_protocol: true },
@@ -163,6 +278,14 @@ export class UpdateProductDto {
   @MaxLength(2048, { message: 'Image link must be 2,048 characters or fewer.' })
   prod_image_url?: string | null;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'EGP amount as a decimal string, up to 10 whole digits and 2 decimal places. Never use floating-point arithmetic for money.',
+    pattern: '^\\d{1,10}(\\.\\d{1,2})?$',
+    example: '100.00',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsString({ message: 'Enter price as text, for example "100.00".' })
   @Matches(/^\d{1,10}(\.\d{1,2})?$/, {
@@ -171,12 +294,22 @@ export class UpdateProductDto {
   })
   price?: string;
 
+  @ApiProperty({ type: 'boolean', description: 'is active.', required: false })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsBoolean({ message: 'is_active must be true or false.' })
   is_active?: boolean;
 }
 
 export class ListProductsQuery extends PaginationQuery {
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Positive PostgreSQL BIGINT ID as a decimal string (maximum 9223372036854775807).',
+    nullable: true,
+    pattern: '^[1-9]\\d{0,18}$',
+    example: '1',
+    required: false,
+  })
   @IsOptional()
   @Transform(trim)
   @IsString({ message: 'cat_id must be text.' })
@@ -221,6 +354,14 @@ export function serializeProduct(p: Product): ProductResponse {
 }
 
 export class CreateAddonDto {
+  @ApiProperty({
+    type: 'string',
+    description: 'addon name.',
+    minLength: 1,
+    maxLength: 150,
+    example: 'Cheese',
+    required: true,
+  })
   @Transform(trim)
   @IsString({ message: 'Enter the addon name as text.' })
   @Length(1, 150, {
@@ -228,6 +369,14 @@ export class CreateAddonDto {
   })
   addon_name!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'EGP amount as a decimal string, up to 10 whole digits and 2 decimal places. Never use floating-point arithmetic for money.',
+    pattern: '^\\d{1,10}(\\.\\d{1,2})?$',
+    example: '10.00',
+    required: true,
+  })
   @IsString({ message: 'Enter addon price as text, for example "10.00".' })
   @Matches(/^\d{1,10}(\.\d{1,2})?$/, {
     message:
@@ -235,12 +384,26 @@ export class CreateAddonDto {
   })
   addon_price!: string;
 
+  @ApiProperty({
+    type: 'boolean',
+    description: 'is active.',
+    nullable: true,
+    required: false,
+  })
   @IsOptional()
   @IsBoolean({ message: 'is_active must be true or false.' })
   is_active?: boolean;
 }
 
 export class UpdateAddonDto {
+  @ApiProperty({
+    type: 'string',
+    description: 'addon name.',
+    minLength: 1,
+    maxLength: 150,
+    example: 'Cheese',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @Transform(trim)
   @IsString({ message: 'Enter the addon name as text.' })
@@ -249,6 +412,14 @@ export class UpdateAddonDto {
   })
   addon_name?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'EGP amount as a decimal string, up to 10 whole digits and 2 decimal places. Never use floating-point arithmetic for money.',
+    pattern: '^\\d{1,10}(\\.\\d{1,2})?$',
+    example: '10.00',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsString({ message: 'Enter addon price as text, for example "10.00".' })
   @Matches(/^\d{1,10}(\.\d{1,2})?$/, {
@@ -257,6 +428,7 @@ export class UpdateAddonDto {
   })
   addon_price?: string;
 
+  @ApiProperty({ type: 'boolean', description: 'is active.', required: false })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsBoolean({ message: 'is_active must be true or false.' })
   is_active?: boolean;
@@ -265,6 +437,12 @@ export class UpdateAddonDto {
 export class ListAddonsQuery extends PaginationQuery {}
 
 export class SetProductAddonDto {
+  @ApiProperty({
+    type: 'boolean',
+    description: 'is active.',
+    nullable: true,
+    required: false,
+  })
   @IsOptional()
   @IsBoolean({ message: 'is_active must be true or false.' })
   is_active?: boolean;
@@ -332,6 +510,14 @@ export function serializeProductAddon(
 // --- Feature 08: Offers ---
 
 export class CreateOfferDto {
+  @ApiProperty({
+    type: 'string',
+    description: 'offer title.',
+    minLength: 1,
+    maxLength: 150,
+    example: 'Lunch offer',
+    required: true,
+  })
   @Transform(trim)
   @IsString({ message: 'Enter the offer title as text.' })
   @Length(1, 150, {
@@ -339,6 +525,13 @@ export class CreateOfferDto {
   })
   offer_title!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'offer description.',
+    nullable: true,
+    maxLength: 10000,
+    required: false,
+  })
   @IsOptional()
   @IsString({ message: 'Enter the offer description as text.' })
   @MaxLength(10000, {
@@ -346,6 +539,14 @@ export class CreateOfferDto {
   })
   offer_description?: string | null;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'EGP amount as a decimal string, up to 10 whole digits and 2 decimal places. Never use floating-point arithmetic for money.',
+    pattern: '^\\d{1,10}(\\.\\d{1,2})?$',
+    example: '150.00',
+    required: true,
+  })
   @IsString({ message: 'Enter initial price as text, for example "150.00".' })
   @Matches(/^\d{1,10}(\.\d{1,2})?$/, {
     message:
@@ -353,6 +554,14 @@ export class CreateOfferDto {
   })
   initial_price!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'EGP amount as a decimal string, up to 10 whole digits and 2 decimal places. Never use floating-point arithmetic for money.',
+    pattern: '^\\d{1,10}(\\.\\d{1,2})?$',
+    example: '130.00',
+    required: true,
+  })
   @IsString({ message: 'Enter real price as text, for example "130.00".' })
   @Matches(/^\d{1,10}(\.\d{1,2})?$/, {
     message:
@@ -360,6 +569,14 @@ export class CreateOfferDto {
   })
   real_price!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'offer image url.',
+    nullable: true,
+    format: 'uri',
+    maxLength: 2048,
+    required: false,
+  })
   @IsOptional()
   @ValidateIf((_o, value: unknown) => value !== undefined && value !== null)
   @IsUrl(
@@ -369,10 +586,24 @@ export class CreateOfferDto {
   @MaxLength(2048, { message: 'Image link must be 2,048 characters or fewer.' })
   offer_image_url?: string | null;
 
+  @ApiProperty({
+    type: 'boolean',
+    description: 'is active.',
+    nullable: true,
+    required: false,
+  })
   @IsOptional()
   @IsBoolean({ message: 'is_active must be true or false.' })
   is_active?: boolean;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'ISO 8601 timestamp with explicit Z or UTC offset. Must be before expires_at.',
+    format: 'date-time',
+    example: '2026-12-01T10:00:00+02:00',
+    required: true,
+  })
   @IsDateString(
     { strict: true },
     { message: 'Enter starts_at as a UTC ISO 8601 timestamp.' },
@@ -382,6 +613,14 @@ export class CreateOfferDto {
   })
   starts_at!: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'ISO 8601 timestamp with explicit Z or UTC offset. Must be after starts_at.',
+    format: 'date-time',
+    example: '2026-12-31T22:00:00+02:00',
+    required: true,
+  })
   @IsDateString(
     { strict: true },
     { message: 'Enter expires_at as a UTC ISO 8601 timestamp.' },
@@ -393,6 +632,14 @@ export class CreateOfferDto {
 }
 
 export class UpdateOfferDto {
+  @ApiProperty({
+    type: 'string',
+    description: 'offer title.',
+    minLength: 1,
+    maxLength: 150,
+    example: 'Lunch offer',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @Transform(trim)
   @IsString({ message: 'Enter the offer title as text.' })
@@ -401,6 +648,13 @@ export class UpdateOfferDto {
   })
   offer_title?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'offer description.',
+    nullable: true,
+    maxLength: 10000,
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined && value !== null)
   @IsString({ message: 'Enter the offer description as text.' })
   @MaxLength(10000, {
@@ -408,6 +662,14 @@ export class UpdateOfferDto {
   })
   offer_description?: string | null;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'EGP amount as a decimal string, up to 10 whole digits and 2 decimal places. Never use floating-point arithmetic for money.',
+    pattern: '^\\d{1,10}(\\.\\d{1,2})?$',
+    example: '150.00',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsString({ message: 'Enter initial price as text, for example "150.00".' })
   @Matches(/^\d{1,10}(\.\d{1,2})?$/, {
@@ -416,6 +678,14 @@ export class UpdateOfferDto {
   })
   initial_price?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'EGP amount as a decimal string, up to 10 whole digits and 2 decimal places. Never use floating-point arithmetic for money.',
+    pattern: '^\\d{1,10}(\\.\\d{1,2})?$',
+    example: '130.00',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsString({ message: 'Enter real price as text, for example "130.00".' })
   @Matches(/^\d{1,10}(\.\d{1,2})?$/, {
@@ -424,6 +694,14 @@ export class UpdateOfferDto {
   })
   real_price?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description: 'offer image url.',
+    nullable: true,
+    format: 'uri',
+    maxLength: 2048,
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined && value !== null)
   @IsUrl(
     { protocols: ['http', 'https'], require_protocol: true },
@@ -432,10 +710,19 @@ export class UpdateOfferDto {
   @MaxLength(2048, { message: 'Image link must be 2,048 characters or fewer.' })
   offer_image_url?: string | null;
 
+  @ApiProperty({ type: 'boolean', description: 'is active.', required: false })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsBoolean({ message: 'is_active must be true or false.' })
   is_active?: boolean;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'ISO 8601 timestamp with explicit Z or UTC offset. Must be before expires_at.',
+    format: 'date-time',
+    example: '2026-12-01T10:00:00+02:00',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsDateString(
     { strict: true },
@@ -446,6 +733,14 @@ export class UpdateOfferDto {
   })
   starts_at?: string;
 
+  @ApiProperty({
+    type: 'string',
+    description:
+      'ISO 8601 timestamp with explicit Z or UTC offset. Must be after starts_at.',
+    format: 'date-time',
+    example: '2026-12-31T22:00:00+02:00',
+    required: false,
+  })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsDateString(
     { strict: true },
