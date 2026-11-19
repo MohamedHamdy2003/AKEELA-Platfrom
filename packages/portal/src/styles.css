@@ -382,34 +382,80 @@ bdi,
 }
 .metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
   margin-bottom: 24px;
 }
 .metric {
   border: 1px solid var(--p-line);
   background: linear-gradient(120deg, #fff, var(--p-bg));
   border-radius: 10px;
-  padding: 20px;
+  padding: 14px 16px;
   display: flex;
-  gap: 16px;
+  gap: 10px;
   align-items: center;
   justify-content: space-between;
-  min-height: 104px;
+  min-height: 82px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+.metric.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+.metric.clickable:hover {
+  border-color: var(--p-accent, #1b4332);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.metric.active {
+  border-color: var(--p-accent, #1b4332);
+  box-shadow: 0 0 0 2px rgba(27, 67, 50, 0.15);
+  background: #fff;
 }
 .metric-icon {
   order: 2;
   color: var(--p-gold);
   background: #f7f3e9;
-  border-radius: 10px;
-  width: 46px;
-  height: 46px;
+  border-radius: 9px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
+  flex-shrink: 0;
 }
 [data-portal='delivery'] .metric-icon {
   color: var(--p-accent);
   background: var(--p-accent-soft);
+}
+.metric[data-status='Pending'] .metric-icon {
+  background: #fef3c7;
+  color: #92400e;
+}
+.metric[data-status='Accepted'] .metric-icon {
+  background: #e0f7f6;
+  color: #0a6c74;
+}
+.metric[data-status='Picked_Up'] .metric-icon {
+  background: #e8f0fe;
+  color: #1e40af;
+}
+.metric[data-status='Delivered'] .metric-icon {
+  background: #e6f9ed;
+  color: #146c36;
+}
+.metric[data-status='Rejected'] .metric-icon {
+  background: #ffe4e6;
+  color: #be123c;
+}
+.metric[data-status='Cancelled'] .metric-icon {
+  background: #f1f5f9;
+  color: #475569;
+}
+.metric[data-status='Failed'] .metric-icon {
+  background: #fee2e2;
+  color: #991b1b;
 }
 .metric div {
   display: grid;
@@ -418,9 +464,10 @@ bdi,
 .metric div > span {
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
 }
 .metric strong {
-  font-size: 27px;
+  font-size: 24px;
   line-height: 1.2;
   font-weight: 600;
 }
@@ -1175,13 +1222,13 @@ dialog p {
     min-height: 38px;
   }
   .metrics {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
     margin-bottom: 18px;
   }
   .metric {
-    min-height: 78px;
-    padding: 14px 18px;
+    min-height: 70px;
+    padding: 10px 12px;
   }
   .metric > div {
     display: flex;
@@ -1190,11 +1237,18 @@ dialog p {
     flex: 1;
   }
   .metric strong {
-    font-size: 24px;
+    font-size: 20px;
+  }
+  .metric div > span {
+    font-size: 11px;
   }
   .metric-icon {
-    width: 37px;
-    height: 37px;
+    width: 32px;
+    height: 32px;
+  }
+  .metric-icon svg {
+    width: 17px;
+    height: 17px;
   }
   .filters {
     gap: 12px;

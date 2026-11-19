@@ -1003,14 +1003,38 @@ export function OrderFacts({
 export function Metrics({
   items,
 }: {
-  items: Array<{ label: string; value: number | null; icon?: ReactNode }>;
+  items: Array<{
+    label: string;
+    value: number | null;
+    icon?: ReactNode;
+    status?: OrderStatus;
+    active?: boolean;
+    onClick?: () => void;
+  }>;
 }) {
   return (
     <div className="metrics">
       {items.map((item) => (
-        <div className="metric" key={item.label}>
+        <div
+          className={`metric${item.active ? ' active' : ''}${item.onClick ? ' clickable' : ''}`}
+          key={item.label}
+          data-status={item.status}
+          onClick={item.onClick}
+          role={item.onClick ? 'button' : undefined}
+          tabIndex={item.onClick ? 0 : undefined}
+          onKeyDown={
+            item.onClick
+              ? (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    item.onClick!();
+                  }
+                }
+              : undefined
+          }
+        >
           <span className="metric-icon">
-            {item.icon ?? <Check size={23} />}
+            {item.icon ?? <Check size={20} />}
           </span>
           <div>
             <span>{item.label}</span>
