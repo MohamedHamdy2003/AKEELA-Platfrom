@@ -4,6 +4,8 @@
 
 Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.
 
+Current one-time owner request: promote all completed order management, status lifecycle, auto-deliver scheduler, metrics cards, badge indicators, and portal UI refinements from `dev` to `main` and deploy to the VPS server. This authorizes merging `dev` to `main` and triggering the Release workflow. Later work returns to dev-only policy. Deployment success must be verified from the Release workflow run and VPS readiness.
+
 Current one-time owner request: review the unsuccessful attempt to publish the four-role Swagger views, then promote the reviewed Swagger changes (#37) to main and deploy after successful CI. Inspection found no new tracked code changes; manual Release runs republished old main `4899602`, which did not contain the role views. This scoped release starts from main and includes only the Swagger role-view commit; pending frontend/asset changes on dev stay excluded. Later work returns to dev-only policy. Deployment success must be verified from the Release run and public role URLs.
 
 Current one-time authorization: publish Swagger for the mobile developer on the VPS after successful CI, promoting the reviewed Swagger changes from dev to main. `SWAGGER_ENABLED` makes production access temporary and removable without deleting code or data; disable it only when the owner finishes testing and asks. This is not standing permission for later main releases.

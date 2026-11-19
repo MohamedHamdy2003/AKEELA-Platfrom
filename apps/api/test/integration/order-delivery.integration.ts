@@ -289,6 +289,8 @@ test('Features 13-14: restaurant acceptance and assigned delivery', async (t) =>
         .set('Authorization', auth(4))
         .expect(404);
       await pickup(id).expect(409);
+      // Delivering an Accepted order before driver assignment/Picked_Up is rejected.
+      await deliver(id).expect(409);
       await assign(id, drivers[2]).expect(404);
       await db.query(
         'UPDATE delivery_drivers SET is_active=false WHERE driver_id=$1',
@@ -302,7 +304,6 @@ test('Features 13-14: restaurant acceptance and assigned delivery', async (t) =>
       await assign(id).expect(200);
       // Re-assigning a driver while Picked_Up is allowed (idempotent status).
       await assign(id, drivers[1]).expect(200);
-      await deliver(id).expect(409);
       await api()
         .post(`/api/v1/delivery-company/orders/${id}/pickup`)
         .set('Authorization', auth(3))
