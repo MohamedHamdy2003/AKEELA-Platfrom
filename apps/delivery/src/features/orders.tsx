@@ -89,21 +89,7 @@ export function DeliveryActions({
             </form>
             <Pager meta={drivers.result?.meta} change={setPage} />
           </ResourceState>
-          {order.driver_id ? (
-            <Confirm
-              label="تأكيد الاستلام من المطعم"
-              description="تأكّد أن السائق استلم الطلب بالفعل. بعد الاستلام لن يمكن تغيير السائق."
-              run={() =>
-                api.request(
-                  '/delivery-company/orders/' + order.order_id + '/pickup',
-                  { method: 'POST' },
-                )
-              }
-              done={refresh}
-            />
-          ) : (
-            <p className="muted">أَسند سائقًا قبل تأكيد الاستلام.</p>
-          )}
+          <p className="muted">أَسند سائقًا للطلب لبدء التوصيل.</p>
         </>
       )}
       {order.status === 'Picked_Up' && (

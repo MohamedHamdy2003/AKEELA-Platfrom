@@ -80,17 +80,16 @@ API paths omit `/api/v1`. Configure the full API base URL; the backend domain is
 | POST   | `/delivery-company/orders/{order_id}/pickup`  | No body.            |
 | POST   | `/delivery-company/orders/{order_id}/deliver` | No body.            |
 
-| Current state                           | Allowed UI actions                                                                  |
-| --------------------------------------- | ----------------------------------------------------------------------------------- |
-| Accepted, no driver                     | Select an active owned driver. Pickup stays disabled.                               |
-| Accepted, active driver                 | Change driver or confirm pickup.                                                    |
-| Picked_Up, active driver                | Confirm delivery; driver selection is locked.                                       |
-| Assigned driver inactive                | Explain the active-driver requirement; replacement is possible only while Accepted. |
-| Delivered / Failed / other final status | Read only.                                                                          |
+| Current state                           | Allowed UI actions                                                            |
+| --------------------------------------- | ----------------------------------------------------------------------------- |
+| Accepted, no driver                     | Select an active owned driver. Assignment transitions the order to Picked_Up. |
+| Picked_Up, active driver                | Confirm delivery; driver selection is locked.                                 |
+| Assigned driver inactive                | Explain the active-driver requirement.                                        |
+| Delivered / Failed / other final status | Read only.                                                                    |
 
-- Assigning a driver keeps Accepted; pickup changes it to Picked_Up; delivery changes it to Delivered.
+- Assigning a driver transitions the order to Picked_Up; delivery changes it to Delivered.
 - The company confirms these actions on behalf of its drivers. Do not build a driver login/workspace in this version.
-- Confirm pickup/delivery and disable actions during submission. After success refetch the order/list. Never provide a generic status dropdown.
+- Confirm delivery and disable actions during submission. After success refetch the order/list. Never provide a generic status dropdown.
 - On `DRIVER_REQUIRED`, choose a driver. On `DRIVER_UNAVAILABLE`, refetch driver/order data. On 409 or uncertain network outcome, refetch before retrying; another actor may have marked the order Failed.
 - Restaurant suspension does not stop assigned delivery from completing. Company/account/driver activity checks still apply.
 - No company cancel/reject/fail/transfer-company action, proof-of-delivery upload, signature or delivery OTP is supported. Admin alone can mark eligible orders Failed.
