@@ -4,6 +4,7 @@ import { AuthEnvironment, validateAuthEnvironment } from './auth.environment';
 export interface Environment extends AuthEnvironment {
   NODE_ENV: 'development' | 'test' | 'production';
   PORT: number;
+  SWAGGER_ENABLED: boolean;
   PUBLIC_BASE_URL: string;
   IMAGE_STORAGE_PATH: string;
   DATABASE_URL: string;
@@ -26,6 +27,11 @@ export function validateEnvironment(
   }
 
   const databaseUrl = input.DATABASE_URL;
+  const swagger =
+    input.SWAGGER_ENABLED ?? (mode === 'production' ? 'false' : 'true');
+  if (swagger !== 'true' && swagger !== 'false') {
+    throw new Error('SWAGGER_ENABLED must be true or false.');
+  }
   if (typeof databaseUrl !== 'string') {
     throw new Error('DATABASE_URL is required.');
   }
@@ -116,6 +122,7 @@ export function validateEnvironment(
     PUBLIC_BASE_URL: publicBase,
     IMAGE_STORAGE_PATH: imagePath,
     PORT: port,
+    SWAGGER_ENABLED: swagger === 'true',
     DATABASE_URL: databaseUrl,
     DATABASE_SSL: ssl === 'true',
     CORS_ORIGINS: origins,

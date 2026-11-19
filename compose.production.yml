@@ -19,6 +19,7 @@ services:
     environment: &api-environment
       NODE_ENV: production
       PORT: '3000'
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
       TZ: Africa/Cairo
       PUBLIC_BASE_URL: https://${APP_DOMAIN:?Set APP_DOMAIN}
       IMAGE_STORAGE_PATH: /app/storage/images

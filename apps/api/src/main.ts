@@ -16,7 +16,7 @@ async function bootstrap(): Promise<void> {
     config.get('TRUST_PROXY', { infer: true }),
     config.get('IMAGE_STORAGE_PATH', { infer: true }),
   );
-  configureSwagger(app);
+  configureSwagger(app, config.get('SWAGGER_ENABLED', { infer: true }));
   try {
     await app.listen(config.get('PORT', { infer: true }));
   } catch (error) {

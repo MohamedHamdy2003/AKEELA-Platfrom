@@ -524,7 +524,8 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
   return document;
 }
 
-export function configureSwagger(app: INestApplication): void {
+export function configureSwagger(app: INestApplication, enabled = true): void {
+  if (!enabled) return;
   const document = createApiDocument(app);
   SwaggerModule.setup('docs', app, document, {
     useGlobalPrefix: true,
