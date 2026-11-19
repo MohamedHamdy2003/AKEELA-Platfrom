@@ -1,5 +1,6 @@
 import { AuthModule } from '../auth/auth.module';
 import { OrderEventsGateway } from './order-events.gateway';
+import { OrdersAutoDeliverService } from './orders-auto-deliver.service';
 import { UsersModule } from '../users/users.module';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { DeliveryModule } from '../delivery/delivery.module';
@@ -18,7 +19,7 @@ import { CustomerOrdersController } from './customer-orders.controller';
     RestaurantsModule,
     DeliveryModule,
   ],
-  providers: [OrdersService, OrderEventsGateway],
+  providers: [OrdersService, OrderEventsGateway, OrdersAutoDeliverService],
   controllers: [
     CustomerOrdersController,
     RestaurantOrdersController,

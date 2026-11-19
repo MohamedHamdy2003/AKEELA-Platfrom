@@ -364,19 +364,26 @@ export class OrdersService {
   async assignDriver(actor: AuthActor, id: string, driverId: string) {
     this.assertRole(actor, 'Delivery_Company');
     return this.change(actor, id, async (order, m) => {
-      this.requireState(order, ['Accepted']);
+      this.requireState(order, ['Accepted', 'Picked_Up']);
       order.driver_id = await this.delivery.driverForOrder(
         order.company_id!,
         driverId,
         m,
       );
+      order.status = 'Picked_Up';
       await m.getRepository(Order).save(order);
     });
   }
   async deliveryAction(actor: AuthActor, id: string, pickup: boolean) {
     this.assertRole(actor, 'Delivery_Company');
     return this.change(actor, id, async (order, m) => {
-      this.requireState(order, [pickup ? 'Accepted' : 'Picked_Up']);
+      if (pickup) {
+        // Idempotent: driver assignment already transitions to Picked_Up.
+        // Accept Picked_Up as well so explicit pickup calls remain valid.
+        this.requireState(order, ['Accepted', 'Picked_Up']);
+      } else {
+        this.requireState(order, ['Picked_Up']);
+      }
       if (!order.driver_id)
         throw new ApiError(
           409,
@@ -384,6 +391,7 @@ export class OrdersService {
           'Assign an active driver before pickup.',
         );
       await this.delivery.driverForOrder(order.company_id!, order.driver_id, m);
+      if (pickup && order.status === 'Picked_Up') return; // already transitioned
       order.status = pickup ? 'Picked_Up' : 'Delivered';
       await m.getRepository(Order).save(order);
     });

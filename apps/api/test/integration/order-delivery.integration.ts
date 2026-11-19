@@ -300,6 +300,7 @@ test('Features 13-14: restaurant acceptance and assigned delivery', async (t) =>
         [drivers[0]],
       );
       await assign(id).expect(200);
+      // Re-assigning a driver while Picked_Up is allowed (idempotent status).
       await assign(id, drivers[1]).expect(200);
       await deliver(id).expect(409);
       await api()
@@ -307,8 +308,10 @@ test('Features 13-14: restaurant acceptance and assigned delivery', async (t) =>
         .set('Authorization', auth(3))
         .send({ status: 'Delivered' })
         .expect(422);
+      // Explicit pickup is idempotent when already Picked_Up.
       await pickup(id).expect(200);
-      await assign(id).expect(409);
+      // Re-assigning after Picked_Up is still allowed.
+      await assign(id).expect(200);
       await deliver(id).expect(200);
       await deliver(id).expect(409);
       await accept(id).expect(409);

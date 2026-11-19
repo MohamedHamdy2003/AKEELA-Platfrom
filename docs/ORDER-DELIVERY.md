@@ -16,7 +16,9 @@ The owner confirmed one always-active company for this version. Company creation
 - Restaurant reads filter by its own restaurant. Delivery reads/writes filter by the assigned company. Admin may read all orders.
 - Pending becomes Accepted and receives the configured company in one transaction. Driver stays NULL. Retrying Accepted returns the saved state without choosing a company again, even if configuration has changed.
 - Restaurant rejection and customer cancellation apply only to Pending.
-- The assigned company chooses an active owned driver while Accepted, then reports pickup and delivery. Pickup requires Accepted and becomes Picked_Up; delivery requires Picked_Up and becomes Delivered.
+- The assigned company chooses an active owned driver while Accepted or Picked_Up. Driver assignment (`PUT /delivery-company/orders/:id/driver`) immediately transitions the order to `Picked_Up`; re-assigning a different driver while already Picked_Up is allowed and keeps the status unchanged.
+- Explicit pickup (`POST /delivery-company/orders/:id/pickup`) is idempotent: it succeeds whether the order is Accepted or already Picked_Up, verifying the assigned driver is still active. Delivery (`POST /delivery-company/orders/:id/deliver`) requires Picked_Up and becomes Delivered.
+- If a Picked_Up order has not transitioned to Delivered within 90 minutes of its last status update, `OrdersAutoDeliverService` automatically sets the status to Delivered and broadcasts the change via Socket.IO. The scanner runs every 5 minutes (first check after a 1-minute warm-up).
 - Admin may fail Accepted or Picked_Up orders. Final states cannot transition. Other action retries return 409 when their required state no longer holds.
 - Suspending a restaurant does not stop the assigned company completing delivery. Admin can fail eligible orders for support.
 - Prices, items and customer delivery address remain checkout snapshots. Delivery pickup fields use the current restaurant profile.
@@ -33,4 +35,4 @@ Bruno folders 13 and 14 use runtime order_id and driver_id. Log in with the role
 
 ## Tests
 
-Use npm run check and npm run test:integration. Tests use the dedicated local PostgreSQL database and Mailpit only. Coverage includes role/ownership, default-company failures, driver activity/ownership, immutable final states, restaurant suspension, acceptance retries, Cairo day boundaries, and concurrent state changes. No application database migrations, real account provisioning or deployment are performed.
+Use npm run check and npm run test:integration. Tests use the dedicated local PostgreSQL database and Mailpit only. Coverage includes role/ownership, default-company failures, driver activity/ownership, immutable final states, restaurant suspension, acceptance retries, Cairo day boundaries, concurrent state changes, and idempotent pickup/auto-deliver behaviour. No application database migrations, real account provisioning or deployment are performed.
