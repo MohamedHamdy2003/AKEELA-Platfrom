@@ -9,7 +9,6 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react';
-
 import { ApiClient, ApiError, query } from './api';
 import {
   statuses,
@@ -29,6 +28,7 @@ import {
   OrderFacts,
   Pager,
   PageTitle,
+  RefreshCw,
   ResourceState,
   useResource,
   X,
@@ -218,7 +218,12 @@ export function OrdersBoard({
               ? 'عرض وإدارة الطلبات المسندة إلى شركتك فقط.'
               : 'متابعة طلبات المنصة حسب الحالة والفترة الزمنية.'
           }
-          action={null}
+          action={
+            <button className="button primary" onClick={refresh}>
+              <RefreshCw size={15} />
+              تحديث البيانات
+            </button>
+          }
         />
         <Metrics items={metricItems} />
         <div className="filters">
