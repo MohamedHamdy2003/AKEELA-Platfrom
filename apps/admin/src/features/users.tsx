@@ -12,6 +12,7 @@ import {
   useResource,
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
+import { DetailWorkspace } from '../components/detail-workspace';
 import { ProfileDetails } from './profile-details';
 import { EmailVerification } from '../components/email-verification';
 import { EmailVerificationDialog } from '../components/email-verification-dialog';
@@ -51,172 +52,183 @@ export function Users({
       id ? '/admin/users/' + id : null,
       revision + tick,
     );
-  const selected = detail.result?.data;
+  const selected =
+    detail.result?.data.user_id === id ? detail.result.data : undefined;
   return (
     <>
-      <div className="filters">
-        {!companyOnly && (
-          <Field label="نوع الحساب">
+      <DetailWorkspace
+        selectedKey={id}
+        title="تفاصيل الحساب"
+        onClose={() => setId(null)}
+        details={
+          <>
+            <ResourceState resource={detail}>
+              {selected && (
+                <>
+                  <h2>{selected.full_name}</h2>
+                  <ProfileDetails user={selected} />
+                  <div className="account-meta">
+                    <span className="email-cell">
+                      <bdi>{selected.email}</bdi>
+                      <EmailVerification
+                        verified={!!selected.email_verified_at}
+                        onClick={
+                          selected.role === 'Delivery_Company'
+                            ? () => setVerifyTarget(selected)
+                            : undefined
+                        }
+                      />
+                    </span>
+                    <bdi>{selected.phone}</bdi>
+                  </div>
+                  <p>
+                    {roles[selected.role]} ·{' '}
+                    {selected.is_active ? 'نشط' : 'غير نشط'}
+                  </p>
+                  {selected.role === 'Delivery_Company' && selected.profile && (
+                    <>
+                      <h3>{String(selected.profile.company_name)}</h3>
+                      <p>{String(selected.profile.company_address)}</p>
+                      <p>
+                        <bdi>
+                          {String(selected.profile.company_phone)} ·{' '}
+                          {String(selected.profile.company_email ?? '')}
+                        </bdi>
+                      </p>
+                      <p>
+                        رقم الشركة:{' '}
+                        <bdi>{String(selected.profile.company_id)}</bdi>
+                      </p>
+                      <Notice>
+                        {selected.email_verified_at
+                          ? 'بريد تسجيل الدخول موثّق. '
+                          : 'البريد يحتاج إلى التوثيق قبل دخول الشركة. '}
+                        رقم الشركة يُستخدم في إعداد إسناد الطلبات على الخادم.
+                      </Notice>
+                    </>
+                  )}
+                  {['Customer', 'Restaurant'].includes(selected.role) ? (
+                    <Confirm
+                      danger={selected.is_active}
+                      label={
+                        selected.is_active ? 'تعطيل الحساب' : 'تنشيط الحساب'
+                      }
+                      description="سيتم تغيير نشاط الحساب. هذا الإجراء منفصل عن تفعيل المطعم."
+                      run={() =>
+                        api.request(
+                          '/admin/users/' + selected.user_id + '/activity',
+                          {
+                            method: 'PATCH',
+                            body: { is_active: !selected.is_active },
+                          },
+                        )
+                      }
+                      done={() => setTick((n) => n + 1)}
+                    />
+                  ) : (
+                    <p className="muted">
+                      لا يمكن تعطيل حساب الإدارة أو شركة التوصيل.
+                    </p>
+                  )}
+                </>
+              )}
+            </ResourceState>
+          </>
+        }
+      >
+        <div className="filters">
+          {!companyOnly && (
+            <Field label="نوع الحساب">
+              <select
+                value={role}
+                onChange={(event) => {
+                  setRole(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">جميع الأدوار</option>
+                {Object.entries(roles).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Field label="نشاط الحساب">
             <select
-              value={role}
+              value={active}
               onChange={(event) => {
-                setRole(event.target.value);
+                setActive(event.target.value);
                 setPage(1);
               }}
             >
-              <option value="">جميع الأدوار</option>
-              {Object.entries(roles).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
+              <option value="">الكل</option>
+              <option value="true">نشط</option>
+              <option value="false">غير نشط</option>
             </select>
           </Field>
-        )}
-        <Field label="نشاط الحساب">
-          <select
-            value={active}
-            onChange={(event) => {
-              setActive(event.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">الكل</option>
-            <option value="true">نشط</option>
-            <option value="false">غير نشط</option>
-          </select>
-        </Field>
-      </div>
-      <ResourceState
-        resource={resource}
-        empty={!!resource.result && !resource.result.data.length}
-      >
-        <section className="panel">
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th className="user-id-column">الرقم</th>
-                  <th>الاسم</th>
-                  <th>البريد الإلكتروني</th>
-                  <th>الدور</th>
-                  <th>الحساب</th>
-                  <th>التفاصيل</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resource.result?.data.map((row) => (
-                  <tr key={row.user_id}>
-                    <td className="user-id-column">
-                      <bdi>#{row.user_id}</bdi>
-                    </td>
-                    <td>
-                      <strong>{row.full_name}</strong>
-                    </td>
-                    <td>
-                      <div className="email-cell">
-                        <bdi>{row.email}</bdi>
-                        <EmailVerification
-                          verified={!!row.email_verified_at}
-                          onClick={
-                            row.role === 'Delivery_Company'
-                              ? () => setVerifyTarget(row)
-                              : undefined
-                          }
-                        />
-                      </div>
-                    </td>
-                    <td>{roles[row.role]}</td>
-                    <td>{row.is_active ? 'نشط' : 'غير نشط'}</td>
-                    <td>
-                      <button
-                        className="button compact"
-                        onClick={() => setId(row.user_id)}
-                      >
-                        عرض الحساب
-                      </button>
-                    </td>
+        </div>
+        <ResourceState
+          resource={resource}
+          empty={!!resource.result && !resource.result.data.length}
+        >
+          <section className="panel">
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="user-id-column">الرقم</th>
+                    <th>الاسم</th>
+                    <th>البريد الإلكتروني</th>
+                    <th>الدور</th>
+                    <th>الحساب</th>
+                    <th>التفاصيل</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Pager meta={resource.result?.meta} change={setPage} />
-        </section>
-      </ResourceState>
-      {id && (
-        <section className="panel panel-pad">
-          <ResourceState resource={detail}>
-            {selected && (
-              <>
-                <h2>{selected.full_name}</h2>
-                <ProfileDetails user={selected} />
-                <div className="account-meta">
-                  <span className="email-cell">
-                    <bdi>{selected.email}</bdi>
-                    <EmailVerification
-                      verified={!!selected.email_verified_at}
-                      onClick={
-                        selected.role === 'Delivery_Company'
-                          ? () => setVerifyTarget(selected)
-                          : undefined
-                      }
-                    />
-                  </span>
-                  <bdi>{selected.phone}</bdi>
-                </div>
-                <p>
-                  {roles[selected.role]} ·{' '}
-                  {selected.is_active ? 'نشط' : 'غير نشط'}
-                </p>
-                {selected.role === 'Delivery_Company' && selected.profile && (
-                  <>
-                    <h3>{String(selected.profile.company_name)}</h3>
-                    <p>{String(selected.profile.company_address)}</p>
-                    <p>
-                      <bdi>
-                        {String(selected.profile.company_phone)} ·{' '}
-                        {String(selected.profile.company_email ?? '')}
-                      </bdi>
-                    </p>
-                    <p>
-                      رقم الشركة:{' '}
-                      <bdi>{String(selected.profile.company_id)}</bdi>
-                    </p>
-                    <Notice>
-                      {selected.email_verified_at
-                        ? 'بريد تسجيل الدخول موثّق. '
-                        : 'البريد يحتاج إلى التوثيق قبل دخول الشركة. '}
-                      رقم الشركة يُستخدم في إعداد إسناد الطلبات على الخادم.
-                    </Notice>
-                  </>
-                )}
-                {['Customer', 'Restaurant'].includes(selected.role) ? (
-                  <Confirm
-                    danger={selected.is_active}
-                    label={selected.is_active ? 'تعطيل الحساب' : 'تنشيط الحساب'}
-                    description="سيتم تغيير نشاط الحساب. هذا الإجراء منفصل عن تفعيل المطعم."
-                    run={() =>
-                      api.request(
-                        '/admin/users/' + selected.user_id + '/activity',
-                        {
-                          method: 'PATCH',
-                          body: { is_active: !selected.is_active },
-                        },
-                      )
-                    }
-                    done={() => setTick((n) => n + 1)}
-                  />
-                ) : (
-                  <p className="muted">
-                    لا يمكن تعطيل حساب الإدارة أو شركة التوصيل.
-                  </p>
-                )}
-              </>
-            )}
-          </ResourceState>
-        </section>
-      )}
+                </thead>
+                <tbody>
+                  {resource.result?.data.map((row) => (
+                    <tr key={row.user_id} data-selected={id === row.user_id}>
+                      <td className="user-id-column">
+                        <bdi>#{row.user_id}</bdi>
+                      </td>
+                      <td>
+                        <strong>{row.full_name}</strong>
+                      </td>
+                      <td>
+                        <div className="email-cell">
+                          <bdi>{row.email}</bdi>
+                          <EmailVerification
+                            verified={!!row.email_verified_at}
+                            onClick={
+                              row.role === 'Delivery_Company'
+                                ? () => setVerifyTarget(row)
+                                : undefined
+                            }
+                          />
+                        </div>
+                      </td>
+                      <td>{roles[row.role]}</td>
+                      <td>{row.is_active ? 'نشط' : 'غير نشط'}</td>
+                      <td>
+                        <button
+                          className="button compact"
+                          aria-expanded={id === row.user_id}
+                          data-detail-record={row.user_id}
+                          onClick={() => setId(row.user_id)}
+                        >
+                          عرض الحساب
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager meta={resource.result?.meta} change={setPage} />
+          </section>
+        </ResourceState>
+      </DetailWorkspace>
       {verifyTarget && (
         <EmailVerificationDialog
           key={verifyTarget.user_id}

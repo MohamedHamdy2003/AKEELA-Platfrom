@@ -99,6 +99,8 @@ API paths omit `/api/v1`. Use a configured full API base URL; the backend domain
 
 ## UI and Integration Rules
 
+- Restaurant Review and Users/Company account details open in the Admin's left detail card, using the order detail visual pattern. Headers/close controls, selected-row context, a 280ms left entrance/exit and reduced motion are implemented. On smaller screens, details precede the list and opening brings them into view. Escape closes the detail unless a native confirmation/verification dialog is open; closing restores the row trigger's focus. Existing activation/account/verification actions and REST payloads are unchanged. Loading, error/retry and switching records stay inside the card; a late response must never show a different account's data.
+
 - Include loading, empty, confirmation, success, validation, forbidden, missing-record and retry states. Map `error.fields` to forms and use server messages.
 - Lists use paginated `data` and `meta`; show only supported filters. IDs, money and coordinates stay strings. Money is EGP; timestamps display in Africa/Cairo. A page subtotal is not an all-time revenue metric.
 - Access JWT uses Authorization; refresh currently uses a JSON token. Tokens use tab-scoped sessionStorage so reload restores login; see [AUTH](../AUTH.md). No remember-me across browser sessions is implemented. Coordinate refreshes; avoid retry loops, shared-subdomain SSO assumptions and secrets in frontend configuration.
