@@ -14,6 +14,8 @@ The user approved the foundation and authorized Features 01-16, local tests, CI/
 
 When `SWAGGER_ENABLED=true`, the API serves Swagger at `/api/v1/docs` and OpenAPI JSON at `/api/v1/docs-json`. Production defaults to false; disabling it removes documentation routes/assets without affecting business APIs. `apps/api/src/documentation` owns presentation-only metadata; controllers/validated DTOs supply the route/input structure. No new business module, entity, database access or separate service. See [SWAGGER.md](SWAGGER.md).
 
+The UI uses four role references (Customer, Restaurant, Admin, Delivery Company), each with client-specific feature groups and direct `/api/v1/docs/<role>` pages. Shared authentication is repeated where needed; full JSON stays compatible. Role projections filter documentation only, never business access policies.
+
 ```mermaid
 flowchart TD
     HTTP[HTTP client] --> APP[NestJS application /api/v1]
