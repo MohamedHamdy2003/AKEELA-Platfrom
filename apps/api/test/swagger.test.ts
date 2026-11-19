@@ -254,3 +254,35 @@ function responseSchema(
   assert.ok(!('$ref' in response));
   return response.content!['application/json']!.schema as SchemaObject;
 }
+
+test('disabled Swagger registers no UI, JSON or asset routes and leaves the API running', async () => {
+  const module = await Test.createTestingModule({ controllers })
+    .useMocker(() => ({}))
+    .compile();
+  const app = module.createNestApplication({ logger: false });
+  configureApplication(app, []);
+  configureSwagger(app, false);
+  try {
+    await app.listen(0, '127.0.0.1');
+    const origin = await app.getUrl();
+    for (const path of [
+      '/docs',
+      '/docs/',
+      '/docs-json',
+      '/docs/swagger-ui-init.js',
+      '/docs/swagger-ui-bundle.js',
+      '/docs/swagger-ui.css',
+    ]) {
+      const response = await fetch(`${origin}/api/v1${path}`);
+      assert.equal(response.status, 404, path);
+    }
+    const health = await fetch(`${origin}/api/v1/health/live`);
+    assert.equal(health.status, 200);
+    assert.equal(
+      ((await health.json()) as { data: { status: string } }).data.status,
+      'ok',
+    );
+  } finally {
+    await app.close();
+  }
+});

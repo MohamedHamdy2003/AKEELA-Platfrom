@@ -11,7 +11,19 @@ Start the API normally, then open:
 | Interactive Swagger UI | `http://localhost:3000/api/v1/docs`      |
 | OpenAPI JSON           | `http://localhost:3000/api/v1/docs-json` |
 
-After an owner-approved release, the same paths work on the configured API domain. Do not assume a dev-only change is already on the VPS. Caddy's existing API proxy supports these paths; no new service or public port is required.
+With Swagger enabled on the VPS, the mobile reference is `https://api.akeelaonline.tech/api/v1/docs` and JSON is `https://api.akeelaonline.tech/api/v1/docs-json`. Caddy's existing API proxy supports these paths; no new domain, service or public port is required. Deployment must still be verified after release.
+
+## Temporary production access
+
+`SWAGGER_ENABLED` accepts only `true` or `false`. Default: true outside production, false in production. Production Compose also defaults to false. For the owner-approved mobile testing window, set `SWAGGER_ENABLED=true` in the private server `/opt/akeela/.env.production` before the release.
+
+When the owner finishes testing, set it to `false` and recreate only the API from the current release directory:
+
+```bash
+docker compose -p akeela --env-file /opt/akeela/.env.production --env-file /opt/akeela/images.env -f compose.production.yml up -d --no-deps api
+```
+
+Verify `/api/v1/docs`, `/api/v1/docs-json` and `/api/v1/docs/swagger-ui-bundle.js` all return 404, while `/api/v1/health/ready` stays 200. The API, stored data and images remain available. This hides the entire documentation surface, including assets; no source deletion, rebuild or database action is needed. Do not run this shutdown step until the owner asks. There is no automatic expiry timer.
 
 Documentation is public and contains synthetic examples only. Swagger assets are served by NestJS, with no external schema validator. JSON can be imported into API tools or used for client generation. YAML is disabled. Socket.IO is described in the introduction and [REALTIME.md](REALTIME.md), not represented as fake REST endpoints.
 

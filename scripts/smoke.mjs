@@ -140,6 +140,10 @@ try {
     const r = await get(`${base}/api/v1/health/ready`, ca);
     if (r.status !== 200) throw Error('Readiness failed');
   });
+  for (const route of ['docs', 'docs-json', 'docs/swagger-ui-bundle.js']) {
+    if ((await get(`${base}/api/v1/${route}`, ca)).status !== 404)
+      throw Error('Production Swagger must be disabled by default: ' + route);
+  }
   const redirect = await get(`http://localhost:${httpPort}/api/v1/health/live`);
   for (const app of ['admin', 'vendor', 'delivery']) {
     const page = await get(`${base}/${app}/`, ca);

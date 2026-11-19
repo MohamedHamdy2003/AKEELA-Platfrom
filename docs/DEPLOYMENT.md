@@ -40,6 +40,8 @@ Local compose.yml remains the developer PostgreSQL/Mailpit setup. Production use
 
 ## Caddy and realtime
 
+Temporary Swagger publishing uses the existing API HTTPS host. Set private `SWAGGER_ENABLED=true` during the owner-approved testing window; production defaults to false. After testing, set false and recreate only the API to remove UI/JSON/assets, without rebuilding or changing persistent data. See [SWAGGER.md](SWAGGER.md) for URLs and verification.
+
 Production Caddy explicitly serves the four domains. Each frontend proxies /api/* and /socket.io/* to the API, serves /images/* from the read-only image volume, and sends remaining requests to its static frontend. The API domain proxies the API/socket paths directly. Caddy handles WebSocket upgrades and automatic HTTPS. Frontend CSP allows its own WebSocket host. No DNS record, live certificate or deployment is implied by a validated Caddyfile.
 
 The old sites-enabled/templates files are legacy preparation, not production imports. See [realtime](REALTIME.md) for mobile/browser connections, session expiry and REST recovery. Run one API instance; no Redis adapter or event replay exists.
