@@ -39,6 +39,8 @@ Open `bruno/AKEELA` in Bruno and select Local; see [BRUNO.md](docs/BRUNO.md). Ke
 
 Swagger: `http://localhost:3000/api/v1/docs`. OpenAPI JSON: `http://localhost:3000/api/v1/docs-json`. All 81 REST endpoints include input/response schemas, examples, JWT authorization and mobile integration rules. See [SWAGGER.md](docs/SWAGGER.md). Try it out sends real requests to the selected API.
 
+Swagger has four role views: Customer, Restaurant, Admin and Delivery Company, each with its own feature groups. Use the top selector or `/api/v1/docs/customer`, `/restaurant`, `/admin` and `/delivery-company` under the same docs prefix. The full JSON remains unchanged for existing imports.
+
 ## Documentation
 
 Every agent/developer must read [AGENTS.md](AGENTS.md) and relevant documentation first. Documentation is the source of truth.

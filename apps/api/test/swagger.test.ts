@@ -24,6 +24,10 @@ import {
 } from '../src/documentation/swagger';
 import { operations } from '../src/documentation/operations';
 import { PUBLIC_ROUTE } from '../src/common/http/public-route.decorator';
+import {
+  createRoleDocument,
+  swaggerRoles,
+} from '../src/documentation/role-documents';
 
 function files(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((e) =>
@@ -237,6 +241,28 @@ test('OpenAPI describes every real REST route with validated schemas, inputs, au
     ).text();
     assert.match(init, /"persistAuthorization": false/);
     assert.match(init, /"validatorUrl": null/);
+    assert.match(init, /"urls.primaryName": "Customer"/);
+    for (const role of swaggerRoles) {
+      const specResponse = await fetch(
+        `${origin}/api/v1/docs/${role.slug}-json`,
+      );
+      assert.equal(specResponse.status, 200, role.slug);
+      const spec = (await specResponse.json()) as OpenAPIObject;
+      assert.equal(spec.info.title, `AKEELA API — ${role.name}`);
+      assert.equal(
+        (await fetch(`${origin}/api/v1/docs/${role.slug}/`)).status,
+        200,
+      );
+      const roleInit = await (
+        await fetch(`${origin}/api/v1/docs/${role.slug}/swagger-ui-init.js`)
+      ).text();
+      assert.ok(roleInit.includes(`"urls.primaryName": "${role.name}"`));
+      assert.equal(
+        (await fetch(`${origin}/api/v1/docs/${role.slug}/swagger-ui-bundle.js`))
+          .status,
+        200,
+      );
+    }
     assert.equal((await fetch(`${origin}/api/v1/docs-yaml`)).status, 404);
   } finally {
     await app.close();
@@ -272,6 +298,13 @@ test('disabled Swagger registers no UI, JSON or asset routes and leaves the API 
       '/docs/swagger-ui-init.js',
       '/docs/swagger-ui-bundle.js',
       '/docs/swagger-ui.css',
+      ...swaggerRoles.flatMap((role) => [
+        `/docs/${role.slug}`,
+        `/docs/${role.slug}/`,
+        `/docs/${role.slug}-json`,
+        `/docs/${role.slug}/swagger-ui-init.js`,
+        `/docs/${role.slug}/swagger-ui-bundle.js`,
+      ]),
     ]) {
       const response = await fetch(`${origin}/api/v1${path}`);
       assert.equal(response.status, 404, path);
@@ -281,6 +314,134 @@ test('disabled Swagger registers no UI, JSON or asset routes and leaves the API 
     assert.equal(
       ((await health.json()) as { data: { status: string } }).data.status,
       'ok',
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('four role references include only role routes, usable feature tags and reachable schemas', async () => {
+  const module = await Test.createTestingModule({ controllers })
+    .useMocker(() => ({}))
+    .compile();
+  const app = module.createNestApplication({ logger: false });
+  configureApplication(app, []);
+  try {
+    const source = createApiDocument(app);
+    const original = JSON.stringify(source);
+    const union = new Set<string>();
+    const expectedCounts = {
+      customer: 36,
+      restaurant: 38,
+      admin: 21,
+      'delivery-company': 22,
+    };
+    const common = [
+      '/api/v1/auth/login',
+      '/api/v1/auth/refresh',
+      '/api/v1/auth/logout',
+      '/api/v1/me',
+      '/api/v1/me/password',
+      '/api/v1/health/ready',
+    ];
+    for (const role of swaggerRoles) {
+      const doc = createRoleDocument(source, role);
+      await SwaggerParser.validate(JSON.parse(JSON.stringify(doc)), {
+        resolve: { external: false },
+      });
+      const entries = Object.entries(doc.paths).flatMap(([path, item]) =>
+        Object.keys(item).map((method) => `${method} ${path}`),
+      );
+      assert.equal(entries.length, expectedCounts[role.slug], role.name);
+      entries.forEach((entry) => union.add(entry));
+      for (const path of common)
+        assert.ok(doc.paths[path], `${role.name}: ${path}`);
+      for (const [path, item] of Object.entries(doc.paths)) {
+        for (const prefix of [
+          '/api/v1/customer/',
+          '/api/v1/restaurant/',
+          '/api/v1/admin/',
+          '/api/v1/delivery-company/',
+        ]) {
+          if (prefix !== role.prefix)
+            assert.ok(!path.startsWith(prefix), `${role.name}: ${path}`);
+        }
+        for (const operation of Object.values(item) as OperationObject[])
+          assert.equal(operation.tags?.length, 1);
+      }
+      assert.equal(
+        !!doc.paths['/api/v1/auth/register'],
+        role.slug === 'customer',
+      );
+      assert.equal(
+        !!doc.paths['/api/v1/auth/register/restaurant'],
+        role.slug === 'restaurant',
+      );
+      assert.equal(
+        !!doc.paths['/api/v1/restaurants'],
+        role.slug === 'customer',
+      );
+      assert.equal(
+        !!doc.paths['/api/v1/restaurant/products'],
+        role.slug === 'restaurant',
+      );
+      assert.equal(!!doc.paths['/api/v1/admin/users'], role.slug === 'admin');
+      assert.equal(
+        !!doc.paths['/api/v1/delivery-company/drivers'],
+        role.slug === 'delivery-company',
+      );
+      const schemas = doc.components!.schemas!;
+      const loginResponse =
+        doc.paths['/api/v1/auth/login']!.post!.responses[200]!;
+      assert.ok(!('$ref' in loginResponse));
+      const loginExample = loginResponse.content!['application/json']!
+        .example as { data: { user: { role: string } } };
+      assert.equal(
+        loginExample.data.user.role,
+        role.slug === 'delivery-company' ? 'Delivery_Company' : role.name,
+      );
+      const ownResponse = doc.paths['/api/v1/me']!.get!.responses[200]!;
+      assert.ok(!('$ref' in ownResponse));
+      assert.equal(
+        ownResponse.content!['application/json']!.example.data.role,
+        loginExample.data.user.role,
+      );
+      assert.equal('AdminCreateUserDto' in schemas, role.slug === 'admin');
+      assert.equal('CreateProductDto' in schemas, role.slug === 'restaurant');
+      assert.equal(
+        'CreateDriverDto' in schemas,
+        role.slug === 'delivery-company',
+      );
+      assert.equal('CreateAddressDto' in schemas, role.slug === 'customer');
+      assert.equal(
+        'cus_avatar_url' in (schemas.PatchMeDto as SchemaObject).properties!,
+        role.slug === 'customer',
+      );
+      const patch = doc.paths['/api/v1/me']!.patch!
+        .requestBody as RequestBodyObject;
+      const sample = patch.content['application/json']!.examples!.standard;
+      assert.ok(sample && !('$ref' in sample));
+      assert.equal('cus_avatar_url' in sample.value, role.slug === 'customer');
+      if (role.slug === 'customer') {
+        assert.deepEqual(
+          doc.paths['/api/v1/restaurants/{rest_id}/products']!.get!.tags,
+          ['Products'],
+        );
+        assert.deepEqual(doc.paths['/api/v1/customer/cart']!.get!.tags, [
+          'Cart',
+        ]);
+      }
+      if (role.slug === 'restaurant')
+        assert.deepEqual(
+          doc.paths['/api/v1/restaurant/products/{prod_id}/addons']!.get!.tags,
+          ['Product Addons'],
+        );
+    }
+    assert.equal(union.size, 81);
+    assert.equal(
+      JSON.stringify(source),
+      original,
+      'Role projections must not mutate each other or the full reference.',
     );
   } finally {
     await app.close();

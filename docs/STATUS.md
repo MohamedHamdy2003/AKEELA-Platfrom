@@ -4,6 +4,8 @@
 
 Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.
 
+Current one-time owner request: review the unsuccessful attempt to publish the four-role Swagger views, then promote the reviewed Swagger changes (#37) to main and deploy after successful CI. Inspection found no new tracked code changes; manual Release runs republished old main `4899602`, which did not contain the role views. This scoped release starts from main and includes only the Swagger role-view commit; pending frontend/asset changes on dev stay excluded. Later work returns to dev-only policy. Deployment success must be verified from the Release run and public role URLs.
+
 Current one-time authorization: publish Swagger for the mobile developer on the VPS after successful CI, promoting the reviewed Swagger changes from dev to main. `SWAGGER_ENABLED` makes production access temporary and removable without deleting code or data; disable it only when the owner finishes testing and asks. This is not standing permission for later main releases.
 
 Release scope is Swagger only. Dev also contains unreleased UI/asset improvements, so this one-time release uses a branch from current main with only the reviewed Swagger commits; those frontend changes remain on dev. Review the scoped main PR rather than promoting all dev changes.
@@ -15,6 +17,9 @@ Current one-time release authorization: the owner requested the icon-only verifi
 Backend Features 01-17, three browser dashboards and Compose initialization are implemented. Historical release approvals do not authorize a new main promotion; follow the current user request and GitHub flow. The owner purchased a Hostinger VPS at public IPv4 2.25.12.243. Read-only SSH confirmed Ubuntu 26.04.1 LTS; domain is akeelaonline.tech. Docker provisioning and public DNS resolution are complete. Public HTTPS and the first application rollout are verified. Backup automation is deferred by the owner.
 
 ## Implemented
+
+- Swagger role views: `/api/v1/docs` has a four-role selector, plus direct `customer`, `restaurant`, `admin` and `delivery-company` pages with client-specific Authentication/Profile/Products/Orders/etc. groups and role JSON. Shared auth/health are repeated; Customer/Restaurant registration is shown only in its own view. All 81 unique REST operations remain covered, with the full JSON URL preserved. Non-Customer PATCH `/me` excludes the avatar field/example. No business routes, guards, schema or dependencies changed. Initially delivered on dev; the current one-time owner request above now authorizes this Swagger update on main/VPS. See [SWAGGER.md](SWAGGER.md).
+- Role-view checks: root `npm run check`, final API tests (32), OpenAPI/reference validation and actual HTTP UI/JSON/assets checks passed. Isolated Chromium QA covered all four dropdown choices/direct pages, reload, JWT dialog and desktop/mobile layout at 1440×1000 and 390×844; no console errors, external requests or business mutations. Browser plugin not available; existing Playwright used. Role operation counts are Customer 36, Restaurant 38, Admin 21 and Delivery Company 22; shared operations are intentionally repeated. No production change.
 
 - Temporary Swagger switch: validated `SWAGGER_ENABLED`, enabled by default outside production and disabled by default in production/Compose. False registers no UI, JSON or Swagger asset routes; ordinary APIs remain active. Tests cover both switch values, invalid configuration and disabled HTTP routes. The owner approved publishing this Swagger release; actual live verification is recorded by the Release workflow and release handoff.
 
