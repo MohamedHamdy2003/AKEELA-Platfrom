@@ -193,10 +193,7 @@ export function OrdersBoard({
                           <bdi>#{order.order_id}</bdi>
                         </strong>
                       </td>
-                      <td className="cell-stack">
-                        {dateTime(order.created_at)}
-                        <small>بتوقيت مصر</small>
-                      </td>
+                      <td>{dateTime(order.created_at)}</td>
                       <td>
                         <Badge status={order.status} />
                       </td>

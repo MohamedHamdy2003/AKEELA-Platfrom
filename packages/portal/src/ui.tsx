@@ -31,6 +31,7 @@ import {
   Users,
   Utensils,
   X,
+  XCircle,
   PanelRightClose,
   PanelRightOpen,
 } from 'lucide-react';
@@ -138,7 +139,36 @@ export function Field({
 export function Badge({ status }: { status: OrderStatus }) {
   return (
     <span className={'badge ' + status}>
-      <Circle size={10} />
+      {status === 'Delivered' ? (
+        <svg
+          width={12}
+          height={12}
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="11" fill="currentColor" />
+          <path
+            d="M18 6 7 17l-5-5"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="m22 10-7.5 7.5L13 16"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : status === 'Cancelled' ? (
+        <XCircle size={11} aria-hidden="true" />
+      ) : (
+        <Circle size={10} aria-hidden="true" />
+      )}
       {statuses[status]}
     </span>
   );

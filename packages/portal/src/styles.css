@@ -560,27 +560,36 @@ tbody tr:hover {
   gap: 6px;
   line-height: 1.7;
 }
-.badge.Pending {
-  background: #fff1d9;
-  color: #8b5a1c;
+.badge svg {
+  flex-shrink: 0;
 }
-.badge.Accepted,
-.badge.Delivered {
-  background: #e7f6e9;
-  color: #21743a;
+.badge.Pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge.Accepted {
+  background: #e0f7f6;
+  color: #0a6c74;
 }
 .badge.Picked_Up {
-  background: #e5efff;
-  color: #25599c;
+  background: #e8f0fe;
+  color: #1e40af;
 }
-.badge.Failed,
+.badge.Delivered {
+  background: #e6f9ed;
+  color: #146c36;
+}
 .badge.Rejected {
-  background: #fff0f1;
-  color: #a73948;
+  background: #ffe4e6;
+  color: #be123c;
 }
 .badge.Cancelled {
-  background: #eff1f4;
-  color: #586371;
+  background: #f1f5f9;
+  color: #475569;
+}
+.badge.Failed {
+  background: #fee2e2;
+  color: #991b1b;
 }
 .pager {
   border-top: 1px solid var(--p-line);
