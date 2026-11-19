@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 import { operations, OperationDoc } from './operations';
 import { responseExamples } from './examples';
+import { createRoleDocument, swaggerRoles } from './role-documents';
 import { id, object, ref, responseModels } from './response-models';
 import {
   PaginationQuery,
@@ -527,11 +528,18 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
 export function configureSwagger(app: INestApplication, enabled = true): void {
   if (!enabled) return;
   const document = createApiDocument(app);
-  SwaggerModule.setup('docs', app, document, {
+  const urls = swaggerRoles.map((role) => ({
+    name: role.name,
+    url: `/api/v1/docs/${role.slug}-json`,
+  }));
+  const options = (name: string) => ({
     useGlobalPrefix: true,
-    raw: ['json'],
-    customSiteTitle: 'AKEELA — API Reference',
+    explorer: true,
+    raw: ['json'] as ['json'],
+    customSiteTitle: `AKEELA — ${name} API Reference`,
     swaggerOptions: {
+      urls,
+      'urls.primaryName': name,
       deepLinking: false,
       persistAuthorization: false,
       validatorUrl: null,
@@ -539,7 +547,27 @@ export function configureSwagger(app: INestApplication, enabled = true): void {
       filter: true,
       displayRequestDuration: true,
       defaultModelsExpandDepth: -1,
-      tagsSorter: 'alpha',
+      // Keep the workflow order from each role document, rather than alphabetic tags.
     },
   });
+  for (const role of swaggerRoles) {
+    SwaggerModule.setup(
+      `docs/${role.slug}`,
+      app,
+      createRoleDocument(document, role),
+      options(role.name),
+    );
+  }
+  // Preserve the full JSON URL for existing imports, while the UI starts in Customer.
+  SwaggerModule.setup('docs', app, document, {
+    useGlobalPrefix: true,
+    ui: false,
+    raw: ['json'],
+  });
+  SwaggerModule.setup(
+    'docs',
+    app,
+    createRoleDocument(document, swaggerRoles[0]),
+    { ...options('Customer'), raw: false },
+  );
 }
