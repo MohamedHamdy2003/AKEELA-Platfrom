@@ -61,6 +61,10 @@
     padding-bottom: 12px;
     align-items: center;
   }
+  .sidebar .sidebar-brand picture,
+  .sidebar .wordmark picture {
+    display: contents;
+  }
   .sidebar .sidebar-brand .sidebar-wordmark {
     width: 92px;
     height: 92px;

@@ -11,6 +11,7 @@ import {
   useResource,
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
+import { DetailWorkspace } from '../components/detail-workspace';
 import { EmailVerification } from '../components/email-verification';
 import './restaurants.css';
 
@@ -79,157 +80,172 @@ export function Restaurants() {
 
   return (
     <>
-      <PageTitle
-        title="المطاعم"
-        description="راجع بيانات المطعم ثم فعّل حسابه أو علّقه."
-      />
-      <div className="filters">
-        <Field label="حالة التفعيل">
-          <select
-            value={filter}
-            onChange={(event) => {
-              setFilter(event.target.value);
-              setPage(1);
-              setSelected(null);
-            }}
-          >
-            <option value="">جميع المطاعم</option>
-            {Object.entries(labels).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </div>
-      <ResourceState
-        resource={resource}
-        empty={!!resource.result && !resource.result.data.length}
-      >
-        <section className="panel">
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>رقم المطعم</th>
-                  <th>المطعم</th>
-                  <th>المالك</th>
-                  <th>حالة التفعيل</th>
-                  <th>استقبال الطلبات</th>
-                  <th>المراجعة</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resource.result?.data.map((row) => (
-                  <tr key={row.profile.rest_id}>
-                    <td>
-                      <bdi>#{row.profile.rest_id}</bdi>
-                    </td>
-                    <td>
-                      <strong>{row.profile.rest_title}</strong>
-                    </td>
-                    <td>{row.owner?.full_name ?? 'غير متاح'}</td>
-                    <td>
-                      <span
-                        className={`status-pill activation-${row.profile.activation_status.toLowerCase()}`}
-                      >
-                        <i className="status-dot" aria-hidden="true" />
-                        {labels[row.profile.activation_status]}
-                      </span>
-                    </td>
-                    <td>{row.profile.is_active ? 'مفتوح' : 'متوقف'}</td>
-                    <td>
-                      <button
-                        className="button compact"
-                        onClick={() => setSelected(row.profile.rest_id)}
-                      >
-                        مراجعة المطعم
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Pager meta={resource.result?.meta} change={setPage} />
-        </section>
-      </ResourceState>
-      {item && (
-        <section className="panel panel-pad">
-          <div className="restaurant-detail-title-wrap">
-            <h2>{item.profile.rest_title}</h2>
-            <span
-              className={`status-pill activation-${item.profile.activation_status.toLowerCase()}`}
-            >
-              <i className="status-dot" aria-hidden="true" />
-              {labels[item.profile.activation_status]}
-            </span>
-          </div>
-          <div className="form-grid">
-            <div>
-              <h3>بيانات المطعم</h3>
-              <p>{item.profile.rest_description}</p>
-              <p>{item.profile.rest_address}</p>
-              <p>
-                <bdi>
-                  {item.profile.latitude}, {item.profile.longitude}
-                </bdi>
-              </p>
-              <p>
-                <bdi>
-                  {item.profile.opens_at} – {item.profile.closes_at}
-                </bdi>{' '}
-                · بتوقيت مصر
-              </p>
-              {item.profile.rest_image_url_mobile && (
-                <img
-                  className="restaurant-thumbnail"
-                  src={item.profile.rest_image_url_mobile}
-                  alt={item.profile.rest_title}
-                />
-              )}
-            </div>
-            <div>
-              <h3>بيانات المالك</h3>
-              <p>{item.owner?.full_name}</p>
-              <p className="email-cell">
-                <bdi>{item.owner?.email}</bdi>
-                {item.owner && (
-                  <EmailVerification
-                    verified={!!item.owner.email_verified_at}
-                  />
-                )}
-              </p>
-              <p>
-                <bdi>{item.owner?.phone}</bdi>
-              </p>
-              <div className="account-meta">
-                <span>الحساب {item.owner?.is_active ? 'نشط' : 'غير نشط'}</span>
+      <DetailWorkspace
+        selectedKey={item ? selected : null}
+        title="مراجعة المطعم"
+        onClose={() => setSelected(null)}
+        details={
+          item && (
+            <>
+              <div className="restaurant-detail-title-wrap">
+                <h2>{item.profile.rest_title}</h2>
+                <span
+                  className={`status-pill activation-${item.profile.activation_status.toLowerCase()}`}
+                >
+                  <i className="status-dot" aria-hidden="true" />
+                  {labels[item.profile.activation_status]}
+                </span>
               </div>
+              <div className="form-grid">
+                <div>
+                  <h3>بيانات المطعم</h3>
+                  <p>{item.profile.rest_description}</p>
+                  <p>{item.profile.rest_address}</p>
+                  <p>
+                    <bdi>
+                      {item.profile.latitude}, {item.profile.longitude}
+                    </bdi>
+                  </p>
+                  <p>
+                    <bdi>
+                      {item.profile.opens_at} – {item.profile.closes_at}
+                    </bdi>{' '}
+                    · بتوقيت مصر
+                  </p>
+                  {item.profile.rest_image_url_mobile && (
+                    <img
+                      className="restaurant-thumbnail"
+                      src={item.profile.rest_image_url_mobile}
+                      alt={item.profile.rest_title}
+                    />
+                  )}
+                </div>
+                <div>
+                  <h3>بيانات المالك</h3>
+                  <p>{item.owner?.full_name}</p>
+                  <p className="email-cell">
+                    <bdi>{item.owner?.email}</bdi>
+                    {item.owner && (
+                      <EmailVerification
+                        verified={!!item.owner.email_verified_at}
+                      />
+                    )}
+                  </p>
+                  <p>
+                    <bdi>{item.owner?.phone}</bdi>
+                  </p>
+                  <div className="account-meta">
+                    <span>
+                      الحساب {item.owner?.is_active ? 'نشط' : 'غير نشط'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="actions">
+                {item.profile.activation_status !== 'Active' && (
+                  <button
+                    type="button"
+                    className="button primary"
+                    onClick={() => setConfirmAction('Active')}
+                  >
+                    تفعيل المطعم
+                  </button>
+                )}
+                {item.profile.activation_status !== 'Suspended' && (
+                  <button
+                    type="button"
+                    className="button danger"
+                    onClick={() => setConfirmAction('Suspended')}
+                  >
+                    تعليق المطعم
+                  </button>
+                )}
+              </div>
+            </>
+          )
+        }
+      >
+        <PageTitle
+          title="المطاعم"
+          description="راجع بيانات المطعم ثم فعّل حسابه أو علّقه."
+        />
+        <div className="filters">
+          <Field label="حالة التفعيل">
+            <select
+              value={filter}
+              onChange={(event) => {
+                setFilter(event.target.value);
+                setPage(1);
+                setSelected(null);
+              }}
+            >
+              <option value="">جميع المطاعم</option>
+              {Object.entries(labels).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <ResourceState
+          resource={resource}
+          empty={!!resource.result && !resource.result.data.length}
+        >
+          <section className="panel">
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>رقم المطعم</th>
+                    <th>المطعم</th>
+                    <th>المالك</th>
+                    <th>حالة التفعيل</th>
+                    <th>استقبال الطلبات</th>
+                    <th>المراجعة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resource.result?.data.map((row) => (
+                    <tr
+                      key={row.profile.rest_id}
+                      data-selected={selected === row.profile.rest_id}
+                    >
+                      <td>
+                        <bdi>#{row.profile.rest_id}</bdi>
+                      </td>
+                      <td>
+                        <strong>{row.profile.rest_title}</strong>
+                      </td>
+                      <td>{row.owner?.full_name ?? 'غير متاح'}</td>
+                      <td>
+                        <span
+                          className={`status-pill activation-${row.profile.activation_status.toLowerCase()}`}
+                        >
+                          <i className="status-dot" aria-hidden="true" />
+                          {labels[row.profile.activation_status]}
+                        </span>
+                      </td>
+                      <td>{row.profile.is_active ? 'مفتوح' : 'متوقف'}</td>
+                      <td>
+                        <button
+                          className="button compact"
+                          aria-expanded={selected === row.profile.rest_id}
+                          data-detail-record={row.profile.rest_id}
+                          onClick={() => setSelected(row.profile.rest_id)}
+                        >
+                          مراجعة المطعم
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-          <div className="actions">
-            {item.profile.activation_status !== 'Active' && (
-              <button
-                type="button"
-                className="button primary"
-                onClick={() => setConfirmAction('Active')}
-              >
-                تفعيل المطعم
-              </button>
-            )}
-            {item.profile.activation_status !== 'Suspended' && (
-              <button
-                type="button"
-                className="button danger"
-                onClick={() => setConfirmAction('Suspended')}
-              >
-                تعليق المطعم
-              </button>
-            )}
-          </div>
-        </section>
-      )}
+            <Pager meta={resource.result?.meta} change={setPage} />
+          </section>
+        </ResourceState>
+      </DetailWorkspace>
 
       {/* Confirmation Dialog for Restaurant Activation / Suspension */}
       <dialog

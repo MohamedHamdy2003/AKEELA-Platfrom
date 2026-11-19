@@ -73,6 +73,30 @@ async function companies(page: Page, verified = false) {
   };
 }
 
+test('company verification from the account pane keeps the pane and its focus context', async ({
+  page,
+}) => {
+  await companies(page);
+  await page.getByRole('button', { name: 'عرض الحساب', exact: true }).click();
+  const pane = page.getByRole('complementary', { name: 'تفاصيل الحساب' });
+  const shield = pane.getByRole('button', {
+    name: 'بريد غير موثّق',
+    exact: true,
+  });
+  await shield.click();
+  const dialog = page.getByRole('dialog', { name: 'توثيق بريد شركة التوصيل' });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await expect(pane).toBeVisible();
+  await expect(shield).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(pane).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'عرض الحساب', exact: true }),
+  ).toBeFocused();
+});
+
 for (const width of [1536, 390]) {
   test(`company email verification sends the fixed account email, handles OTP errors and refreshes the badge at ${width}px`, async ({
     page,

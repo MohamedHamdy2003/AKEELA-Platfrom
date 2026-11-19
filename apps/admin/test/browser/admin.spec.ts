@@ -156,7 +156,8 @@ test('large restaurant images stay contained and account details include the rol
   expect(
     (await page.getByRole('img', { name: 'مطعم بيت الشواية' }).boundingBox())!
       .width,
-  ).toBeLessThanOrEqual(180);
+    // A translated pane can produce subpixel DOMQuad rounding during its entry.
+  ).toBeLessThanOrEqual(180.01);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

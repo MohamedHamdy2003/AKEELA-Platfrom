@@ -961,7 +961,8 @@ dialog p {
   place-items: center;
   background: #fff;
 }
-.portal[data-portal='delivery'] .auth-icon {
+.portal[data-portal='delivery'] .auth-icon,
+.portal[data-portal='admin'] .auth-icon {
   background: color-mix(in srgb, var(--p-accent), transparent 92%);
   border-color: color-mix(in srgb, var(--p-accent), transparent 75%);
   color: var(--p-accent);

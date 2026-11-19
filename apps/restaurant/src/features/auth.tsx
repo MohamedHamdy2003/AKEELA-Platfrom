@@ -168,7 +168,17 @@ export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
         <div
           className={'auth-form ' + (mode === 'register' ? 'registration' : '')}
         >
-          <img className="mobile-brand" src={logo} alt="أكيلة" />
+          <picture>
+            <source srcSet={logoWebp} type="image/webp" />
+            <img
+              className="mobile-brand"
+              src={logo}
+              alt="أكيلة"
+              width="120"
+              height="110"
+              decoding="async"
+            />
+          </picture>
           <h1>{titles[mode]}</h1>
           <p className="auth-subtitle">
             {mode === 'login'
