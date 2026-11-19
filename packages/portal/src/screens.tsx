@@ -28,7 +28,6 @@ import {
   OrderFacts,
   Pager,
   PageTitle,
-  RefreshCw,
   ResourceState,
   useResource,
   X,
@@ -217,12 +216,6 @@ export function OrdersBoard({
             delivery
               ? 'عرض وإدارة الطلبات المسندة إلى شركتك فقط.'
               : 'متابعة طلبات المنصة حسب الحالة والفترة الزمنية.'
-          }
-          action={
-            <button className="button primary" onClick={refresh}>
-              <RefreshCw size={15} />
-              تحديث البيانات
-            </button>
           }
         />
         <Metrics items={metricItems} />

@@ -122,7 +122,7 @@ test('compact mobile navigation, failed requests, and keyboard confirmation', as
       },
     }),
   );
-  await page.getByRole('button', { name: 'تحديث البيانات' }).click();
+  await page.getByLabel('حالة الطلب').selectOption('Delivered');
   await expect(page.getByRole('alert').first()).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'إعادة المحاولة' }).first(),
