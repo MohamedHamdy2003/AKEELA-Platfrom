@@ -26,12 +26,14 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
-- **Hardening, scalability & portal refinements (2026-11-20, ready for owner-authorized release)**:
+- **Production release: DB performance indexes, N+1 fixes, order counts API, backend hardening, lazy maps & security headers (2026-11-20)**: [Release 44819777625](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/44819777625) deployed `main` commit `6b96064` via PR #51. Verify passed in 5m48s (repo, 34 API tests, PostgreSQL integration suite, 77 Playwright E2E scenarios across all 3 portals, production container smoke); 4 Docker images published to GHCR in 1m21s; VPS deployment completed in 1m17s (including applying migration `1794600000000-AddPerformanceIndexes.ts`). Live HTTPS checks returned HTTP 200 on all 5 endpoints (`api/v1/health/live`, `api/v1/health/ready`, `admin`, `restaurant`, `delivery`), confirmed live Caddy security headers (`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`), and confirmed 83 live OpenAPI operations (`SWAGGER_ENABLED=true` retained for mobile testing). Work now returns to dev-only policy.
+
+- **Hardening, scalability & portal refinements (2026-11-20, released)**:
   - **Orders Counts Aggregation**: Added `GET /admin/orders/counts` and `GET /delivery-company/orders/counts` (single `GROUP BY status` SQL query, OpenAPI/Swagger, Bruno folder 14, and specs updated to 83 endpoints). Admin/Delivery `OrdersBoard` and `Home` screens now fetch all status metrics in 1 HTTP request instead of up to 7 parallel list calls.
   - **Backend Hardening & Maintenance**: Removed unnecessary non-transactional `FOR UPDATE` from `OrdersAutoDeliverService` outer scan; passed optional `EntityManager` through `UsersService.resolveProfiles` / `AuthService.getProfilesFor`; scoped `OrderEventsGateway` broadcasts to role/entity Socket.IO rooms (`admin`, `rest:<id>`, `company:<id>`, `customer:<id>`) while preserving live session/activation re-validation; added daily `AuthCleanupService` (expired/revoked sessions > 7d, expired OTP challenges > 1d) and `ImagesCleanupService` (unreferenced UUID `.webp` files > 24h); tuned PostgreSQL pool (`max: 20`, `idleTimeoutMillis: 30000`); added global `ApiRateLimitGuard` (300 req/min per IP, bypassing health probes and test mode).
   - **Frontend & Infrastructure**: Deduplicated `ArabicDateFields` in Admin to share `@akeela/portal/arabic-date-fields`; lazy-loaded Leaflet `LocationMap` in Restaurant auth/settings to shrink the initial JS bundle; added shared `ErrorBoundary` and inline Google Maps coordinate links in Admin and Delivery portals; added `mem_limit` caps in `compose.production.yml`, security headers (`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` preserving `geolocation=(self)`) in Caddy, and updated pinned GitHub Action SHAs to Node 24 releases.
 
-- **Performance, DB indexes, N+1 fixes, image compression & skeleton loading (2026-11-20, dev-only)**:
+- **Performance, DB indexes, N+1 fixes, image compression & skeleton loading (2026-11-20, released)**:
   - **DB Indexes**: Added migration `1794600000000-AddPerformanceIndexes.ts` with 13 targeted composite/partial indexes across `orders`, `order_items`, `cart_items`, `users`, `restaurant_profiles`, `delivery_drivers`, `products`, and `auth_sessions` (including partial index on `orders(updated_at) WHERE status = 'Picked_Up'` for auto-deliver scans).
   - **N+1 Query Elimination**: Batched `OrderItemAddon` lookups in `OrdersService.renderDetails`, batched `Addon`/`ProductAddon`/`Product`/`Offer`/`Category` lookups in `CatalogService.saleSelections` & `CartService.snapshot`/`add`, batched owner lookups in `RestaurantsService.listForReview`, and added batched role-profile resolution (`UsersService.resolveProfiles` / `AuthService.getProfilesFor`) for `UsersService.listUsers`.
   - **Pagination Audit & Fix**: Fixed `AdminUsersController` and `AdminRestaurantsController` to pass `skip`/`take` directly from `resolvePagination` (preserving `offset`/`limit` semantics) and bounded `offset` with `@Max(1000000)`. Verified all paginated endpoints execute SQL-level `LIMIT`/`OFFSET`.
@@ -100,7 +102,7 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 | 11-14: Cart, checkout/history, restaurant order handling/delivery     | Implemented                                                                                            |
 | 15: Customer/restaurant/product/offer images and public URLs          | Implemented                                                                                            |
 | 16: Public liveness/readiness                                         | Implemented                                                                                            |
-| PostgreSQL                                                            | Twenty table mappings, one history view, eight reversible migrations; no schema change in this release |
+| PostgreSQL                                                            | Twenty table mappings, one history view, nine reversible migrations (including 13 performance indexes) |
 | Restaurant frontend                                                   | React/Vite/TypeScript, Arabic RTL, tab-scoped sessionStorage sessions, Leaflet location picker         |
 | API collection                                                        | 83 routes in specifications and matching Bruno folders                                                 |
 | Docker/Caddy                                                          | Persistent images/database/certificates, private API/database; local TLS smoke verified                |
@@ -119,7 +121,7 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 ## Pending
 
 - Create/verify the real Delivery_Company account through Admin and set its company profile ID in DEFAULT_DELIVERY_COMPANY_ID before accepting customer orders. No company is seeded automatically.
-- Backup/restore automation explicitly deferred. OpenAPI, future delivery-fee Admin API, image cleanup and load testing remain unimplemented. Browser sessions now survive refresh; see AUTH.md.
+- Backup/restore automation explicitly deferred. Future delivery-fee Admin API and load testing remain unimplemented. Browser sessions now survive refresh; see AUTH.md.
 - The owner-authorized production init applied all eight migrations and provisioned the single Admin. No test/customer/restaurant/company/driver/catalog data was seeded on production. Tests truncate only dedicated test databases.
 
 ## Restaurant frontend
