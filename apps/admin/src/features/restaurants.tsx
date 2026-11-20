@@ -188,6 +188,19 @@ export function Restaurants() {
               ))}
             </select>
           </Field>
+          {filter && (
+            <button
+              type="button"
+              className="button filters-reset"
+              onClick={() => {
+                setFilter('');
+                setPage(1);
+                setSelected(null);
+              }}
+            >
+              إعادة ضبط
+            </button>
+          )}
         </div>
         <ResourceState
           resource={resource}

@@ -83,7 +83,7 @@ API paths omit `/api/v1`. Configure the full API base URL; the backend domain is
 | Current state                           | Allowed UI actions                                                            |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
 | Accepted, no driver                     | Select an active owned driver. Assignment transitions the order to Picked_Up. |
-| Picked_Up, active driver                | Confirm delivery; driver selection is locked.                                 |
+| Picked_Up, active driver                | Confirm delivery; optional driver reassignment via toggle.                    |
 | Assigned driver inactive                | Explain the active-driver requirement.                                        |
 | Delivered / Failed / other final status | Read only.                                                                    |
 

@@ -1,8 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, Check, MapPin, RefreshCw, X } from 'lucide-react';
+import { Check, MapPin, X } from 'lucide-react';
 import { api, query } from '../lib/api';
 import { dateTime, money, sumMoney } from '../lib/format';
-import { statuses, type Order, type OrderSummary } from '../lib/models';
+import {
+  statuses,
+  statusDescriptions,
+  type Order,
+  type OrderSummary,
+} from '../lib/models';
 import { useResource } from '../lib/use-resource';
 import { Presence } from '../components/presence';
 import {
@@ -112,15 +117,6 @@ export function Orders({
       <PageHeading
         title="الطلبات"
         subtitle="تابع الطلبات وتفاصيلها، خطوة بخطوة."
-        action={
-          <button className="button secondary" onClick={resource.reload}>
-            <RefreshCw
-              size={18}
-              className={resource.loading ? 'spin' : undefined}
-            />
-            تحديث
-          </button>
-        }
       />
       <form className="filter-bar" onSubmit={filter}>
         <Select label="الحالة" name="status">
@@ -217,6 +213,7 @@ export function OrderDetails({
         order && (
           <>
             <Badge status={order.status} />
+            <p className="muted">{statusDescriptions[order.status]}</p>
             <p className="muted">{dateTime(order.created_at)}</p>
             <section className="detail-section">
               <h3>تفاصيل الطلب</h3>
@@ -332,17 +329,8 @@ export function OrderDetails({
               </div>
             )}
             {order.status !== 'Pending' && (
-              <p className="muted">
-                تظهر تحديثات الطلب لحظيًا، ويمكنك التحديث يدويًا أيضًا.
-              </p>
+              <p className="muted">تظهر تحديثات الطلب لحظيًا فور حدوثها.</p>
             )}
-            <button
-              className="text-button"
-              disabled={busy}
-              onClick={resource.reload}
-            >
-              تحديث حالة الطلب <ArrowLeft size={16} />
-            </button>
           </>
         )
       )}

@@ -36,6 +36,7 @@ export function Users({
     [active, setActive] = useState(''),
     [id, setId] = useState<string | null>(null),
     [verifyTarget, setVerifyTarget] = useState<User | null>(null),
+    [copiedId, setCopiedId] = useState<string | null>(null),
     [tick, setTick] = useState(0);
   const resource = useResource<User[]>(
       api,
@@ -92,13 +93,42 @@ export function Users({
                       <p>{String(selected.profile.company_address)}</p>
                       <p>
                         <bdi>
-                          {String(selected.profile.company_phone)} ·{' '}
-                          {String(selected.profile.company_email ?? '')}
+                          {String(selected.profile.company_phone)}
+                          {selected.profile.company_email
+                            ? ' · ' + String(selected.profile.company_email)
+                            : ''}
                         </bdi>
                       </p>
-                      <p>
-                        رقم الشركة:{' '}
-                        <bdi>{String(selected.profile.company_id)}</bdi>
+                      <p className="copy-id-row">
+                        <span>
+                          رقم الشركة:{' '}
+                          <bdi>{String(selected.profile.company_id)}</bdi>
+                        </span>
+                        <button
+                          type="button"
+                          className="button compact"
+                          onClick={() => {
+                            const companyId = String(
+                              selected.profile.company_id,
+                            );
+                            void navigator.clipboard
+                              ?.writeText(companyId)
+                              .then(() => {
+                                setCopiedId(companyId);
+                                setTimeout(
+                                  () =>
+                                    setCopiedId((current) =>
+                                      current === companyId ? null : current,
+                                    ),
+                                  2000,
+                                );
+                              });
+                          }}
+                        >
+                          {copiedId === String(selected.profile.company_id)
+                            ? 'تم النسخ'
+                            : 'نسخ'}
+                        </button>
                       </p>
                       <Notice>
                         {selected.email_verified_at
@@ -169,6 +199,19 @@ export function Users({
               <option value="false">غير نشط</option>
             </select>
           </Field>
+          {((!companyOnly && role) || active) && (
+            <button
+              type="button"
+              className="button filters-reset"
+              onClick={() => {
+                if (!companyOnly) setRole('');
+                setActive('');
+                setPage(1);
+              }}
+            >
+              إعادة ضبط
+            </button>
+          )}
         </div>
         <ResourceState
           resource={resource}

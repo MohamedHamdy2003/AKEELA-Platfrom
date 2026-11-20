@@ -694,7 +694,52 @@ tbody tr:hover {
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
+}
+.detail-status-desc {
+  font-size: 12px;
+  color: var(--p-muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.driver-form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+.portal[data-portal='delivery'] .detail-section {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.portal[data-portal='delivery'] .detail-head {
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.portal[data-portal='delivery'] .detail-panel {
+  padding: 16px 18px;
+}
+.copy-id-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.filters-reset {
+  align-self: flex-end;
+  min-height: 42px;
+}
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--p-muted);
+  line-height: 1.6;
+}
+.driver-reassign-wrap {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--p-line);
 }
 .detail-section {
   border-bottom: 1px solid var(--p-line);
@@ -1307,34 +1352,49 @@ dialog p {
   }
 }
 
-/* Admin and Restaurant share a readable scale; Delivery keeps its current scale. */
-.portal[data-portal='admin'] {
+/* Admin, Delivery and Restaurant share a readable dashboard typography scale. */
+.portal[data-portal='admin'],
+.portal[data-portal='delivery'] {
   font-size: var(--dashboard-type-body);
 }
 .portal[data-portal='admin'] h1,
 .portal[data-portal='admin'] .auth-card h1,
-.portal[data-portal='admin'] .auth-identity h2 {
+.portal[data-portal='admin'] .auth-identity h2,
+.portal[data-portal='delivery'] h1,
+.portal[data-portal='delivery'] .auth-card h1,
+.portal[data-portal='delivery'] .auth-identity h2 {
   font-size: var(--dashboard-type-page);
 }
 .portal[data-portal='admin'] h2,
 .portal[data-portal='admin'] .detail-head h2,
-.portal[data-portal='admin'] .dialog-head h2 {
+.portal[data-portal='admin'] .dialog-head h2,
+.portal[data-portal='delivery'] h2,
+.portal[data-portal='delivery'] .detail-head h2,
+.portal[data-portal='delivery'] .dialog-head h2 {
   font-size: var(--dashboard-type-section);
 }
 .portal[data-portal='admin'] h3,
 .portal[data-portal='admin'] .detail-section h3,
-.portal[data-portal='admin'] .empty h3 {
+.portal[data-portal='admin'] .empty h3,
+.portal[data-portal='delivery'] h3,
+.portal[data-portal='delivery'] .detail-section h3,
+.portal[data-portal='delivery'] .empty h3 {
   font-size: var(--dashboard-type-navigation);
 }
-.portal[data-portal='admin'] .sidebar nav button {
+.portal[data-portal='admin'] .sidebar nav button,
+.portal[data-portal='delivery'] .sidebar nav button {
   font-size: var(--dashboard-type-navigation);
 }
 .portal[data-portal='admin'] .button,
-.portal[data-portal='admin'] .button.compact {
+.portal[data-portal='admin'] .button.compact,
+.portal[data-portal='delivery'] .button,
+.portal[data-portal='delivery'] .button.compact {
   font-size: var(--dashboard-type-button);
 }
 .portal[data-portal='admin'] th,
-.portal[data-portal='admin'] td {
+.portal[data-portal='admin'] td,
+.portal[data-portal='delivery'] th,
+.portal[data-portal='delivery'] td {
   font-size: var(--dashboard-type-table);
 }
 .portal[data-portal='admin'] .field > span,
@@ -1352,7 +1412,23 @@ dialog p {
 .portal[data-portal='admin'] .key-value,
 .portal[data-portal='admin'] .notice,
 .portal[data-portal='admin'] .empty p,
-.portal[data-portal='admin'] .profile-data {
+.portal[data-portal='admin'] .profile-data,
+.portal[data-portal='delivery'] .field > span,
+.portal[data-portal='delivery'] .page-title p,
+.portal[data-portal='delivery'] .auth-card > p,
+.portal[data-portal='delivery'] .metric > div > span,
+.portal[data-portal='delivery'] .breadcrumb,
+.portal[data-portal='delivery'] .account-name,
+.portal[data-portal='delivery'] .auth-links,
+.portal[data-portal='delivery'] .auth-links button,
+.portal[data-portal='delivery'] .text-button,
+.portal[data-portal='delivery'] .detail-status,
+.portal[data-portal='delivery'] .detail-section p,
+.portal[data-portal='delivery'] .order-item,
+.portal[data-portal='delivery'] .key-value,
+.portal[data-portal='delivery'] .notice,
+.portal[data-portal='delivery'] .empty p,
+.portal[data-portal='delivery'] .profile-data {
   font-size: var(--dashboard-type-label);
 }
 .portal[data-portal='admin'] small,
@@ -1360,20 +1436,36 @@ dialog p {
 .portal[data-portal='admin'] .order-item small,
 .portal[data-portal='admin'] .detail-section small,
 .portal[data-portal='admin'] .detail-section > bdi,
+.portal[data-portal='admin'] .detail-status-desc,
 .portal[data-portal='admin'] .badge,
 .portal[data-portal='admin'] .connection,
 .portal[data-portal='admin'] .pager,
-.portal[data-portal='admin'] .auth-note {
+.portal[data-portal='admin'] .auth-note,
+.portal[data-portal='delivery'] small,
+.portal[data-portal='delivery'] .cell-stack small,
+.portal[data-portal='delivery'] .order-item small,
+.portal[data-portal='delivery'] .detail-section small,
+.portal[data-portal='delivery'] .detail-section > bdi,
+.portal[data-portal='delivery'] .detail-status-desc,
+.portal[data-portal='delivery'] .badge,
+.portal[data-portal='delivery'] .connection,
+.portal[data-portal='delivery'] .pager,
+.portal[data-portal='delivery'] .auth-note {
   font-size: var(--dashboard-type-caption);
 }
 .portal[data-portal='admin'] .field input,
 .portal[data-portal='admin'] .field select,
-.portal[data-portal='admin'] .field textarea {
+.portal[data-portal='admin'] .field textarea,
+.portal[data-portal='delivery'] .field input,
+.portal[data-portal='delivery'] .field select,
+.portal[data-portal='delivery'] .field textarea {
   font-size: var(--dashboard-type-control);
 }
 @media (max-width: 680px) {
   .portal[data-portal='admin'] h1,
-  .portal[data-portal='admin'] .auth-card h1 {
+  .portal[data-portal='admin'] .auth-card h1,
+  .portal[data-portal='delivery'] h1,
+  .portal[data-portal='delivery'] .auth-card h1 {
     font-size: var(--dashboard-type-page-mobile);
   }
 }

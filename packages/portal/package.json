@@ -13,7 +13,8 @@
     "./logout-confirmation": "./src/logout-confirmation.tsx",
     "./styles.css": "./src/styles.css",
     "./screens": "./src/screens.tsx",
-    "./detail-workspace": "./src/detail-workspace.tsx"
+    "./detail-workspace": "./src/detail-workspace.tsx",
+    "./arabic-date-fields": "./src/arabic-date-fields.tsx"
   },
   "dependencies": {
     "socket.io-client": "4.8.4",

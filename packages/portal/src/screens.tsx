@@ -283,6 +283,18 @@ export function OrdersBoard({
               </Field>
             </>
           )}
+          {(filters.status || filters.date_from || filters.date_to) && (
+            <button
+              type="button"
+              className="button filters-reset"
+              onClick={() => {
+                setFilters({ status: '', date_from: '', date_to: '' });
+                setPage(1);
+              }}
+            >
+              إعادة ضبط الفلاتر
+            </button>
+          )}
         </div>
         <ResourceState
           resource={list}
@@ -303,7 +315,10 @@ export function OrdersBoard({
                 </thead>
                 <tbody>
                   {list.result?.data.map((order) => (
-                    <tr key={order.order_id}>
+                    <tr
+                      key={order.order_id}
+                      data-selected={id === order.order_id}
+                    >
                       <td>
                         <strong>
                           <bdi>#{order.order_id}</bdi>
@@ -328,6 +343,7 @@ export function OrdersBoard({
                       <td>
                         <button
                           className="button compact"
+                          aria-expanded={id === order.order_id}
                           data-detail-record={order.order_id}
                           onClick={() => setId(order.order_id)}
                         >

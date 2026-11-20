@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { cairo } from '../lib/format';
-import {
-  ArrowLeft,
-  CircleCheck,
-  Clock3,
-  RefreshCw,
-  ShieldAlert,
-} from 'lucide-react';
+import { ArrowLeft, CircleCheck, Clock3, ShieldAlert } from 'lucide-react';
 import { useResource } from '../lib/use-resource';
 import type { Dashboard, OrderSummary, Profile } from '../lib/models';
 import {
@@ -169,13 +163,6 @@ export function Home({
       </div>
       <div className="refresh-line">
         <span>{updatedAt ? 'آخر تحديث ' + updatedAt : 'جارٍ التحديث…'}</span>
-        <button className="button secondary compact" onClick={resource.reload}>
-          <RefreshCw
-            size={17}
-            className={resource.loading ? 'spin' : undefined}
-          />
-          تحديث
-        </button>
       </div>
       <footer className="main-footer">
         أكيلة <span>|</span> AKEELA
