@@ -49,7 +49,8 @@
     "dev:admin": "npm run dev --workspace @akeela/admin",
     "dev:delivery": "npm run dev --workspace @akeela/delivery",
     "audit:runtime": "node scripts/audit-runtime.mjs",
-    "prepare:production": "node scripts/prepare-production.mjs"
+    "prepare:production": "node scripts/prepare-production.mjs",
+    "seed:demo-restaurants": "npm run seed:demo-restaurants --workspace akeela-api --"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
