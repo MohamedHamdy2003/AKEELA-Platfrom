@@ -13,6 +13,12 @@ import {
 @Index('ix_products_rest_id', ['rest_id'])
 @Index('ix_products_rest_cat', ['rest_id', 'cat_id'])
 @Index('uq_products_rest_prod', ['rest_id', 'prod_id'], { unique: true })
+@Index('ix_products_rest_active_created', [
+  'rest_id',
+  'is_active',
+  'created_at',
+  'prod_id',
+])
 @ForeignKey('categories', ['rest_id', 'cat_id'], ['rest_id', 'cat_id'], {
   name: 'fk_products_category',
   onDelete: 'RESTRICT',

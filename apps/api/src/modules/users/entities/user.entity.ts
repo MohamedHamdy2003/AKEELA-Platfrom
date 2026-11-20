@@ -6,9 +6,16 @@ import {
   UpdateDateColumn,
   Unique,
   Check,
+  Index,
 } from 'typeorm';
 import { Account, Role } from '../account.types';
 @Entity('users')
+@Index('ix_users_role_active_created', ['role', 'is_active', 'created_at'])
+@Index('ix_users_created_desc', ['created_at'])
+@Index('ix_users_active_verified_restaurants', ['user_id'], {
+  where:
+    "role = 'Restaurant' AND is_active = true AND email_verified_at IS NOT NULL",
+})
 @Unique('uq_users_email', ['email'])
 @Unique('uq_users_phone', ['phone_number'])
 @Unique('uq_users_id_role', ['user_id', 'role'])

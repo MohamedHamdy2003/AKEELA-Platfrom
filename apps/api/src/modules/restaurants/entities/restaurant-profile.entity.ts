@@ -10,6 +10,12 @@ import {
 } from 'typeorm';
 @Entity('restaurant_profiles')
 @Index('ix_restaurant_activation_created', ['activation_status', 'created_at'])
+@Index('ix_restaurant_public_active', [
+  'activation_status',
+  'is_active',
+  'created_at',
+  'rest_id',
+])
 @ForeignKey('users', ['user_id', 'profile_role'], ['user_id', 'role'], {
   name: 'fk_restaurant_profiles_user_role',
   onDelete: 'RESTRICT',
