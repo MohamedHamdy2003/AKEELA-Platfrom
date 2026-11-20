@@ -1,5 +1,5 @@
 import type { User } from '@akeela/portal/models';
-import { dateTime } from '@akeela/portal/ui';
+import { ActivityBadge, dateTime } from '@akeela/portal/ui';
 
 const restaurantFields = [
   ['rest_id', 'معرّف المطعم'],
@@ -47,13 +47,17 @@ export function ProfileDetails({ user }: { user: User }) {
             <div className="profile-fact" key={key}>
               <strong>{label}</strong>
               <p>
-                {key === 'is_active'
-                  ? profile[key]
-                    ? 'يستقبل الطلبات'
-                    : 'متوقف'
-                  : key === 'activation_status'
-                    ? (activation[String(profile[key])] ?? '—')
-                    : String(profile[key] ?? '—')}
+                {key === 'is_active' ? (
+                  <ActivityBadge
+                    active={!!profile[key]}
+                    activeLabel="يستقبل الطلبات"
+                    inactiveLabel="متوقف"
+                  />
+                ) : key === 'activation_status' ? (
+                  (activation[String(profile[key])] ?? '—')
+                ) : (
+                  String(profile[key] ?? '—')
+                )}
               </p>
             </div>
           ))}

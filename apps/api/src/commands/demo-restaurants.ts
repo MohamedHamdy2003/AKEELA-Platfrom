@@ -1,6 +1,7 @@
 export const demoRestaurants = [
   {
     slug: 'farahat',
+    ownerName: 'أحمد محمود عبدالعزيز',
     title: 'كبابجي فرحات الاصلي',
     description:
       'كباب وكفتة على الفحم، وحمام محشي بالفريك مع طحينة وسلطات بلدي.',
@@ -12,6 +13,7 @@ export const demoRestaurants = [
   },
   {
     slug: 'abou-tarek',
+    ownerName: 'محمود طارق حسن',
     title: 'كشري ابوطارق',
     description:
       'كشري مصري بالأرز والعدس والمكرونة والحمص، مع بصل مقرمش ودقة وصلصة.',
@@ -23,6 +25,7 @@ export const demoRestaurants = [
   },
   {
     slug: 'sheikh-el-hara',
+    ownerName: 'خالد إبراهيم منصور',
     title: 'حواوشي وفطير شيخ الحاره',
     description:
       'حواوشي بلدي وإسكندراني طازة من الفرن، وفطير مشلتت بحشوات حلوة وحادقة.',
@@ -34,6 +37,7 @@ export const demoRestaurants = [
   },
   {
     slug: 'karam-el-sham',
+    ownerName: 'عمر محمد الشامي',
     title: 'شاورما كرم الشام الاصلي',
     description:
       'شاورما فراخ ولحمة بتتبيلة شامية، في ساندوتشات أو وجبات عربي مع تومية ومخلل.',
@@ -45,6 +49,7 @@ export const demoRestaurants = [
   },
   {
     slug: 'buffalo-masr',
+    ownerName: 'يوسف مصطفى عادل',
     title: 'برجر بافلو مصر',
     description:
       'برجر لحم مشوي بصوص مدخن وجبنة شيدر، مع ساندوتشات فرايد تشيكن وبطاطس.',

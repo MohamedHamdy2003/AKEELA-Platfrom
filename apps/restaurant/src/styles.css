@@ -833,22 +833,6 @@ td .numeric {
   color: #7c8e77;
   border: 1px solid var(--brand-border);
 }
-.activity {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--brand-muted);
-  font-size: 16px;
-}
-.activity > span {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.activity.active {
-  color: var(--brand-success);
-}
 .row-actions {
   display: flex;
   align-items: center;

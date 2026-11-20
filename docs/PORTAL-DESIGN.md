@@ -33,3 +33,10 @@ Design references: [Admin concept](design/admin/concept.png), [Delivery concept]
 ## Admin field language
 
 Admin uses its app-owned Arabic date range fields and Arabic form feedback. The day/month/year selectors keep Gregorian YYYY-MM-DD API values; display digits/month names are Arabic even in English browsers. The Admin workspace provider translates native/inline field feedback while auth pages keep their existing behavior. Entered content and standard email/phone/password/ID formats remain intact. Delivery keeps its current controls. See apps/admin/src/components and src/lib/arabic-fields.ts.
+
+## Activity and detail surfaces
+
+- Boolean activity uses the shared `packages/brand/activity.css` badge: translucent green for active and red for inactive, with a dot and readable label. Order and restaurant approval statuses retain their distinct meanings/colors.
+- Admin account/review panes and Admin/Delivery order details reuse `packages/portal/src/detail-workspace.tsx`. Details enter from the physical left, retain content during close, restore focus, and respect reduced motion. On narrow screens the pane precedes the list. Restaurant keeps its existing animated modal drawer.
+- Account panes use a plain border with no colored top stripe. Admin navigation retains emerald/gold with subdued default items and an outlined selected item. Delivery auth keeps its original logo shape in white on navy; picture-wrapped images must receive the logo styling.
+- Use CSS motion and existing assets; no animation library or additional image downloads are required for these refinements.

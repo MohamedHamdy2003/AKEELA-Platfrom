@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { ApiError, query } from '@akeela/portal/api';
 import type { Driver } from '@akeela/portal/models';
 import {
+  ActivityBadge,
   Failure,
   Field,
   Notice,
@@ -179,7 +180,9 @@ export function Drivers() {
                     <td>
                       <bdi>{item.driver_email ?? '—'}</bdi>
                     </td>
-                    <td>{item.is_active ? 'نشط' : 'غير نشط'}</td>
+                    <td>
+                      <ActivityBadge active={item.is_active} />
+                    </td>
                     <td>
                       <button
                         className="button compact"

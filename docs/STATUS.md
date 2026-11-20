@@ -1,5 +1,7 @@
 # Project Status
 
+- Dashboard polish (2026-11-20): shared green/red activity badges, refined Admin navigation, white Delivery auth logo, and shared animated left detail panes for Admin/Delivery. Restaurant retains its existing animated drawer. Local demo owners now have natural sample names; `--refresh-demo-names` updates original labels only, without changing login/profile settings. No production data or release is changed by this work.
+
 ## Authorized scope
 
 Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.

@@ -1,3 +1,4 @@
+import { DetailWorkspace } from './detail-workspace';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import {
   AlertTriangle,
@@ -30,7 +31,6 @@ import {
   PageTitle,
   ResourceState,
   useResource,
-  X,
 } from './ui';
 export type OrderDateFilters = { date_from: string; date_to: string };
 export function OrdersBoard({
@@ -208,7 +208,21 @@ export function OrdersBoard({
         },
       ];
   return (
-    <div className={id ? 'workspace-columns' : ''}>
+    <DetailWorkspace
+      selectedKey={id}
+      title="تفاصيل الطلب"
+      onClose={() => setId(null)}
+      details={
+        <ResourceState resource={detail}>
+          {detail.result && (
+            <OrderFacts
+              order={detail.result.data}
+              actions={actions(detail.result.data, refresh)}
+            />
+          )}
+        </ResourceState>
+      }
+    >
       <section>
         <PageTitle
           title={delivery ? 'طلبات الشركة' : 'إدارة الطلبات'}
@@ -314,6 +328,7 @@ export function OrdersBoard({
                       <td>
                         <button
                           className="button compact"
+                          data-detail-record={order.order_id}
                           onClick={() => setId(order.order_id)}
                         >
                           عرض التفاصيل
@@ -328,27 +343,7 @@ export function OrdersBoard({
           </div>
         </ResourceState>
       </section>
-      {id && (
-        <aside className="detail-panel" aria-label="تفاصيل الطلب">
-          <header className="detail-head">
-            <h2>تفاصيل الطلب</h2>
-            <button aria-label="إغلاق تفاصيل الطلب" onClick={() => setId(null)}>
-              <X size={18} />
-            </button>
-          </header>
-          <ResourceState resource={detail}>
-            {detail.result && (
-              <>
-                <OrderFacts
-                  order={detail.result.data}
-                  actions={actions(detail.result.data, refresh)}
-                />
-              </>
-            )}
-          </ResourceState>
-        </aside>
-      )}
-    </div>
+    </DetailWorkspace>
   );
 }
 export function AccountScreen({

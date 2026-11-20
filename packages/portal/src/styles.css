@@ -139,7 +139,7 @@ bdi,
   filter: brightness(0) invert(1);
 }
 .wordmark small {
-  color: #d1bb87;
+  color: var(--p-gold);
   letter-spacing: 0.3px;
   font-size: 12px;
 }
@@ -668,15 +668,6 @@ tbody tr:hover {
   border-color: var(--p-accent);
   font-weight: 500;
 }
-.workspace-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 24px;
-  align-items: start;
-}
-.workspace-columns > section {
-  min-width: 0;
-}
 .detail-panel {
   background: #fff;
   border: 1px solid var(--p-line);
@@ -960,7 +951,7 @@ dialog p {
     0 0 0 45px #ffffff03,
     0 0 0 90px #ffffff02;
 }
-.auth-identity > img {
+.auth-identity img {
   width: 135px;
   filter: brightness(0) invert(1);
   object-fit: contain;
@@ -1097,10 +1088,6 @@ dialog p {
   }
 }
 @media (max-width: 1250px) {
-  .workspace-columns {
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 18px;
-  }
   .portal-main {
     padding: 26px 22px;
   }
@@ -1117,9 +1104,6 @@ dialog p {
   }
 }
 @media (max-width: 1080px) {
-  .workspace-columns {
-    grid-template-columns: 1fr;
-  }
   .detail-panel {
     position: relative;
     top: 0;

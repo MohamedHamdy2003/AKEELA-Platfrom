@@ -3,6 +3,7 @@ import { ApiError, query } from '@akeela/portal/api';
 import type { User } from '@akeela/portal/models';
 import {
   Confirm,
+  ActivityBadge,
   Failure,
   Field,
   Notice,
@@ -83,7 +84,7 @@ export function Users({
                   </div>
                   <p>
                     {roles[selected.role]} ·{' '}
-                    {selected.is_active ? 'نشط' : 'غير نشط'}
+                    <ActivityBadge active={selected.is_active} />
                   </p>
                   {selected.role === 'Delivery_Company' && selected.profile && (
                     <>
@@ -209,7 +210,9 @@ export function Users({
                         </div>
                       </td>
                       <td>{roles[row.role]}</td>
-                      <td>{row.is_active ? 'نشط' : 'غير نشط'}</td>
+                      <td>
+                        <ActivityBadge active={row.is_active} />
+                      </td>
                       <td>
                         <button
                           className="button compact"
