@@ -24,7 +24,8 @@
     "create:admin": "ts-node src/commands/create-admin.ts",
     "create:admin:prod": "node dist/commands/create-admin.js",
     "smtp:check": "ts-node src/commands/check-smtp.ts",
-    "smtp:check:prod": "node dist/commands/check-smtp.js"
+    "smtp:check:prod": "node dist/commands/check-smtp.js",
+    "seed:demo-restaurants": "ts-node src/commands/seed-demo-restaurants.ts"
   },
   "dependencies": {
     "@nestjs/common": "12.5.0",
