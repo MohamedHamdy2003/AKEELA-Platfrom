@@ -56,6 +56,24 @@ export class CatalogService {
       await repo.update({ offer_id: id }, { offer_image_url: url });
     }
   }
+
+  async referencedImageUrls(): Promise<string[]> {
+    const [products, offers] = await Promise.all([
+      this.dataSource
+        .getRepository(Product)
+        .createQueryBuilder('p')
+        .select('p.prod_image_url', 'url')
+        .where('p.prod_image_url IS NOT NULL')
+        .getRawMany<{ url: string }>(),
+      this.dataSource
+        .getRepository(Offer)
+        .createQueryBuilder('o')
+        .select('o.offer_image_url', 'url')
+        .where('o.offer_image_url IS NOT NULL')
+        .getRawMany<{ url: string }>(),
+    ]);
+    return [...products, ...offers].map((row) => row.url);
+  }
   async saleSelection(
     restId: string,
     prodId: string | null,

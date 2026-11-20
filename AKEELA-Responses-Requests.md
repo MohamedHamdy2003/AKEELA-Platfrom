@@ -258,6 +258,8 @@ Checkout calculates current server prices and creates a Pending order directly. 
 | PUT | `/delivery-company/orders/{order_id}/driver` | Assign or change an owned active driver before pickup. | Body: `{"driver_id":"30"}` | `200` · OrderState |
 | POST | `/delivery-company/orders/{order_id}/pickup` | Mark an assigned Accepted order as Picked_Up. | No body | `200` · OrderState |
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. | No body | `200` · OrderState |
+| GET | `/admin/orders/counts` | Return order counts grouped by status across the platform. | No body | `200` · OrderStatusCounts |
+| GET | `/delivery-company/orders/counts` | Return assigned order counts grouped by status for the company. | No body | `200` · OrderStatusCounts |
 
 List date filters use valid `YYYY-MM-DD` dates in Africa/Cairo. Both bounds include their whole local day; `date_from` must not follow `date_to`. Delivery pickup details use the current restaurant address/coordinates; the customer delivery address and prices remain order snapshots. Only acceptance retries from Accepted are idempotent; other invalid/final-state transitions return `409 CONFLICT`.
 
@@ -786,6 +788,20 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "company_id": "20",
   "driver_id": null,
   "updated_at": "2026-11-12T12:00:00.000+02:00"
+}
+```
+
+### OrderStatusCounts
+
+```json
+{
+  "Pending": 3,
+  "Accepted": 2,
+  "Picked_Up": 1,
+  "Delivered": 14,
+  "Rejected": 1,
+  "Cancelled": 2,
+  "Failed": 0
 }
 ```
 

@@ -755,6 +755,25 @@ tbody tr:hover {
   font-size: 11px;
   color: var(--p-muted);
 }
+.coords-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--p-muted);
+}
+.map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--p-accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+.map-link:hover {
+  text-decoration: underline;
+}
 .detail-section h3 {
   font-size: 13px;
   margin-bottom: 10px;
@@ -1529,6 +1548,7 @@ dialog p {
 .portal[data-portal='admin'] .order-item small,
 .portal[data-portal='admin'] .detail-section small,
 .portal[data-portal='admin'] .detail-section > bdi,
+.portal[data-portal='admin'] .detail-section .coords-row,
 .portal[data-portal='admin'] .detail-status-desc,
 .portal[data-portal='admin'] .badge,
 .portal[data-portal='admin'] .connection,
@@ -1539,6 +1559,7 @@ dialog p {
 .portal[data-portal='delivery'] .order-item small,
 .portal[data-portal='delivery'] .detail-section small,
 .portal[data-portal='delivery'] .detail-section > bdi,
+.portal[data-portal='delivery'] .detail-section .coords-row,
 .portal[data-portal='delivery'] .detail-status-desc,
 .portal[data-portal='delivery'] .badge,
 .portal[data-portal='delivery'] .connection,

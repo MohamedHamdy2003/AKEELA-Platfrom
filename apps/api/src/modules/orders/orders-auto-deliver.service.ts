@@ -46,9 +46,9 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
       const repo = this.db.getRepository(Order);
       const stale = await repo
         .createQueryBuilder('o')
+        .select(['o.order_id'])
         .where("o.status = 'Picked_Up'")
         .andWhere('o.updated_at <= :cutoff', { cutoff })
-        .setLock('pessimistic_write')
         .skip(0)
         .take(100)
         .getMany()

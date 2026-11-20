@@ -788,6 +788,22 @@ export const operations: OperationDoc[] = [
     model: 'OrderState',
   },
   {
+    method: 'get',
+    path: '/api/v1/admin/orders/counts',
+    tag: '14. Order Assignment and Delivery',
+    summary: 'Return order counts grouped by status across the platform.',
+    status: 200,
+    model: 'OrderStatusCounts',
+  },
+  {
+    method: 'get',
+    path: '/api/v1/delivery-company/orders/counts',
+    tag: '14. Order Assignment and Delivery',
+    summary: 'Return assigned order counts grouped by status for the company.',
+    status: 200,
+    model: 'OrderStatusCounts',
+  },
+  {
     method: 'put',
     path: '/api/v1/customer/avatar',
     tag: '15. Image Uploads',

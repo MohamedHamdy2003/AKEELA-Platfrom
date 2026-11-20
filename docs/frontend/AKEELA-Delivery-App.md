@@ -63,6 +63,7 @@ API paths omit `/api/v1`. Configure the full API base URL; the backend domain is
 | Method | API                                   | Screen action                                                                                     |
 | ------ | ------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | GET    | `/delivery-company/orders`            | List only assigned company orders; `page`, `per_page`, optional `status`, `date_from`, `date_to`. |
+| GET    | `/delivery-company/orders/counts`     | Fetch assigned company order counts grouped by status for the metrics strip.                      |
 | GET    | `/delivery-company/orders/{order_id}` | Load saved order data plus current restaurant pickup details.                                     |
 
 - Orders arrive after the restaurant accepts; the company does not browse/claim Pending orders or accept company assignments manually. Backend configuration selects the company.

@@ -12,7 +12,7 @@ import {
   ListOrdersQuery,
   OperationalOrdersQuery,
 } from './orders.dto';
-import { Order } from './entities/order.entity';
+import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderItemAddon } from './entities/order-item-addon.entity';
 import { paginationMeta, resolvePagination } from '../users/admin.dto';
@@ -271,6 +271,29 @@ export class OrdersService {
       items: rows.map((o) => this.summary(o)),
       meta: paginationMeta(total, page.page, page.per_page),
     };
+  }
+  async operationalCounts(
+    actor: AuthActor,
+  ): Promise<Record<OrderStatus, number>> {
+    const scope = await this.scope(actor, this.db.manager);
+    const rows = await this.scopedQuery(scope, this.db.manager)
+      .select('o.status', 'status')
+      .addSelect('COUNT(*)::int', 'count')
+      .groupBy('o.status')
+      .getRawMany<{ status: OrderStatus; count: number }>();
+    const counts: Record<OrderStatus, number> = {
+      Pending: 0,
+      Accepted: 0,
+      Picked_Up: 0,
+      Delivered: 0,
+      Rejected: 0,
+      Cancelled: 0,
+      Failed: 0,
+    };
+    for (const row of rows) {
+      if (row.status in counts) counts[row.status] = Number(row.count);
+    }
+    return counts;
   }
   async operationalDetails(actor: AuthActor, id: string) {
     const scope = await this.scope(actor, this.db.manager);

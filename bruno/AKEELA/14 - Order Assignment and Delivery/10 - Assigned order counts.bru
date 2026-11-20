@@ -1,0 +1,15 @@
+meta {
+  name: Assigned order counts
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{base_url}}/delivery-company/orders/counts
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

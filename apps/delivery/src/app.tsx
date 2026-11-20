@@ -3,7 +3,13 @@ import type { User } from '@akeela/portal/models';
 import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
 import { AccountScreen, OrdersBoard } from '@akeela/portal/screens';
 import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
-import { AuthPage, Failure, Loading, Shell } from '@akeela/portal/ui';
+import {
+  AuthPage,
+  ErrorBoundary,
+  Failure,
+  Loading,
+  Shell,
+} from '@akeela/portal/ui';
 import { useSessionRestore } from '@akeela/portal/use-session-restore';
 import { api, base } from './lib/api';
 import { Home } from './features/home';
@@ -32,6 +38,13 @@ const currentRoute = () => {
   return navigation.some(([key]) => key === segment) ? segment : 'home';
 };
 export function App() {
+  return (
+    <ErrorBoundary theme="delivery">
+      <DeliveryWorkspace />
+    </ErrorBoundary>
+  );
+}
+function DeliveryWorkspace() {
   const [user, setUser] = useState<User | null>(null),
     [route, setRoute] = useState(currentRoute),
     [revision, setRevision] = useState(0),

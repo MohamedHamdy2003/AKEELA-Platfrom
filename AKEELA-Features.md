@@ -281,6 +281,8 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 | PUT | `/delivery-company/orders/{order_id}/driver` | Assign or change an owned active driver before pickup. |
 | POST | `/delivery-company/orders/{order_id}/pickup` | Mark an assigned Accepted order as Picked_Up. |
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. |
+| GET | `/admin/orders/counts` | Return order counts grouped by status across the platform. |
+| GET | `/delivery-company/orders/counts` | Return assigned order counts grouped by status for the company. |
 
 ## 15. Image Uploads
 
@@ -289,7 +291,7 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 - Customer uploads an avatar; an Active restaurant owner uploads restaurant/product/offer images. Check resource ownership. Pending/Suspended owners cannot upload.
 - One multipart file field named `file`; JPEG/PNG/WebP up to 5MB. Validate bytes, reject animation, re-encode to WebP and remove metadata. Technical encoding/rate limits: `docs/IMAGES.md`.
 - Save files in persistent image storage and update the existing image URL field. Return an absolute public URL. No new image table.
-- Public files use `/images/<filename>` outside the API prefix. Keep old versions; cleanup is deferred.
+- Public files use `/images/<filename>` outside the API prefix. Unreferenced `.webp` files older than 24 hours are cleaned up automatically.
 
 | Method | Route | Purpose |
 |---|---|---|

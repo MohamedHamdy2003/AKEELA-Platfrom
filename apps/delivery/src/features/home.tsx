@@ -1,4 +1,4 @@
-import type { Order, Driver } from '@akeela/portal/models';
+import type { Driver, OrderStatusCounts } from '@akeela/portal/models';
 import {
   Failure,
   Metrics,
@@ -14,14 +14,9 @@ export function Home({
   revision: number;
   navigate: (key: string) => void;
 }) {
-  const orders = useResource<Order[]>(
+  const orderCounts = useResource<OrderStatusCounts>(
       api,
-      '/delivery-company/orders?per_page=1&status=Accepted',
-      revision,
-    ),
-    picked = useResource<Order[]>(
-      api,
-      '/delivery-company/orders?per_page=1&status=Picked_Up',
+      '/delivery-company/orders/counts',
       revision,
     ),
     drivers = useResource<Driver[]>(
@@ -38,13 +33,13 @@ export function Home({
         items={[
           {
             label: 'طلبات مقبولة',
-            value: orders.result?.meta?.total ?? null,
+            value: orderCounts.result?.data.Accepted ?? null,
             status: 'Accepted',
             onClick: () => navigate('orders'),
           },
           {
             label: 'قيد التوصيل',
-            value: picked.result?.meta?.total ?? null,
+            value: orderCounts.result?.data.Picked_Up ?? null,
             status: 'Picked_Up',
             onClick: () => navigate('orders'),
           },
@@ -55,7 +50,7 @@ export function Home({
           },
         ]}
       />
-      {[orders, picked, drivers]
+      {[orderCounts, drivers]
         .filter((item) => item.error)
         .map((item, index) => (
           <Failure key={index} error={item.error} retry={item.reload} />

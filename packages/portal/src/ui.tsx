@@ -1,5 +1,6 @@
 import { LogoutConfirmation } from './logout-confirmation';
 import {
+  Component,
   useEffect,
   useRef,
   useState,
@@ -25,6 +26,7 @@ import {
   UserRoundCog,
   Home,
   LogOut,
+  MapPin,
   Menu,
   RefreshCw,
   Truck,
@@ -1017,6 +1019,42 @@ export function AuthPage({
     </div>
   );
 }
+export class ErrorBoundary extends Component<
+  { children: ReactNode; theme: 'admin' | 'delivery' },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <main
+        className="portal session-recovery"
+        data-portal={this.props.theme}
+        aria-label="خطأ غير متوقع"
+      >
+        <section className="session-recovery-panel">
+          <h1>تعذّر عرض الصفحة</h1>
+          <p className="muted">
+            حدث خطأ غير متوقع أثناء عرض الواجهة. أعد تحميل الصفحة للمتابعة.
+          </p>
+          <button
+            className="button primary"
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            إعادة تحميل التطبيق
+          </button>
+        </section>
+      </main>
+    );
+  }
+}
+function googleMapsUrl(latitude: string, longitude: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${latitude},${longitude}`)}`;
+}
 export function OrderFacts({
   order,
   actions,
@@ -1036,9 +1074,23 @@ export function OrderFacts({
           <h3>نقطة الاستلام</h3>
           <strong>{order.pickup.rest_title}</strong>
           <p>{order.pickup.rest_address}</p>
-          <bdi>
-            {order.pickup.latitude}, {order.pickup.longitude}
-          </bdi>
+          <div className="coords-row">
+            <bdi>
+              {order.pickup.latitude}, {order.pickup.longitude}
+            </bdi>
+            <a
+              className="map-link"
+              href={googleMapsUrl(
+                order.pickup.latitude,
+                order.pickup.longitude,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MapPin size={13} aria-hidden="true" />
+              فتح على الخريطة
+            </a>
+          </div>
         </section>
       )}
       <section className="detail-section">
@@ -1067,9 +1119,23 @@ export function OrderFacts({
       <section className="detail-section">
         <h3>عنوان التوصيل</h3>
         <p>{order.customer_address}</p>
-        <bdi>
-          {order.delivery_latitude}, {order.delivery_longitude}
-        </bdi>
+        <div className="coords-row">
+          <bdi>
+            {order.delivery_latitude}, {order.delivery_longitude}
+          </bdi>
+          <a
+            className="map-link"
+            href={googleMapsUrl(
+              order.delivery_latitude,
+              order.delivery_longitude,
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <MapPin size={13} aria-hidden="true" />
+            فتح على الخريطة
+          </a>
+        </div>
         {order.notes && <p className="order-note">{order.notes}</p>}
       </section>
       {actions}

@@ -8,7 +8,7 @@ Feature 15 adds four authenticated PUT routes, listed in the root API documents 
 - Return `{image_url}` in the success envelope and update the existing image URL field. No new table/migration.
 - IMAGE_STORAGE_PATH is an absolute directory (default: `apps/api/storage/images` in the checkout). PUBLIC_BASE_URL builds URLs (default: `http://localhost:3000`; required HTTPS origin in production). Never trust request Host headers for URLs.
 - `/images/<uuid>.webp` is public and outside `/api/v1`. Images must contain no private information; random names are not access control. Caddy serves them in production; the API serves them locally.
-- Rejected database updates remove their new file. Older versions stay available so saved URLs do not break. Cleanup/deletion is not implemented; a crash between writing and committing may leave an unused file. Monitor disk usage; add a reviewed cleanup policy later.
+- Rejected database updates remove their new file. A daily background job (`ImagesCleanupService`, skipped in test mode) removes unreferenced UUID `.webp` files older than 24 hours after checking customer avatars, restaurant images, products and offers.
 - Invalid content: 422; oversized: 413; role/activation: 403; foreign/missing resource: 404; upload throttling: 429; invalid multipart: 400. No remote downloads/general file upload endpoint.
 
 Production uses a persistent image volume, read-only for Caddy. Rebuilding/replacing the API preserves images. Backup automation is deferred. See [DEPLOYMENT.md](DEPLOYMENT.md).

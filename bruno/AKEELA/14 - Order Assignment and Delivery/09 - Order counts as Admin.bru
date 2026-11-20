@@ -1,0 +1,15 @@
+meta {
+  name: Order counts as Admin
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/admin/orders/counts
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

@@ -1,5 +1,9 @@
 import { navigation } from '../lib/navigation';
-import type { User, RestaurantReview, Order } from '@akeela/portal/models';
+import type {
+  User,
+  RestaurantReview,
+  OrderStatusCounts,
+} from '@akeela/portal/models';
 import { Failure, Metrics, PageTitle, useResource } from '@akeela/portal/ui';
 import { api } from '../lib/api';
 export function Home({
@@ -14,9 +18,9 @@ export function Home({
       api,
       '/admin/restaurants?activation_status=Pending&per_page=1',
     ),
-    orders = useResource<Order[]>(
+    orderCounts = useResource<OrderStatusCounts>(
       api,
-      '/admin/orders?status=Pending&per_page=1',
+      '/admin/orders/counts',
       revision,
     );
   return (
@@ -39,13 +43,13 @@ export function Home({
           },
           {
             label: 'طلبات قيد الانتظار',
-            value: orders.result?.meta?.total ?? null,
+            value: orderCounts.result?.data.Pending ?? null,
             status: 'Pending',
             onClick: () => navigate('orders'),
           },
         ]}
       />
-      {[users, restaurants, orders]
+      {[users, restaurants, orderCounts]
         .filter((item) => item.error)
         .map((item, index) => (
           <Failure key={index} error={item.error} retry={item.reload} />

@@ -76,6 +76,16 @@ export class CustomersService {
       .update({ user_id: userId }, { cus_avatar_url: url });
   }
 
+  async referencedAvatarUrls(): Promise<string[]> {
+    const rows = await this.dataSource
+      .getRepository(CustomerProfile)
+      .createQueryBuilder('c')
+      .select('c.cus_avatar_url', 'url')
+      .where('c.cus_avatar_url IS NOT NULL')
+      .getRawMany<{ url: string }>();
+    return rows.map((row) => row.url);
+  }
+
   async listAddresses(
     userId: string,
     options: { skip: number; take: number },

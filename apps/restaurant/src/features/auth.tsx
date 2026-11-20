@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
 import { Eye, EyeOff, MapPin } from 'lucide-react';
 import logo from '@akeela/brand/logo.png';
 import logoWebp from '@akeela/brand/logo.webp';
@@ -7,8 +7,13 @@ import botanicalWebp from '@akeela/brand/botanical.webp';
 import { api, ApiError } from '../lib/api';
 import type { User } from '../lib/models';
 import { useDeviceLocation } from '../lib/use-device-location';
-import { LocationMap } from '../components/location-map';
 import { ButtonContent, Field, FieldErrors, Notice } from '../components/ui';
+
+const LocationMap = lazy(() =>
+  import('../components/location-map').then((m) => ({
+    default: m.LocationMap,
+  })),
+);
 
 type Mode = 'login' | 'register' | 'verify' | 'forgot' | 'reset';
 const titles: Record<Mode, string> = {
@@ -336,10 +341,18 @@ export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
                         {locating ? 'جارٍ تحديد الموقع…' : 'تحديث الموقع'}
                       </button>
                     </div>
-                    <LocationMap
-                      coordinates={coordinates}
-                      onChoose={chooseCoordinates}
-                    />
+                    <Suspense
+                      fallback={
+                        <div className="location-picker full" aria-busy="true">
+                          <div className="location-map skel-block" />
+                        </div>
+                      }
+                    >
+                      <LocationMap
+                        coordinates={coordinates}
+                        onChoose={chooseCoordinates}
+                      />
+                    </Suspense>
                     <Field
                       label="خط الطول"
                       name="longitude"

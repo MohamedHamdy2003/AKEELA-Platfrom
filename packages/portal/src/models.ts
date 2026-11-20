@@ -35,6 +35,7 @@ export type OrderStatus =
   | 'Rejected'
   | 'Cancelled'
   | 'Failed';
+export type OrderStatusCounts = Record<OrderStatus, number>;
 export const statuses: Record<OrderStatus, string> = {
   Pending: 'قيد الانتظار',
   Accepted: 'مقبول',

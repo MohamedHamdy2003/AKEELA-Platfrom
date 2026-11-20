@@ -3,19 +3,23 @@ services:
   admin:
     image: ${ADMIN_IMAGE:-akeela-admin:local}
     restart: unless-stopped
+    mem_limit: 64m
     networks: [edge]
   restaurant:
     image: ${RESTAURANT_IMAGE:-akeela-restaurant:local}
     restart: unless-stopped
+    mem_limit: 64m
     networks: [edge]
   delivery:
     image: ${DELIVERY_IMAGE:-akeela-delivery:local}
     restart: unless-stopped
+    mem_limit: 64m
     networks: [edge]
   api:
     image: ${API_IMAGE:-akeela-api:local}
     restart: unless-stopped
     init: true
+    mem_limit: 512m
     environment: &api-environment
       NODE_ENV: production
       PORT: '3000'
@@ -75,6 +79,7 @@ services:
     image: ${API_IMAGE:-akeela-api:local}
     restart: 'no'
     init: true
+    mem_limit: 512m
     command:
       ['sh', '-c', 'npm run migration:run:prod && npm run create:admin:prod']
     environment:
@@ -91,6 +96,7 @@ services:
   postgres:
     image: postgres:17
     restart: unless-stopped
+    mem_limit: 768m
     environment:
       POSTGRES_USER: akeela
       POSTGRES_DB: akeela
@@ -106,6 +112,7 @@ services:
   caddy:
     image: caddy:2
     restart: unless-stopped
+    mem_limit: 128m
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}

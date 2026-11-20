@@ -15,6 +15,7 @@ import {
   statuses,
   type Order,
   type OrderStatus,
+  type OrderStatusCounts,
   type OrderSummary,
   type User,
 } from './models';
@@ -71,39 +72,9 @@ export function OrdersBoard({
     id ? prefix + '/orders/' + id : null,
     revision + tick,
   );
-  const pending = useResource<OrderSummary[]>(
+  const counts = useResource<OrderStatusCounts>(
       api,
-      !delivery ? prefix + '/orders?per_page=1&status=Pending' : null,
-      revision + tick,
-    ),
-    accepted = useResource<OrderSummary[]>(
-      api,
-      prefix + '/orders?per_page=1&status=Accepted',
-      revision + tick,
-    ),
-    pickedUp = useResource<OrderSummary[]>(
-      api,
-      prefix + '/orders?per_page=1&status=Picked_Up',
-      revision + tick,
-    ),
-    delivered = useResource<OrderSummary[]>(
-      api,
-      prefix + '/orders?per_page=1&status=Delivered',
-      revision + tick,
-    ),
-    rejected = useResource<OrderSummary[]>(
-      api,
-      !delivery ? prefix + '/orders?per_page=1&status=Rejected' : null,
-      revision + tick,
-    ),
-    cancelled = useResource<OrderSummary[]>(
-      api,
-      !delivery ? prefix + '/orders?per_page=1&status=Cancelled' : null,
-      revision + tick,
-    ),
-    failed = useResource<OrderSummary[]>(
-      api,
-      !delivery ? prefix + '/orders?per_page=1&status=Failed' : null,
+      prefix + '/orders/counts',
       revision + tick,
     ),
     activeDrivers = useResource<unknown[]>(
@@ -111,6 +82,7 @@ export function OrdersBoard({
       delivery ? '/delivery-company/drivers?per_page=1&is_active=true' : null,
       revision + tick,
     );
+  const statusCounts = counts.result?.data;
   const refresh = () => setTick((value) => value + 1);
   const toggleStatus = (target: string) => {
     setFilters((current) => ({
@@ -123,7 +95,7 @@ export function OrdersBoard({
     ? [
         {
           label: 'الطلبات المقبولة',
-          value: accepted.result?.meta?.total ?? null,
+          value: statusCounts?.Accepted ?? null,
           icon: <Clock size={20} />,
           status: 'Accepted' as OrderStatus,
           active: filters.status === 'Accepted',
@@ -131,7 +103,7 @@ export function OrdersBoard({
         },
         {
           label: 'قيد التوصيل',
-          value: pickedUp.result?.meta?.total ?? null,
+          value: statusCounts?.Picked_Up ?? null,
           icon: <Truck size={20} />,
           status: 'Picked_Up' as OrderStatus,
           active: filters.status === 'Picked_Up',
@@ -139,7 +111,7 @@ export function OrdersBoard({
         },
         {
           label: 'تم التسليم',
-          value: delivered.result?.meta?.total ?? null,
+          value: statusCounts?.Delivered ?? null,
           icon: <CheckCheck size={20} />,
           status: 'Delivered' as OrderStatus,
           active: filters.status === 'Delivered',
@@ -154,7 +126,7 @@ export function OrdersBoard({
     : [
         {
           label: statuses.Pending,
-          value: pending.result?.meta?.total ?? null,
+          value: statusCounts?.Pending ?? null,
           icon: <Clock size={20} />,
           status: 'Pending' as OrderStatus,
           active: filters.status === 'Pending',
@@ -162,7 +134,7 @@ export function OrdersBoard({
         },
         {
           label: statuses.Accepted,
-          value: accepted.result?.meta?.total ?? null,
+          value: statusCounts?.Accepted ?? null,
           icon: <Check size={20} />,
           status: 'Accepted' as OrderStatus,
           active: filters.status === 'Accepted',
@@ -170,7 +142,7 @@ export function OrdersBoard({
         },
         {
           label: statuses.Picked_Up,
-          value: pickedUp.result?.meta?.total ?? null,
+          value: statusCounts?.Picked_Up ?? null,
           icon: <Truck size={20} />,
           status: 'Picked_Up' as OrderStatus,
           active: filters.status === 'Picked_Up',
@@ -178,7 +150,7 @@ export function OrdersBoard({
         },
         {
           label: statuses.Delivered,
-          value: delivered.result?.meta?.total ?? null,
+          value: statusCounts?.Delivered ?? null,
           icon: <CheckCheck size={20} />,
           status: 'Delivered' as OrderStatus,
           active: filters.status === 'Delivered',
@@ -186,7 +158,7 @@ export function OrdersBoard({
         },
         {
           label: statuses.Rejected,
-          value: rejected.result?.meta?.total ?? null,
+          value: statusCounts?.Rejected ?? null,
           icon: <Ban size={20} />,
           status: 'Rejected' as OrderStatus,
           active: filters.status === 'Rejected',
@@ -194,7 +166,7 @@ export function OrdersBoard({
         },
         {
           label: statuses.Cancelled,
-          value: cancelled.result?.meta?.total ?? null,
+          value: statusCounts?.Cancelled ?? null,
           icon: <XCircle size={20} />,
           status: 'Cancelled' as OrderStatus,
           active: filters.status === 'Cancelled',
@@ -202,7 +174,7 @@ export function OrdersBoard({
         },
         {
           label: statuses.Failed,
-          value: failed.result?.meta?.total ?? null,
+          value: statusCounts?.Failed ?? null,
           icon: <AlertTriangle size={20} />,
           status: 'Failed' as OrderStatus,
           active: filters.status === 'Failed',

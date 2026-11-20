@@ -14,9 +14,13 @@ export interface UserListFilters {
   take?: number;
 }
 
-export type ProfileResolver = (account: Account) => Promise<unknown>;
+export type ProfileResolver = (
+  account: Account,
+  manager?: EntityManager,
+) => Promise<unknown>;
 export type BatchProfileResolver = (
   accounts: Account[],
+  manager?: EntityManager,
 ) => Promise<Map<string, unknown>>;
 
 @Injectable()
@@ -34,25 +38,34 @@ export class UsersService {
     this.batchProfileResolver = resolver;
   }
 
-  async resolveProfile(account: Account): Promise<unknown> {
+  async resolveProfile(
+    account: Account,
+    manager?: EntityManager,
+  ): Promise<unknown> {
     if (this.profileResolver) {
-      return this.profileResolver(account);
+      return this.profileResolver(account, manager);
     }
     if (account.role === 'Admin') {
-      return this.adminProfile(account.user_id);
+      return this.adminProfile(account.user_id, manager);
     }
     return null;
   }
 
-  async resolveProfiles(accounts: Account[]): Promise<Map<string, unknown>> {
+  async resolveProfiles(
+    accounts: Account[],
+    manager?: EntityManager,
+  ): Promise<Map<string, unknown>> {
     if (!accounts.length) return new Map();
     if (this.batchProfileResolver) {
-      return this.batchProfileResolver(accounts);
+      return this.batchProfileResolver(accounts, manager);
     }
     const entries = await Promise.all(
       accounts.map(
         async (account) =>
-          [account.user_id, await this.resolveProfile(account)] as const,
+          [
+            account.user_id,
+            await this.resolveProfile(account, manager),
+          ] as const,
       ),
     );
     return new Map(entries);
@@ -187,7 +200,7 @@ export class UsersService {
     const skip = filters.skip ?? ((filters.page ?? 1) - 1) * take;
     const [accounts, total] = await qb.skip(skip).take(take).getManyAndCount();
 
-    const profiles = await this.resolveProfiles(accounts);
+    const profiles = await this.resolveProfiles(accounts, manager);
     const items = accounts.map((account) =>
       this.safeUser(account, profiles.get(account.user_id) ?? null),
     );

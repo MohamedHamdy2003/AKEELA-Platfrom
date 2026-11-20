@@ -386,6 +386,18 @@ export const responseModels: Record<string, SchemaObject> = {
     }),
   }),
   OrderState: object(state),
+  OrderStatusCounts: object(
+    {
+      Pending: integer,
+      Accepted: integer,
+      Picked_Up: integer,
+      Delivered: integer,
+      Rejected: integer,
+      Cancelled: integer,
+      Failed: integer,
+    },
+    'Order counts grouped by status for the authenticated scope.',
+  ),
   RestaurantReview: object({
     owner: {
       ...object({

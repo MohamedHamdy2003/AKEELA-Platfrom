@@ -163,6 +163,16 @@ export class RestaurantsService {
     return new Map(rows.map((row) => [row.user_id, row]));
   }
 
+  async referencedImageUrls(): Promise<string[]> {
+    const rows = await this.dataSource
+      .getRepository(RestaurantProfile)
+      .createQueryBuilder('r')
+      .select('r.rest_image_url_mobile', 'url')
+      .where('r.rest_image_url_mobile IS NOT NULL')
+      .getRawMany<{ url: string }>();
+    return rows.map((row) => row.url);
+  }
+
   async profileById(
     restId: string,
     manager = this.dataSource.manager,

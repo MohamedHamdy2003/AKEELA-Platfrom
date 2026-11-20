@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react';
 import type { User } from '@akeela/portal/models';
 import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
 import { AccountScreen, OrdersBoard } from '@akeela/portal/screens';
+import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import {
   AuthPage,
+  ErrorBoundary,
   Failure,
   Loading,
   PageTitle,
@@ -17,7 +19,6 @@ import { Restaurants } from './features/restaurants';
 import { Users, Companies } from './features/users';
 import { AdminActions } from './features/orders';
 import { ArabicFields } from './components/arabic-fields';
-import { ArabicDateFields } from './components/arabic-date-fields';
 const currentRoute = () => {
   if (typeof window === 'undefined') return 'home';
   if (window.location.hash.startsWith('#/')) {
@@ -33,6 +34,13 @@ const currentRoute = () => {
   return navigation.some(([key]) => key === segment) ? segment : 'home';
 };
 export function App() {
+  return (
+    <ErrorBoundary theme="admin">
+      <AdminWorkspace />
+    </ErrorBoundary>
+  );
+}
+function AdminWorkspace() {
   const [user, setUser] = useState<User | null>(null),
     [route, setRoute] = useState(currentRoute),
     [revision, setRevision] = useState(0),
