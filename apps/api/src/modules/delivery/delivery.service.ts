@@ -6,7 +6,7 @@ import {
   UpdateCompanyDto,
 } from './delivery.dto';
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { DeliveryCompanyProfile } from './entities/delivery-company-profile.entity';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
@@ -143,6 +143,17 @@ export class DeliveryService {
     return manager
       .getRepository(DeliveryCompanyProfile)
       .findOneBy({ user_id: userId });
+  }
+
+  async profilesByUserIds(
+    userIds: string[],
+    manager: EntityManager = this.dataSource.manager,
+  ): Promise<Map<string, DeliveryCompanyProfile>> {
+    if (!userIds.length) return new Map();
+    const rows = await manager
+      .getRepository(DeliveryCompanyProfile)
+      .findBy({ user_id: In([...new Set(userIds)]) });
+    return new Map(rows.map((row) => [row.user_id, row]));
   }
 
   async create(

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { CustomerProfile } from './entities/customer-profile.entity';
 import { CustomerAddress } from './entities/customer-address.entity';
 import {
@@ -53,6 +53,17 @@ export class CustomersService {
     return manager
       .getRepository(CustomerProfile)
       .findOneBy({ user_id: userId });
+  }
+
+  async profilesByUserIds(
+    userIds: string[],
+    manager = this.dataSource.manager,
+  ): Promise<Map<string, CustomerProfile>> {
+    if (!userIds.length) return new Map();
+    const rows = await manager
+      .getRepository(CustomerProfile)
+      .findBy({ user_id: In([...new Set(userIds)]) });
+    return new Map(rows.map((row) => [row.user_id, row]));
   }
 
   async setAvatar(

@@ -550,6 +550,41 @@ export class AuthService {
           : await this.users.adminProfile(account.user_id);
   }
 
+  async getProfilesFor(accounts: Account[]): Promise<Map<string, unknown>> {
+    const customerIds: string[] = [];
+    const restaurantIds: string[] = [];
+    const companyIds: string[] = [];
+    const adminIds: string[] = [];
+    for (const account of accounts) {
+      if (account.role === 'Customer') customerIds.push(account.user_id);
+      else if (account.role === 'Restaurant')
+        restaurantIds.push(account.user_id);
+      else if (account.role === 'Delivery_Company')
+        companyIds.push(account.user_id);
+      else adminIds.push(account.user_id);
+    }
+    const [customers, restaurants, companies, admins] = await Promise.all([
+      this.customers.profilesByUserIds(customerIds),
+      this.restaurants.profilesByUserIds(restaurantIds),
+      this.delivery.profilesByUserIds(companyIds),
+      this.users.adminProfilesByIds(adminIds),
+    ]);
+    const result = new Map<string, unknown>();
+    for (const account of accounts) {
+      result.set(
+        account.user_id,
+        account.role === 'Customer'
+          ? (customers.get(account.user_id) ?? null)
+          : account.role === 'Restaurant'
+            ? (restaurants.get(account.user_id) ?? null)
+            : account.role === 'Delivery_Company'
+              ? (companies.get(account.user_id) ?? null)
+              : (admins.get(account.user_id) ?? null),
+      );
+    }
+    return result;
+  }
+
   async userData(account: Account) {
     const profile = await this.getProfileFor(account);
     return {

@@ -1851,6 +1851,34 @@ tbody tr:hover {
   position: relative;
   overflow: hidden;
 }
+.panel-skeleton {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-panel);
+  background: var(--brand-surface);
+}
+.panel-skeleton .skeleton-line {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  height: 14px;
+  border-radius: 8px;
+  background: #e6efe9;
+  animation: skeleton-wait 1400ms var(--ease-in-out) infinite;
+}
+.panel-skeleton .skeleton-line.sk-head {
+  height: 22px;
+  width: 44%;
+}
+.panel-skeleton .skeleton-line.sk-mid {
+  width: 78%;
+}
+.panel-skeleton .skeleton-line.sk-short {
+  width: 52%;
+}
+.panel-skeleton .skeleton-line::after,
 .table-skeleton .skeleton-line::after {
   content: '';
   position: absolute;

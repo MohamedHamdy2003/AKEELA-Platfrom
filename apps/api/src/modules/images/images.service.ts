@@ -13,6 +13,12 @@ import { CustomersService } from '../customers/customers.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 import { CatalogService } from '../catalog/catalog.service';
 export type ImageTarget = 'avatar' | 'restaurant' | 'product' | 'offer';
+const TARGET_MAX_DIMENSION: Record<ImageTarget, number> = {
+  avatar: 512,
+  product: 1280,
+  offer: 1280,
+  restaurant: 1600,
+};
 @Injectable()
 export class ImagesService {
   private readonly rates = new Map<string, { until: number; count: number }>();
@@ -66,15 +72,16 @@ export class ImagesService {
         (meta.pages ?? 1) > 1
       )
         throw new Error();
+      const maxDim = TARGET_MAX_DIMENSION[target];
       encoded = await decoder
         .rotate()
         .resize({
-          width: 2048,
-          height: 2048,
+          width: maxDim,
+          height: maxDim,
           fit: 'inside',
           withoutEnlargement: true,
         })
-        .webp({ quality: 85 })
+        .webp({ quality: 82, effort: 6, smartSubsample: true })
         .toBuffer();
     } catch {
       throw new ApiError(

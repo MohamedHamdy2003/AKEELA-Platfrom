@@ -43,5 +43,8 @@ export class AuthModule implements OnModuleInit {
     this.users.registerProfileResolver((account) =>
       this.auth.getProfileFor(account),
     );
+    this.users.registerBatchProfileResolver((accounts) =>
+      this.auth.getProfilesFor(accounts),
+    );
   }
 }

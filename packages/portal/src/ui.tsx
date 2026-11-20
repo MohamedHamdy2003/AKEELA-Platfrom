@@ -229,10 +229,94 @@ export function Pager({
 }
 export function Loading() {
   return (
-    <div className="skeleton" aria-label="جار التحميل" role="status">
-      <div />
-      <div />
-      <div />
+    <div
+      className="skeleton"
+      aria-label="جار التحميل"
+      aria-busy="true"
+      role="status"
+    >
+      <div className="sk-bar sk-title" />
+      <div className="sk-bar sk-line" />
+      <div className="sk-bar sk-line sk-short" />
+    </div>
+  );
+}
+export function TableSkeleton({
+  rows = 6,
+  columns = 5,
+}: {
+  rows?: number;
+  columns?: number;
+}) {
+  return (
+    <div
+      className="panel portal-table-skeleton"
+      aria-label="جار التحميل"
+      aria-busy="true"
+      role="status"
+    >
+      <div className="table-scroll">
+        <table aria-hidden="true">
+          <thead>
+            <tr>
+              {Array.from({ length: columns }, (_, col) => (
+                <th key={col}>
+                  <span className="sk-bar sk-head" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rows }, (_, row) => (
+              <tr key={row}>
+                {Array.from({ length: columns }, (_, col) => (
+                  <td key={col}>
+                    <span
+                      className={
+                        'sk-bar ' +
+                        (col === columns - 1
+                          ? 'sk-action'
+                          : col === 2
+                            ? 'sk-pill'
+                            : (row + col) % 2 === 0
+                              ? 'sk-cell'
+                              : 'sk-cell sk-narrow')
+                      }
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+export function DetailSkeleton() {
+  return (
+    <div
+      className="portal-detail-skeleton"
+      aria-label="جار التحميل"
+      aria-busy="true"
+      role="status"
+    >
+      <div className="sk-row-between">
+        <span className="sk-bar sk-id" />
+        <span className="sk-bar sk-pill" />
+      </div>
+      <div className="sk-bar sk-line sk-short" />
+      <div className="sk-section">
+        <div className="sk-bar sk-subhead" />
+        <div className="sk-bar sk-line" />
+        <div className="sk-bar sk-line sk-medium" />
+      </div>
+      <div className="sk-section">
+        <div className="sk-bar sk-subhead" />
+        <div className="sk-bar sk-line" />
+        <div className="sk-bar sk-line sk-short" />
+      </div>
+      <div className="sk-bar sk-total" />
     </div>
   );
 }
@@ -272,6 +356,7 @@ export function ResourceState({
   resource,
   children,
   empty = false,
+  skeleton,
 }: {
   resource: {
     result: unknown;
@@ -281,10 +366,12 @@ export function ResourceState({
   };
   children: ReactNode;
   empty?: boolean;
+  skeleton?: ReactNode;
 }) {
   if (resource.error)
     return <Failure error={resource.error} retry={resource.reload} />;
-  if (!resource.result && resource.loading) return <Loading />;
+  if (!resource.result && resource.loading)
+    return <>{skeleton ?? <Loading />}</>;
   if (empty)
     return (
       <div className="empty">

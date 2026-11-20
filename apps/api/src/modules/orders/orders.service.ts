@@ -4,7 +4,7 @@ import { UsersService } from '../users/users.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 import { DeliveryService } from '../delivery/delivery.service';
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
 import { CartService } from '../cart/cart.service';
 import {
@@ -65,13 +65,22 @@ export class OrdersService {
     const rows = await m
       .getRepository(OrderItem)
       .find({ where: { order_id: orderId }, order: { order_item_id: 'ASC' } });
-    const items = [];
-    for (const item of rows) {
-      const addons = await m.getRepository(OrderItemAddon).find({
-        where: { order_item_id: item.order_item_id },
-        order: { order_item_addon_id: 'ASC' },
-      });
-      items.push({
+    const itemIds = rows.map((row) => row.order_item_id);
+    const allAddons = itemIds.length
+      ? await m.getRepository(OrderItemAddon).find({
+          where: { order_item_id: In(itemIds) },
+          order: { order_item_addon_id: 'ASC' },
+        })
+      : [];
+    const addonsByItem = new Map<string, OrderItemAddon[]>();
+    for (const addon of allAddons) {
+      const list = addonsByItem.get(addon.order_item_id);
+      if (list) list.push(addon);
+      else addonsByItem.set(addon.order_item_id, [addon]);
+    }
+    const items = rows.map((item) => {
+      const addons = addonsByItem.get(item.order_item_id) ?? [];
+      return {
         order_item_id: item.order_item_id,
         prod_id: item.prod_id,
         offer_id: item.offer_id,
@@ -87,8 +96,8 @@ export class OrdersService {
           quantity: a.quantity,
           subtotal: a.subtotal,
         })),
-      });
-    }
+      };
+    });
     return {
       ...this.summary(order),
       customer_id: order.customer_id,

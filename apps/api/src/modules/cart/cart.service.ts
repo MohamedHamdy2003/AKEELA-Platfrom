@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
 import { moneyCents } from '../../common/money';
 import { CustomersService } from '../customers/customers.service';
@@ -84,21 +84,37 @@ export class CartService {
       where: { cart_id: cart.cart_id },
       order: { cart_item_id: 'ASC' },
     });
+    const rowIds = rows.map((row) => row.cart_item_id);
+    const allChoices = rowIds.length
+      ? await manager.getRepository(CartItemAddon).find({
+          where: { cart_item_id: In(rowIds) },
+          order: { addon_id: 'ASC' },
+        })
+      : [];
+    const choicesByItem = new Map<string, CartItemAddon[]>();
+    for (const choice of allChoices) {
+      const list = choicesByItem.get(choice.cart_item_id);
+      if (list) list.push(choice);
+      else choicesByItem.set(choice.cart_item_id, [choice]);
+    }
+    const sales = await this.catalog.saleSelections(
+      cart.rest_id,
+      rows.map((row) => ({
+        prodId: row.prod_id,
+        offerId: row.offer_id,
+        addonIds: (choicesByItem.get(row.cart_item_id) ?? []).map(
+          (a) => a.addon_id,
+        ),
+      })),
+      manager,
+    );
     const items: CartItemView[] = [];
     let itemsTotal = 0n;
     let addonsTotal = 0n;
-    for (const row of rows) {
-      const choices = await manager.getRepository(CartItemAddon).find({
-        where: { cart_item_id: row.cart_item_id },
-        order: { addon_id: 'ASC' },
-      });
-      const sale = await this.catalog.saleSelection(
-        cart.rest_id,
-        row.prod_id,
-        row.offer_id,
-        choices.map((a) => a.addon_id),
-        manager,
-      );
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]!;
+      const choices = choicesByItem.get(row.cart_item_id) ?? [];
+      const sale = sales[i]!;
       const price = sale.item?.price ?? '0.00';
       const subtotal = moneyCents(price) * BigInt(row.quantity);
       let lineAddons = 0n;
@@ -240,12 +256,23 @@ export class CartService {
         where: { cart_id: cart.cart_id },
         order: { cart_item_id: 'ASC' },
       });
+      const sameItemCandidates = candidates.filter(
+        (row) => row.prod_id === prodId && row.offer_id === offerId,
+      );
+      const candidateAddons = sameItemCandidates.length
+        ? await m.getRepository(CartItemAddon).findBy({
+            cart_item_id: In(sameItemCandidates.map((r) => r.cart_item_id)),
+          })
+        : [];
+      const existingByItem = new Map<string, CartItemAddon[]>();
+      for (const a of candidateAddons) {
+        const list = existingByItem.get(a.cart_item_id);
+        if (list) list.push(a);
+        else existingByItem.set(a.cart_item_id, [a]);
+      }
       let matched: CartItem | undefined;
-      for (const row of candidates) {
-        if (row.prod_id !== prodId || row.offer_id !== offerId) continue;
-        const existing = await m
-          .getRepository(CartItemAddon)
-          .findBy({ cart_item_id: row.cart_item_id });
+      for (const row of sameItemCandidates) {
+        const existing = existingByItem.get(row.cart_item_id) ?? [];
         if (
           existing.length === addons.length &&
           existing.every((a) =>

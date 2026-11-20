@@ -21,6 +21,7 @@ import {
 import {
   Badge,
   dateTime,
+  DetailSkeleton,
   Failure,
   Field,
   Metrics,
@@ -30,6 +31,7 @@ import {
   Pager,
   PageTitle,
   ResourceState,
+  TableSkeleton,
   useResource,
 } from './ui';
 export type OrderDateFilters = { date_from: string; date_to: string };
@@ -213,7 +215,7 @@ export function OrdersBoard({
       title="تفاصيل الطلب"
       onClose={() => setId(null)}
       details={
-        <ResourceState resource={detail}>
+        <ResourceState resource={detail} skeleton={<DetailSkeleton />}>
           {detail.result && (
             <OrderFacts
               order={detail.result.data}
@@ -299,6 +301,7 @@ export function OrdersBoard({
         <ResourceState
           resource={list}
           empty={!!list.result && !list.result.data.length}
+          skeleton={<TableSkeleton columns={delivery ? 6 : 5} />}
         >
           <div className="panel">
             <div className="table-scroll">

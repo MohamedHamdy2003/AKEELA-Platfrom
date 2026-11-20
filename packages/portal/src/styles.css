@@ -829,17 +829,110 @@ tbody tr:hover {
   font-size: 12px;
   margin: 0;
 }
-.skeleton {
-  padding: 26px;
-  background: #fff;
-  border-radius: 10px;
+.sk-bar {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #e9eef1;
 }
-.skeleton div {
-  height: 30px;
-  background: #eff3f5;
-  border-radius: 5px;
-  margin: 12px 0;
-  animation: pulse 1.3s ease-in-out infinite;
+.sk-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.72) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: portal-shimmer 1.4s ease-in-out infinite;
+}
+.skeleton {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  display: grid;
+  gap: 12px;
+}
+.sk-title {
+  height: 22px;
+  width: 42%;
+}
+.sk-line {
+  height: 14px;
+  width: 100%;
+}
+.sk-medium {
+  width: 78%;
+}
+.sk-short {
+  width: 54%;
+}
+.portal-table-skeleton .sk-head {
+  height: 13px;
+  width: 68%;
+  min-width: 56px;
+}
+.portal-table-skeleton .sk-cell {
+  height: 14px;
+  width: 82%;
+  min-width: 72px;
+}
+.portal-table-skeleton .sk-cell.sk-narrow {
+  width: 58%;
+  min-width: 52px;
+}
+.portal-table-skeleton .sk-pill {
+  height: 24px;
+  width: 86px;
+  border-radius: 999px;
+}
+.portal-table-skeleton .sk-action {
+  height: 32px;
+  width: 96px;
+  border-radius: 8px;
+}
+.portal-detail-skeleton {
+  display: grid;
+  gap: 14px;
+}
+.portal-detail-skeleton .sk-row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.portal-detail-skeleton .sk-id {
+  height: 20px;
+  width: 72px;
+}
+.portal-detail-skeleton .sk-pill {
+  height: 24px;
+  width: 90px;
+  border-radius: 999px;
+}
+.portal-detail-skeleton .sk-section {
+  border-top: 1px solid var(--p-line);
+  padding-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+.portal-detail-skeleton .sk-subhead {
+  height: 16px;
+  width: 36%;
+}
+.portal-detail-skeleton .sk-total {
+  height: 44px;
+  width: 100%;
+  border-radius: 8px;
+}
+@keyframes portal-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 .updating {
   display: block;
