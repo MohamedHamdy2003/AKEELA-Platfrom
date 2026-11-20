@@ -37,6 +37,10 @@ Run these commands from the repository root. Local API secrets live in `apps/api
 
 Open `bruno/AKEELA` in Bruno and select Local; see [BRUNO.md](docs/BRUNO.md). Keep credentials/tokens outside Git. Provision the only Admin using `npm run create:admin` with private CLI inputs from [AUTH.md](docs/AUTH.md). Restaurants register themselves and need Admin activation before modifications/operations.
 
+For the local demo catalog, run `npm run seed:demo-restaurants` after migrations. The command creates five active sample restaurants directly in the local `akeela` database. Their dishes and neighborhoods are based on the [Rico prototype](https://rico-ui-cyan.vercel.app/). Coordinates and opening hours are demo values.
+
+The command prints the path to a private local CSV with every account's role, email and status. That first export records the generated passwords for newly created demo accounts. Save it privately. Use `npm run seed:demo-restaurants -- --report-only` to refresh the account list without changing any accounts. Existing passwords stay hashed, and repeat seeding preserves existing accounts.
+
 Swagger: `http://localhost:3000/api/v1/docs`. OpenAPI JSON: `http://localhost:3000/api/v1/docs-json`. All 81 REST endpoints include input/response schemas, examples, JWT authorization and mobile integration rules. See [SWAGGER.md](docs/SWAGGER.md). Try it out sends real requests to the selected API.
 
 Swagger has four role views: Customer, Restaurant, Admin and Delivery Company, each with its own feature groups. Use the top selector or `/api/v1/docs/customer`, `/restaurant`, `/admin` and `/delivery-company` under the same docs prefix. The full JSON remains unchanged for existing imports.
