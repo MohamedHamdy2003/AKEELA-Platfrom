@@ -117,6 +117,12 @@ export function Drivers() {
                 />
                 سائق نشط
               </label>
+              {edit && (
+                <small className="field-hint">
+                  تعطيل سائق مُسند لطلب حالي يوقف إكمال تسليمه حتى يُعاد تنشيطه أو
+                  يُسند الطلب لسائق نشط آخر.
+                </small>
+              )}
               <div className="actions">
                 <button className="button primary">
                   {busy ? 'جار الحفظ…' : 'حفظ السائق'}

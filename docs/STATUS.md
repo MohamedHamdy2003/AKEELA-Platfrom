@@ -1,10 +1,12 @@
 # Project Status
 
-- Dashboard polish (2026-11-20): shared green/red activity badges, refined Admin navigation, white Delivery auth logo, and shared animated left detail panes for Admin/Delivery. Restaurant retains its existing animated drawer. Local demo owners now have natural sample names; `--refresh-demo-names` updates original labels only, without changing login/profile settings. No production data or release is changed by this work.
+- Dashboard polish (2026-11-20): shared green/red activity badges, refined Admin navigation, white Delivery auth logo, and shared animated left detail panes for Admin/Delivery. Restaurant retains its existing animated drawer. Local demo owners now have natural sample names; `--refresh-demo-names` updates original labels only, without changing login/profile settings. Released to production as `7b306e4` through [Release 44778325349](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/44778325349); all services and public HTTPS checks passed. At the owner's follow-up request, the five matching production demo owners (user IDs 19–23) also had their original demo labels replaced with the same natural names. That targeted transaction changed only `full_name` and `updated_at`; login details, permissions, profiles and orders were preserved. Deployment does not run the local demo-name command.
 
 ## Authorized scope
 
 Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.
+
+Current one-time owner request (2026-11-20): implement all reviewed UX improvements and cross-portal design fixes (updated Delivery home copy, realtime offline notice copy, Picked_Up driver reassignment toggle, driver deactivation warning, Admin company ID copy button and optional email separator fix, selected order row highlight, reset-filter buttons, clickable Home metric cards, inline status descriptions in order details, shared Arabic date range fields and readable typography in Delivery, unified semantic badge icons and realtime-first order views in Restaurant), push to `dev`, then promote to `main` and deploy to the VPS server. Later work returns to dev-only policy.
 
 Current one-time owner request: promote all completed order management, status lifecycle, auto-deliver scheduler, metrics cards, badge indicators, and portal UI refinements from `dev` to `main` and deploy to the VPS server. This authorizes merging `dev` to `main` and triggering the Release workflow. Later work returns to dev-only policy. Deployment success must be verified from the Release workflow run and VPS readiness.
 

@@ -36,11 +36,22 @@ export function Home({
       />
       <Metrics
         items={[
-          { label: 'طلبات مقبولة', value: orders.result?.meta?.total ?? null },
-          { label: 'قيد التوصيل', value: picked.result?.meta?.total ?? null },
+          {
+            label: 'طلبات مقبولة',
+            value: orders.result?.meta?.total ?? null,
+            status: 'Accepted',
+            onClick: () => navigate('orders'),
+          },
+          {
+            label: 'قيد التوصيل',
+            value: picked.result?.meta?.total ?? null,
+            status: 'Picked_Up',
+            onClick: () => navigate('orders'),
+          },
           {
             label: 'السائقون النشطون',
             value: drivers.result?.meta?.total ?? null,
+            onClick: () => navigate('drivers'),
           },
         ]}
       />
@@ -51,7 +62,7 @@ export function Home({
         ))}
       <section className="panel panel-pad">
         <h2>ابدأ من الطلبات</h2>
-        <p>اختر سائقًا نشطًا، أكّد الاستلام من المطعم، ثم أكّد التسليم للعميل.</p>
+        <p>اختر سائقًا نشطًا لبدء التوصيل تلقائيًا، ثم أكّد التسليم للعميل.</p>
         <div className="quick-links">
           <button className="button primary" onClick={() => navigate('orders')}>
             فتح طلبات الشركة ←

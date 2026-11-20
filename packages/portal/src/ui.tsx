@@ -646,8 +646,8 @@ export function Shell({
         <main id="main-content" tabIndex={-1} className="portal-main">
           {status === 'offline' && (
             <Notice>
-              التحديث اللحظي غير متصل. يمكنك تحديث البيانات يدويًا حتى يعود
-              الاتصال.
+              التحديث اللحظي غير متصل حاليًا؛ سيُعاد الاتصال وتحديث البيانات
+              تلقائيًا فور عودة الشبكة.
             </Notice>
           )}
           {children}
@@ -943,6 +943,7 @@ export function OrderFacts({
         <bdi>#{order.order_id}</bdi>
         <Badge status={order.status} />
       </div>
+      <p className="detail-status-desc">{statusDescriptions[order.status]}</p>
       {order.pickup && (
         <section className="detail-section">
           <h3>نقطة الاستلام</h3>

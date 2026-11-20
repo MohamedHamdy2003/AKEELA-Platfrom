@@ -27,14 +27,21 @@ export function Home({
       />
       <Metrics
         items={[
-          { label: 'حسابات المنصة', value: users.result?.meta?.total ?? null },
+          {
+            label: 'حسابات المنصة',
+            value: users.result?.meta?.total ?? null,
+            onClick: () => navigate('users'),
+          },
           {
             label: 'مطاعم تنتظر التفعيل',
             value: restaurants.result?.meta?.total ?? null,
+            onClick: () => navigate('restaurants'),
           },
           {
             label: 'طلبات قيد الانتظار',
             value: orders.result?.meta?.total ?? null,
+            status: 'Pending',
+            onClick: () => navigate('orders'),
           },
         ]}
       />

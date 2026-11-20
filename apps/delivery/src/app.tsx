@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { User } from '@akeela/portal/models';
 import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
 import { AccountScreen, OrdersBoard } from '@akeela/portal/screens';
+import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import { AuthPage, Failure, Loading, Shell } from '@akeela/portal/ui';
 import { useSessionRestore } from '@akeela/portal/use-session-restore';
 import { api, base } from './lib/api';
@@ -115,6 +116,9 @@ export function App() {
           prefix="/delivery-company"
           revision={revision}
           delivery
+          dateFields={(value, change) => (
+            <ArabicDateFields value={value} change={change} />
+          )}
           actions={(order, refresh) => (
             <DeliveryActions
               key={order.order_id + order.updated_at}

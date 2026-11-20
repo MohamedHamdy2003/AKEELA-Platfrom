@@ -11,12 +11,14 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
+  Circle,
   CircleCheck,
   ImageOff,
   Inbox,
   LoaderCircle,
   RefreshCw,
   X,
+  XCircle,
 } from 'lucide-react';
 import { ApiError, errorMessage } from '../lib/api';
 import type { Meta, OrderStatus } from '../lib/models';
@@ -271,6 +273,36 @@ export function Badge({ status }: { status: OrderStatus }) {
       className={`badge status-${status}`}
       title={statusDescriptions[status] ?? statuses[status]}
     >
+      {status === 'Delivered' ? (
+        <svg
+          width={13}
+          height={13}
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="11" fill="currentColor" />
+          <path
+            d="M18 6 7 17l-5-5"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="m22 10-7.5 7.5L13 16"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : status === 'Cancelled' ? (
+        <XCircle size={13} aria-hidden="true" />
+      ) : (
+        <Circle size={10} aria-hidden="true" />
+      )}
       <span className="badge-label" key={status}>
         {statuses[status] ?? status}
       </span>
