@@ -1,6 +1,6 @@
 # Project Status
 
-- Dashboard polish (2026-11-20): shared green/red activity badges, refined Admin navigation, white Delivery auth logo, and shared animated left detail panes for Admin/Delivery. Restaurant retains its existing animated drawer. Local demo owners now have natural sample names; `--refresh-demo-names` updates original labels only, without changing login/profile settings. No production data or release is changed by this work.
+- Dashboard polish (2026-11-20): shared green/red activity badges, refined Admin navigation, white Delivery auth logo, and shared animated left detail panes for Admin/Delivery. Restaurant retains its existing animated drawer. Local demo owners now have natural sample names; `--refresh-demo-names` updates original labels only, without changing login/profile settings. Released to production as `7b306e4` through [Release 44778325349](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/44778325349); all services and public HTTPS checks passed. At the owner's follow-up request, the five matching production demo owners (user IDs 19–23) also had their original demo labels replaced with the same natural names. That targeted transaction changed only `full_name` and `updated_at`; login details, permissions, profiles and orders were preserved. Deployment does not run the local demo-name command.
 
 ## Authorized scope
 
