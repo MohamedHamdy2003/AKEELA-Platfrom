@@ -38,8 +38,8 @@ export class AdminUsersController {
       role: query.role,
       is_active:
         query.is_active !== undefined ? query.is_active === 'true' : undefined,
-      page: pagination.page,
-      per_page: pagination.per_page,
+      skip: pagination.skip,
+      take: pagination.take,
     });
     return {
       success: true,

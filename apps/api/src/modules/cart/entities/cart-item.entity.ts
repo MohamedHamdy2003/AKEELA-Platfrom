@@ -17,6 +17,7 @@ import {
 @Index('ix_cart_items_cart', ['rest_id', 'cart_id'])
 @Index('ix_cart_items_product', ['rest_id', 'prod_id'])
 @Index('ix_cart_items_offer', ['rest_id', 'offer_id'])
+@Index('ix_cart_items_cart_id', ['cart_id', 'cart_item_id'])
 @ForeignKey('carts', ['rest_id', 'cart_id'], ['rest_id', 'cart_id'], {
   name: 'fk_cart_items_cart',
   onDelete: 'CASCADE',

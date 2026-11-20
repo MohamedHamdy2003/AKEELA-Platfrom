@@ -39,8 +39,8 @@ export class AdminRestaurantsController {
     const pagination = resolvePagination(query);
     const { items, total } = await this.restaurants.listForReview({
       activation_status: query.activation_status,
-      page: pagination.page,
-      per_page: pagination.per_page,
+      skip: pagination.skip,
+      take: pagination.take,
     });
     return {
       success: true,

@@ -4,12 +4,14 @@ import type { User } from '@akeela/portal/models';
 import {
   Confirm,
   ActivityBadge,
+  DetailSkeleton,
   Failure,
   Field,
   Notice,
   Pager,
   PageTitle,
   ResourceState,
+  TableSkeleton,
   useResource,
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
@@ -64,7 +66,7 @@ export function Users({
         onClose={() => setId(null)}
         details={
           <>
-            <ResourceState resource={detail}>
+            <ResourceState resource={detail} skeleton={<DetailSkeleton />}>
               {selected && (
                 <>
                   <h2>{selected.full_name}</h2>
@@ -216,6 +218,7 @@ export function Users({
         <ResourceState
           resource={resource}
           empty={!!resource.result && !resource.result.data.length}
+          skeleton={<TableSkeleton columns={6} />}
         >
           <section className="panel">
             <div className="table-scroll">

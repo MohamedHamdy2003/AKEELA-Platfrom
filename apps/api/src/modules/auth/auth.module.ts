@@ -8,6 +8,7 @@ import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { DeliveryModule } from '../delivery/delivery.module';
 import { AuthService } from './auth.service';
 import { AuthCryptoService } from './auth-crypto.service';
+import { AuthCleanupService } from './auth-cleanup.service';
 import { OtpMailService } from './otp-mail.service';
 import { AccessGuard } from './access.guard';
 import { AuthRateLimitGuard } from './auth-rate-limit.guard';
@@ -26,6 +27,7 @@ import { AdminUsersAuthController } from './admin-users-auth.controller';
   providers: [
     AuthService,
     AuthCryptoService,
+    AuthCleanupService,
     OtpMailService,
     AccessGuard,
     { provide: APP_GUARD, useExisting: AccessGuard },
@@ -40,8 +42,11 @@ export class AuthModule implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.users.registerProfileResolver((account) =>
-      this.auth.getProfileFor(account),
+    this.users.registerProfileResolver((account, manager) =>
+      this.auth.getProfileFor(account, manager),
+    );
+    this.users.registerBatchProfileResolver((accounts, manager) =>
+      this.auth.getProfilesFor(accounts, manager),
     );
   }
 }

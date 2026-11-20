@@ -552,6 +552,64 @@ test('Features 13-14: restaurant acceptance and assigned delivery', async (t) =>
       );
     },
   );
+  await t.test(
+    'status counts return accurate per-scope grouped totals and enforce role isolation',
+    async () => {
+      await api()
+        .get('/api/v1/admin/orders/counts')
+        .set('Authorization', auth(3))
+        .expect(403);
+      await api()
+        .get('/api/v1/delivery-company/orders/counts')
+        .set('Authorization', auth(5))
+        .expect(403);
+      const adminCounts = await api()
+        .get('/api/v1/admin/orders/counts')
+        .set('Authorization', auth(5))
+        .expect(200);
+      assert.deepEqual(Object.keys(adminCounts.body.data).sort(), [
+        'Accepted',
+        'Cancelled',
+        'Delivered',
+        'Failed',
+        'Pending',
+        'Picked_Up',
+        'Rejected',
+      ]);
+      const expectedTotal = Number(
+        (await db.query('SELECT count(*) FROM orders'))[0].count,
+      );
+      const summedAdmin = Object.values(
+        adminCounts.body.data as Record<string, number>,
+      ).reduce((acc, n) => acc + n, 0);
+      assert.equal(summedAdmin, expectedTotal);
+
+      const companyCounts = await api()
+        .get('/api/v1/delivery-company/orders/counts')
+        .set('Authorization', auth(3))
+        .expect(200);
+      const expectedCompany = Number(
+        (
+          await db.query('SELECT count(*) FROM orders WHERE company_id=$1', [
+            companies[0],
+          ])
+        )[0].count,
+      );
+      const summedCompany = Object.values(
+        companyCounts.body.data as Record<string, number>,
+      ).reduce((acc, n) => acc + n, 0);
+      assert.equal(summedCompany, expectedCompany);
+
+      const otherCompanyCounts = await api()
+        .get('/api/v1/delivery-company/orders/counts')
+        .set('Authorization', auth(4))
+        .expect(200);
+      const summedOther = Object.values(
+        otherCompanyCounts.body.data as Record<string, number>,
+      ).reduce((acc, n) => acc + n, 0);
+      assert.equal(summedOther, 0);
+    },
+  );
 });
 
 test('Realtime orders: authenticated role isolation, committed events, revocation and expiry', async () => {

@@ -23,6 +23,16 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 @Index('ix_orders_customer_created', ['customer_id', 'created_at', 'order_id'])
 @Index('ix_orders_rest_status', ['rest_id', 'status', 'created_at'])
 @Index('ix_orders_company_driver', ['company_id', 'driver_id'])
+@Index('ix_orders_status_created_id', ['status', 'created_at', 'order_id'])
+@Index('ix_orders_created_id', ['created_at', 'order_id'])
+@Index(
+  'ix_orders_company_status_created_id',
+  ['company_id', 'status', 'created_at', 'order_id'],
+  { where: 'company_id IS NOT NULL' },
+)
+@Index('ix_orders_picked_up_updated', ['updated_at'], {
+  where: "status = 'Picked_Up'",
+})
 @ForeignKey('customer_profiles', ['customer_id'], ['user_id'], {
   name: 'fk_orders_customer',
   onDelete: 'RESTRICT',

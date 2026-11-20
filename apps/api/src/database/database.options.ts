@@ -16,7 +16,12 @@ export function databaseOptions(
     dropSchema: false,
     migrationsRun: false,
     logging: false,
-    extra: { connectionTimeoutMillis: 5000, statement_timeout: 10000 },
+    extra: {
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+      statement_timeout: 10000,
+    },
     invalidWhereValuesBehavior: { null: 'throw', undefined: 'throw' },
   };
 }

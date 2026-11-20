@@ -9,6 +9,7 @@ import {
   Pager,
   PageTitle,
   ResourceState,
+  TableSkeleton,
   useResource,
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
@@ -118,6 +119,8 @@ export function Restaurants() {
                       className="restaurant-thumbnail"
                       src={item.profile.rest_image_url_mobile}
                       alt={item.profile.rest_title}
+                      loading="lazy"
+                      decoding="async"
                     />
                   )}
                 </div>
@@ -205,6 +208,7 @@ export function Restaurants() {
         <ResourceState
           resource={resource}
           empty={!!resource.result && !resource.result.data.length}
+          skeleton={<TableSkeleton columns={6} />}
         >
           <section className="panel">
             <div className="table-scroll">

@@ -56,6 +56,24 @@ export class CatalogService {
       await repo.update({ offer_id: id }, { offer_image_url: url });
     }
   }
+
+  async referencedImageUrls(): Promise<string[]> {
+    const [products, offers] = await Promise.all([
+      this.dataSource
+        .getRepository(Product)
+        .createQueryBuilder('p')
+        .select('p.prod_image_url', 'url')
+        .where('p.prod_image_url IS NOT NULL')
+        .getRawMany<{ url: string }>(),
+      this.dataSource
+        .getRepository(Offer)
+        .createQueryBuilder('o')
+        .select('o.offer_image_url', 'url')
+        .where('o.offer_image_url IS NOT NULL')
+        .getRawMany<{ url: string }>(),
+    ]);
+    return [...products, ...offers].map((row) => row.url);
+  }
   async saleSelection(
     restId: string,
     prodId: string | null,
@@ -63,56 +81,109 @@ export class CatalogService {
     addonIds: string[],
     manager: EntityManager,
   ) {
-    const product = prodId
-      ? await manager
-          .getRepository(Product)
-          .findOneBy({ rest_id: restId, prod_id: prodId })
-      : null;
-    const offer = offerId
-      ? await manager
-          .getRepository(Offer)
-          .findOneBy({ rest_id: restId, offer_id: offerId })
-      : null;
-    const category = product
+    const [result] = await this.saleSelections(
+      restId,
+      [{ prodId, offerId, addonIds }],
+      manager,
+    );
+    return result!;
+  }
+
+  async saleSelections(
+    restId: string,
+    requests: Array<{
+      prodId: string | null;
+      offerId: string | null;
+      addonIds: string[];
+    }>,
+    manager: EntityManager,
+  ) {
+    if (!requests.length) return [];
+    const prodIds = [
+      ...new Set(requests.map((r) => r.prodId).filter((v): v is string => !!v)),
+    ];
+    const offerIds = [
+      ...new Set(
+        requests.map((r) => r.offerId).filter((v): v is string => !!v),
+      ),
+    ];
+    const allAddonIds = [...new Set(requests.flatMap((r) => r.addonIds))];
+
+    const [products, offers, addonsList, linksList] = await Promise.all([
+      prodIds.length
+        ? manager
+            .getRepository(Product)
+            .findBy({ rest_id: restId, prod_id: In(prodIds) })
+        : Promise.resolve([] as Product[]),
+      offerIds.length
+        ? manager
+            .getRepository(Offer)
+            .findBy({ rest_id: restId, offer_id: In(offerIds) })
+        : Promise.resolve([] as Offer[]),
+      allAddonIds.length
+        ? manager
+            .getRepository(Addon)
+            .findBy({ rest_id: restId, addon_id: In(allAddonIds) })
+        : Promise.resolve([] as Addon[]),
+      prodIds.length && allAddonIds.length
+        ? manager.getRepository(ProductAddon).findBy({
+            rest_id: restId,
+            prod_id: In(prodIds),
+            addon_id: In(allAddonIds),
+          })
+        : Promise.resolve([] as ProductAddon[]),
+    ]);
+
+    const catIds = [...new Set(products.map((p) => p.cat_id))];
+    const categories = catIds.length
       ? await manager
           .getRepository(Category)
-          .findOneBy({ rest_id: restId, cat_id: product.cat_id })
-      : null;
+          .findBy({ rest_id: restId, cat_id: In(catIds) })
+      : [];
+
+    const productMap = new Map(products.map((p) => [p.prod_id, p]));
+    const offerMap = new Map(offers.map((o) => [o.offer_id, o]));
+    const categoryMap = new Map(categories.map((c) => [c.cat_id, c]));
+    const addonMap = new Map(addonsList.map((a) => [a.addon_id, a]));
+    const linkMap = new Map(
+      linksList.map((l) => [`${l.prod_id}:${l.addon_id}`, l]),
+    );
     const now = Date.now();
-    const item = product
-      ? {
-          name: product.prod_name,
-          price: product.price,
-          is_available: product.is_active && Boolean(category?.is_active),
-        }
-      : offer
+
+    return requests.map(({ prodId, offerId, addonIds }) => {
+      const product = prodId ? (productMap.get(prodId) ?? null) : null;
+      const offer = offerId ? (offerMap.get(offerId) ?? null) : null;
+      const category = product
+        ? (categoryMap.get(product.cat_id) ?? null)
+        : null;
+      const item = product
         ? {
-            name: offer.offer_title,
-            price: offer.real_price,
-            is_available:
-              offer.is_active &&
-              offer.starts_at.getTime() <= now &&
-              offer.expires_at.getTime() > now,
+            name: product.prod_name,
+            price: product.price,
+            is_available: product.is_active && Boolean(category?.is_active),
           }
-        : null;
-    const addons = [];
-    for (const addonId of addonIds) {
-      const addon = await manager
-        .getRepository(Addon)
-        .findOneBy({ rest_id: restId, addon_id: addonId });
-      const link = prodId
-        ? await manager
-            .getRepository(ProductAddon)
-            .findOneBy({ rest_id: restId, prod_id: prodId, addon_id: addonId })
-        : null;
-      addons.push({
-        addon_id: addonId,
-        name: addon?.addon_name ?? '',
-        price: addon?.addon_price ?? '0.00',
-        is_available: Boolean(addon?.is_active && link?.is_active),
+        : offer
+          ? {
+              name: offer.offer_title,
+              price: offer.real_price,
+              is_available:
+                offer.is_active &&
+                offer.starts_at.getTime() <= now &&
+                offer.expires_at.getTime() > now,
+            }
+          : null;
+      const addons = addonIds.map((addonId) => {
+        const addon = addonMap.get(addonId);
+        const link = prodId ? linkMap.get(`${prodId}:${addonId}`) : undefined;
+        return {
+          addon_id: addonId,
+          name: addon?.addon_name ?? '',
+          price: addon?.addon_price ?? '0.00',
+          is_available: Boolean(addon?.is_active && link?.is_active),
+        };
       });
-    }
-    return { item, addons };
+      return { item, addons };
+    });
   }
 
   async assertActiveRestaurant(userId: string): Promise<RestaurantProfile> {

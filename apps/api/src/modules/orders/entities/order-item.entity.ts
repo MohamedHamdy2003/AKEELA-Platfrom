@@ -13,6 +13,7 @@ import {
   { unique: true },
 )
 @Index('ix_order_items_order', ['rest_id', 'order_id'])
+@Index('ix_order_items_order_id', ['order_id', 'order_item_id'])
 @ForeignKey('orders', ['rest_id', 'order_id'], ['rest_id', 'order_id'], {
   name: 'fk_order_items_order',
   onDelete: 'RESTRICT',

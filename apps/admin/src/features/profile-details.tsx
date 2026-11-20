@@ -39,6 +39,8 @@ export function ProfileDetails({ user }: { user: User }) {
           className="profile-image"
           src={image}
           alt={user.role === 'Restaurant' ? 'صورة المطعم' : 'صورة العميل'}
+          loading="lazy"
+          decoding="async"
         />
       )}
       {user.role === 'Restaurant' && (

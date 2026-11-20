@@ -21,8 +21,10 @@ export interface RestaurantRegistration {
 
 export interface RestaurantListFilters {
   activation_status?: 'Pending' | 'Active' | 'Suspended';
-  page: number;
-  per_page: number;
+  page?: number;
+  per_page?: number;
+  skip?: number;
+  take?: number;
 }
 
 @Injectable()
@@ -150,6 +152,27 @@ export class RestaurantsService {
       .findOneBy({ user_id: userId });
   }
 
+  async profilesByUserIds(
+    userIds: string[],
+    manager = this.dataSource.manager,
+  ): Promise<Map<string, RestaurantProfile>> {
+    if (!userIds.length) return new Map();
+    const rows = await manager
+      .getRepository(RestaurantProfile)
+      .findBy({ user_id: In([...new Set(userIds)]) });
+    return new Map(rows.map((row) => [row.user_id, row]));
+  }
+
+  async referencedImageUrls(): Promise<string[]> {
+    const rows = await this.dataSource
+      .getRepository(RestaurantProfile)
+      .createQueryBuilder('r')
+      .select('r.rest_image_url_mobile', 'url')
+      .where('r.rest_image_url_mobile IS NOT NULL')
+      .getRawMany<{ url: string }>();
+    return rows.map((row) => row.url);
+  }
+
   async profileById(
     restId: string,
     manager = this.dataSource.manager,
@@ -176,30 +199,30 @@ export class RestaurantsService {
         activation_status: filters.activation_status,
       });
     }
-    const total = await qb.getCount();
-    const profiles = await qb
-      .skip((filters.page - 1) * filters.per_page)
-      .take(filters.per_page)
-      .getMany();
+    const take = filters.take ?? filters.per_page ?? 20;
+    const skip = filters.skip ?? ((filters.page ?? 1) - 1) * take;
+    const [profiles, total] = await qb.skip(skip).take(take).getManyAndCount();
 
-    const items = await Promise.all(
-      profiles.map(async (p) => {
-        const owner = await this.users.byId(p.user_id, manager);
-        return {
-          owner: owner
-            ? {
-                user_id: owner.user_id,
-                full_name: owner.full_name,
-                email: owner.email,
-                phone: owner.phone_number,
-                email_verified_at: owner.email_verified_at,
-                is_active: owner.is_active,
-              }
-            : null,
-          profile: p,
-        };
-      }),
+    const owners = await this.users.byIds(
+      profiles.map((p) => p.user_id),
+      manager,
     );
+    const items = profiles.map((p) => {
+      const owner = owners.get(p.user_id) ?? null;
+      return {
+        owner: owner
+          ? {
+              user_id: owner.user_id,
+              full_name: owner.full_name,
+              email: owner.email,
+              phone: owner.phone_number,
+              email_verified_at: owner.email_verified_at,
+              is_active: owner.is_active,
+            }
+          : null,
+        profile: p,
+      };
+    });
     return { items, total };
   }
 

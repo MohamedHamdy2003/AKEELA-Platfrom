@@ -93,6 +93,13 @@ export class OrderEventsGateway
   }
   handleConnection(socket: Socket) {
     const context = socket.data.connection as Connection;
+    if (context.actor.role === 'Admin') void socket.join('admin');
+    else if (context.actor.role === 'Customer')
+      void socket.join(`customer:${context.actor.userId}`);
+    else if (context.actor.role === 'Restaurant' && context.restId)
+      void socket.join(`rest:${context.restId}`);
+    else if (context.actor.role === 'Delivery_Company' && context.companyId)
+      void socket.join(`company:${context.companyId}`);
     const expiry = setTimeout(
       () => socket.disconnect(true),
       Math.max(0, Math.min(context.expiresAt - Date.now(), 2147483647)),
@@ -136,6 +143,8 @@ export class OrderEventsGateway
     );
   }
   async notify(event: OrderEvent, order: Order): Promise<void> {
+    const namespace = this.namespace;
+    if (!namespace) return;
     const payload = {
       order_id: order.order_id,
       status: order.status,
@@ -143,8 +152,22 @@ export class OrderEventsGateway
       driver_id: order.driver_id,
       updated_at: cairoTimestamp(order.updated_at),
     };
+    const rooms = [
+      'admin',
+      `customer:${order.customer_id}`,
+      `rest:${order.rest_id}`,
+      ...(order.company_id ? [`company:${order.company_id}`] : []),
+    ];
+    const targetIds = new Set<string>();
+    const adapterRooms = namespace.adapter.rooms;
+    for (const room of rooms) {
+      const members = adapterRooms.get(room);
+      if (members) for (const id of members) targetIds.add(id);
+    }
     await Promise.allSettled(
-      [...(this.namespace?.sockets.values() ?? [])].map(async (socket) => {
+      [...targetIds].map(async (socketId) => {
+        const socket = namespace.sockets.get(socketId);
+        if (!socket) return;
         const bound = socket.data.connection as Connection | undefined;
         if (!bound || !this.canRead(bound, order)) return;
         try {

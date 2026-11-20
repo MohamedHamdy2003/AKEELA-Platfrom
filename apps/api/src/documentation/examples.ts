@@ -390,6 +390,15 @@ export const responseExamples: Record<string, unknown> = {
     driver_id: null,
     updated_at: '2026-11-12T12:00:00.000+02:00',
   },
+  OrderStatusCounts: {
+    Pending: 3,
+    Accepted: 2,
+    Picked_Up: 1,
+    Delivered: 14,
+    Rejected: 1,
+    Cancelled: 2,
+    Failed: 0,
+  },
   PublicProductDetails: {
     prod_id: '200',
     cat_id: '100',

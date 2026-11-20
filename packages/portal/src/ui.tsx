@@ -1,5 +1,6 @@
 import { LogoutConfirmation } from './logout-confirmation';
 import {
+  Component,
   useEffect,
   useRef,
   useState,
@@ -25,6 +26,7 @@ import {
   UserRoundCog,
   Home,
   LogOut,
+  MapPin,
   Menu,
   RefreshCw,
   Truck,
@@ -229,10 +231,94 @@ export function Pager({
 }
 export function Loading() {
   return (
-    <div className="skeleton" aria-label="جار التحميل" role="status">
-      <div />
-      <div />
-      <div />
+    <div
+      className="skeleton"
+      aria-label="جار التحميل"
+      aria-busy="true"
+      role="status"
+    >
+      <div className="sk-bar sk-title" />
+      <div className="sk-bar sk-line" />
+      <div className="sk-bar sk-line sk-short" />
+    </div>
+  );
+}
+export function TableSkeleton({
+  rows = 6,
+  columns = 5,
+}: {
+  rows?: number;
+  columns?: number;
+}) {
+  return (
+    <div
+      className="panel portal-table-skeleton"
+      aria-label="جار التحميل"
+      aria-busy="true"
+      role="status"
+    >
+      <div className="table-scroll">
+        <table aria-hidden="true">
+          <thead>
+            <tr>
+              {Array.from({ length: columns }, (_, col) => (
+                <th key={col}>
+                  <span className="sk-bar sk-head" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rows }, (_, row) => (
+              <tr key={row}>
+                {Array.from({ length: columns }, (_, col) => (
+                  <td key={col}>
+                    <span
+                      className={
+                        'sk-bar ' +
+                        (col === columns - 1
+                          ? 'sk-action'
+                          : col === 2
+                            ? 'sk-pill'
+                            : (row + col) % 2 === 0
+                              ? 'sk-cell'
+                              : 'sk-cell sk-narrow')
+                      }
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+export function DetailSkeleton() {
+  return (
+    <div
+      className="portal-detail-skeleton"
+      aria-label="جار التحميل"
+      aria-busy="true"
+      role="status"
+    >
+      <div className="sk-row-between">
+        <span className="sk-bar sk-id" />
+        <span className="sk-bar sk-pill" />
+      </div>
+      <div className="sk-bar sk-line sk-short" />
+      <div className="sk-section">
+        <div className="sk-bar sk-subhead" />
+        <div className="sk-bar sk-line" />
+        <div className="sk-bar sk-line sk-medium" />
+      </div>
+      <div className="sk-section">
+        <div className="sk-bar sk-subhead" />
+        <div className="sk-bar sk-line" />
+        <div className="sk-bar sk-line sk-short" />
+      </div>
+      <div className="sk-bar sk-total" />
     </div>
   );
 }
@@ -272,6 +358,7 @@ export function ResourceState({
   resource,
   children,
   empty = false,
+  skeleton,
 }: {
   resource: {
     result: unknown;
@@ -281,10 +368,12 @@ export function ResourceState({
   };
   children: ReactNode;
   empty?: boolean;
+  skeleton?: ReactNode;
 }) {
   if (resource.error)
     return <Failure error={resource.error} retry={resource.reload} />;
-  if (!resource.result && resource.loading) return <Loading />;
+  if (!resource.result && resource.loading)
+    return <>{skeleton ?? <Loading />}</>;
   if (empty)
     return (
       <div className="empty">
@@ -930,6 +1019,42 @@ export function AuthPage({
     </div>
   );
 }
+export class ErrorBoundary extends Component<
+  { children: ReactNode; theme: 'admin' | 'delivery' },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <main
+        className="portal session-recovery"
+        data-portal={this.props.theme}
+        aria-label="خطأ غير متوقع"
+      >
+        <section className="session-recovery-panel">
+          <h1>تعذّر عرض الصفحة</h1>
+          <p className="muted">
+            حدث خطأ غير متوقع أثناء عرض الواجهة. أعد تحميل الصفحة للمتابعة.
+          </p>
+          <button
+            className="button primary"
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            إعادة تحميل التطبيق
+          </button>
+        </section>
+      </main>
+    );
+  }
+}
+function googleMapsUrl(latitude: string, longitude: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${latitude},${longitude}`)}`;
+}
 export function OrderFacts({
   order,
   actions,
@@ -949,9 +1074,25 @@ export function OrderFacts({
           <h3>نقطة الاستلام</h3>
           <strong>{order.pickup.rest_title}</strong>
           <p>{order.pickup.rest_address}</p>
-          <bdi>
-            {order.pickup.latitude}, {order.pickup.longitude}
-          </bdi>
+          <div className="coords-row">
+            <bdi>
+              {order.pickup.latitude}, {order.pickup.longitude}
+            </bdi>
+            <a
+              className="map-link"
+              href={googleMapsUrl(
+                order.pickup.latitude,
+                order.pickup.longitude,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="فتح نقطة الاستلام على خرائط جوجل"
+              title="فتح على خرائط جوجل"
+            >
+              <MapPin size={13} aria-hidden="true" />
+              الخريطة
+            </a>
+          </div>
         </section>
       )}
       <section className="detail-section">
@@ -980,9 +1121,25 @@ export function OrderFacts({
       <section className="detail-section">
         <h3>عنوان التوصيل</h3>
         <p>{order.customer_address}</p>
-        <bdi>
-          {order.delivery_latitude}, {order.delivery_longitude}
-        </bdi>
+        <div className="coords-row">
+          <bdi>
+            {order.delivery_latitude}, {order.delivery_longitude}
+          </bdi>
+          <a
+            className="map-link"
+            href={googleMapsUrl(
+              order.delivery_latitude,
+              order.delivery_longitude,
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="فتح عنوان التوصيل على خرائط جوجل"
+            title="فتح على خرائط جوجل"
+          >
+            <MapPin size={13} aria-hidden="true" />
+            الخريطة
+          </a>
+        </div>
         {order.notes && <p className="order-note">{order.notes}</p>}
       </section>
       {actions}

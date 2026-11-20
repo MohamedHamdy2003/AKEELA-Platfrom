@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { lazy, Suspense, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import type { Profile, User } from '../lib/models';
 import { useResource } from '../lib/use-resource';
@@ -13,8 +13,13 @@ import {
   PageHeading,
   TextArea,
 } from '../components/ui';
-import { LocationMap } from '../components/location-map';
 import { ImagePicker } from './catalog';
+
+const LocationMap = lazy(() =>
+  import('../components/location-map').then((m) => ({
+    default: m.LocationMap,
+  })),
+);
 
 export function RestaurantProfile({
   canManage,
@@ -151,11 +156,19 @@ function ProfileForm({
               value={description}
               onChange={setDescription}
             />
-            <LocationMap
-              coordinates={coordinates}
-              onChoose={setCoordinates}
-              editable={canManage && !busy}
-            />
+            <Suspense
+              fallback={
+                <div className="location-picker full" aria-busy="true">
+                  <div className="location-map skel-block" />
+                </div>
+              }
+            >
+              <LocationMap
+                coordinates={coordinates}
+                onChoose={setCoordinates}
+                editable={canManage && !busy}
+              />
+            </Suspense>
             <Field
               label="خط الطول"
               name="longitude"

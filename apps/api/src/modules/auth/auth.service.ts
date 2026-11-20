@@ -540,14 +540,52 @@ export class AuthService {
     return this.userData(account);
   }
 
-  async getProfileFor(account: Account) {
+  async getProfileFor(account: Account, manager?: EntityManager) {
     return account.role === 'Customer'
-      ? await this.customers.profile(account.user_id)
+      ? await this.customers.profile(account.user_id, manager)
       : account.role === 'Restaurant'
-        ? await this.restaurants.profile(account.user_id)
+        ? await this.restaurants.profile(account.user_id, manager)
         : account.role === 'Delivery_Company'
-          ? await this.delivery.profile(account.user_id)
-          : await this.users.adminProfile(account.user_id);
+          ? await this.delivery.profile(account.user_id, manager)
+          : await this.users.adminProfile(account.user_id, manager);
+  }
+
+  async getProfilesFor(
+    accounts: Account[],
+    manager?: EntityManager,
+  ): Promise<Map<string, unknown>> {
+    const customerIds: string[] = [];
+    const restaurantIds: string[] = [];
+    const companyIds: string[] = [];
+    const adminIds: string[] = [];
+    for (const account of accounts) {
+      if (account.role === 'Customer') customerIds.push(account.user_id);
+      else if (account.role === 'Restaurant')
+        restaurantIds.push(account.user_id);
+      else if (account.role === 'Delivery_Company')
+        companyIds.push(account.user_id);
+      else adminIds.push(account.user_id);
+    }
+    const [customers, restaurants, companies, admins] = await Promise.all([
+      this.customers.profilesByUserIds(customerIds, manager),
+      this.restaurants.profilesByUserIds(restaurantIds, manager),
+      this.delivery.profilesByUserIds(companyIds, manager),
+      this.users.adminProfilesByIds(adminIds, manager),
+    ]);
+    const result = new Map<string, unknown>();
+    for (const account of accounts) {
+      result.set(
+        account.user_id,
+        account.role === 'Customer'
+          ? (customers.get(account.user_id) ?? null)
+          : account.role === 'Restaurant'
+            ? (restaurants.get(account.user_id) ?? null)
+            : account.role === 'Delivery_Company'
+              ? (companies.get(account.user_id) ?? null)
+              : (admins.get(account.user_id) ?? null),
+      );
+    }
+    return result;
   }
 
   async userData(account: Account) {

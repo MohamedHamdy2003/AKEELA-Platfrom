@@ -4,7 +4,7 @@ import { UsersService } from '../users/users.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 import { DeliveryService } from '../delivery/delivery.service';
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
 import { CartService } from '../cart/cart.service';
 import {
@@ -12,7 +12,7 @@ import {
   ListOrdersQuery,
   OperationalOrdersQuery,
 } from './orders.dto';
-import { Order } from './entities/order.entity';
+import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderItemAddon } from './entities/order-item-addon.entity';
 import { paginationMeta, resolvePagination } from '../users/admin.dto';
@@ -65,13 +65,22 @@ export class OrdersService {
     const rows = await m
       .getRepository(OrderItem)
       .find({ where: { order_id: orderId }, order: { order_item_id: 'ASC' } });
-    const items = [];
-    for (const item of rows) {
-      const addons = await m.getRepository(OrderItemAddon).find({
-        where: { order_item_id: item.order_item_id },
-        order: { order_item_addon_id: 'ASC' },
-      });
-      items.push({
+    const itemIds = rows.map((row) => row.order_item_id);
+    const allAddons = itemIds.length
+      ? await m.getRepository(OrderItemAddon).find({
+          where: { order_item_id: In(itemIds) },
+          order: { order_item_addon_id: 'ASC' },
+        })
+      : [];
+    const addonsByItem = new Map<string, OrderItemAddon[]>();
+    for (const addon of allAddons) {
+      const list = addonsByItem.get(addon.order_item_id);
+      if (list) list.push(addon);
+      else addonsByItem.set(addon.order_item_id, [addon]);
+    }
+    const items = rows.map((item) => {
+      const addons = addonsByItem.get(item.order_item_id) ?? [];
+      return {
         order_item_id: item.order_item_id,
         prod_id: item.prod_id,
         offer_id: item.offer_id,
@@ -87,8 +96,8 @@ export class OrdersService {
           quantity: a.quantity,
           subtotal: a.subtotal,
         })),
-      });
-    }
+      };
+    });
     return {
       ...this.summary(order),
       customer_id: order.customer_id,
@@ -262,6 +271,29 @@ export class OrdersService {
       items: rows.map((o) => this.summary(o)),
       meta: paginationMeta(total, page.page, page.per_page),
     };
+  }
+  async operationalCounts(
+    actor: AuthActor,
+  ): Promise<Record<OrderStatus, number>> {
+    const scope = await this.scope(actor, this.db.manager);
+    const rows = await this.scopedQuery(scope, this.db.manager)
+      .select('o.status', 'status')
+      .addSelect('COUNT(*)::int', 'count')
+      .groupBy('o.status')
+      .getRawMany<{ status: OrderStatus; count: number }>();
+    const counts: Record<OrderStatus, number> = {
+      Pending: 0,
+      Accepted: 0,
+      Picked_Up: 0,
+      Delivered: 0,
+      Rejected: 0,
+      Cancelled: 0,
+      Failed: 0,
+    };
+    for (const row of rows) {
+      if (row.status in counts) counts[row.status] = Number(row.count);
+    }
+    return counts;
   }
   async operationalDetails(actor: AuthActor, id: string) {
     const scope = await this.scope(actor, this.db.manager);

@@ -169,9 +169,16 @@ export function FieldErrors({ error }: { error: unknown }) {
 }
 export function Loading() {
   return (
-    <div className="state" role="status">
-      <LoaderCircle className="spin" size={30} />
-      <p>جارٍ التحميل…</p>
+    <div
+      className="panel-skeleton"
+      role="status"
+      aria-label="جارٍ التحميل"
+      aria-busy="true"
+    >
+      <div className="skeleton-line sk-head" />
+      <div className="skeleton-line" />
+      <div className="skeleton-line sk-mid" />
+      <div className="skeleton-line sk-short" />
     </div>
   );
 }
@@ -341,6 +348,8 @@ export function Picture({
       src={src}
       alt={alt}
       className={'picture ' + className}
+      loading="lazy"
+      decoding="async"
       onError={() => setFailed(true)}
     />
   ) : (

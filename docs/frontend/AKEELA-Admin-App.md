@@ -81,6 +81,7 @@ API paths omit `/api/v1`. Use a configured full API base URL; the backend domain
 | Method | API                             | Screen action                                                                  |
 | ------ | ------------------------------- | ------------------------------------------------------------------------------ |
 | GET    | `/admin/orders`                 | List all orders with pagination and optional `status`, `date_from`, `date_to`. |
+| GET    | `/admin/orders/counts`          | Fetch order counts grouped by status for the dashboard metrics strip.          |
 | GET    | `/admin/orders/{order_id}`      | Read saved order details for support.                                          |
 | POST   | `/admin/orders/{order_id}/fail` | Mark Accepted/Picked_Up as Failed. No body.                                    |
 

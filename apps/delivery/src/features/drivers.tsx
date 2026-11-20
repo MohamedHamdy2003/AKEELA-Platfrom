@@ -9,6 +9,7 @@ import {
   Pager,
   PageTitle,
   ResourceState,
+  TableSkeleton,
   useResource,
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
@@ -157,6 +158,7 @@ export function Drivers() {
       <ResourceState
         resource={resource}
         empty={!!resource.result && !resource.result.data.length}
+        skeleton={<TableSkeleton columns={6} />}
       >
         <section className="panel">
           <div className="table-scroll">

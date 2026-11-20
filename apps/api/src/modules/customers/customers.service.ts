@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { CustomerProfile } from './entities/customer-profile.entity';
 import { CustomerAddress } from './entities/customer-address.entity';
 import {
@@ -55,6 +55,17 @@ export class CustomersService {
       .findOneBy({ user_id: userId });
   }
 
+  async profilesByUserIds(
+    userIds: string[],
+    manager = this.dataSource.manager,
+  ): Promise<Map<string, CustomerProfile>> {
+    if (!userIds.length) return new Map();
+    const rows = await manager
+      .getRepository(CustomerProfile)
+      .findBy({ user_id: In([...new Set(userIds)]) });
+    return new Map(rows.map((row) => [row.user_id, row]));
+  }
+
   async setAvatar(
     userId: string,
     url: string | null,
@@ -63,6 +74,16 @@ export class CustomersService {
     await manager
       .getRepository(CustomerProfile)
       .update({ user_id: userId }, { cus_avatar_url: url });
+  }
+
+  async referencedAvatarUrls(): Promise<string[]> {
+    const rows = await this.dataSource
+      .getRepository(CustomerProfile)
+      .createQueryBuilder('c')
+      .select('c.cus_avatar_url', 'url')
+      .where('c.cus_avatar_url IS NOT NULL')
+      .getRawMany<{ url: string }>();
+    return rows.map((row) => row.url);
   }
 
   async listAddresses(

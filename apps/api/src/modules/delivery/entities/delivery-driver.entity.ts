@@ -11,6 +11,11 @@ import {
 @Index('uq_delivery_drivers_company_driver', ['company_id', 'driver_id'], {
   unique: true,
 })
+@Index('ix_delivery_drivers_company_active_id', [
+  'company_id',
+  'is_active',
+  'driver_id',
+])
 @ForeignKey('delivery_company_profiles', ['company_id'], ['company_id'], {
   name: 'fk_delivery_drivers_company',
   onDelete: 'RESTRICT',

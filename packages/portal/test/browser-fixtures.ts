@@ -136,7 +136,23 @@ export async function portalFixture(
       };
     else if (path === '/me') data = user;
     else if (path === '/auth/logout') data = null;
-    else if (path.endsWith('/orders')) {
+    else if (path.endsWith('/orders/counts')) {
+      const counts = {
+        Pending: 0,
+        Accepted: 0,
+        Picked_Up: 0,
+        Delivered: 0,
+        Rejected: 0,
+        Cancelled: 0,
+        Failed: 0,
+      };
+      for (const order of orders) {
+        if (order.status in counts) {
+          counts[order.status as keyof typeof counts] += 1;
+        }
+      }
+      data = counts;
+    } else if (path.endsWith('/orders')) {
       const list = orders.filter(
         (order) =>
           !url.searchParams.get('status') ||

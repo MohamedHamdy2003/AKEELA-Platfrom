@@ -30,6 +30,10 @@ export class AdminOrdersController {
     const result = await this.orders.operationalList(this.actor(a), query);
     return { ...reply(result.items), meta: result.meta };
   }
+  @Get('counts')
+  async counts(@CurrentActor() a: AuthActor) {
+    return reply(await this.orders.operationalCounts(this.actor(a)));
+  }
   @Get(':order_id')
   async details(@CurrentActor() a: AuthActor, @Param('order_id') id: string) {
     return reply(await this.orders.operationalDetails(this.actor(a), id));

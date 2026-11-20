@@ -80,6 +80,7 @@ export class PaginationQuery {
   @Type(() => Number)
   @IsInt({ message: 'offset must be a whole number.' })
   @Min(0, { message: 'offset must be at least 0.' })
+  @Max(1000000, { message: 'offset is too large.' })
   offset?: number;
 }
 

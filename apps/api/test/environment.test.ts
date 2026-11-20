@@ -93,6 +93,12 @@ test('database options prevent automatic schema changes and unsafe TLS', () => {
     null: 'throw',
     undefined: 'throw',
   });
+  assert.deepEqual(options.extra, {
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+    statement_timeout: 10000,
+  });
 });
 
 test('default delivery company is optional and validates BIGINT strings without precision loss', () => {
