@@ -1086,9 +1086,11 @@ export function OrderFacts({
               )}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="فتح نقطة الاستلام على خرائط جوجل"
+              title="فتح على خرائط جوجل"
             >
               <MapPin size={13} aria-hidden="true" />
-              فتح على الخريطة
+              الخريطة
             </a>
           </div>
         </section>
@@ -1131,9 +1133,11 @@ export function OrderFacts({
             )}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="فتح عنوان التوصيل على خرائط جوجل"
+            title="فتح على خرائط جوجل"
           >
             <MapPin size={13} aria-hidden="true" />
-            فتح على الخريطة
+            الخريطة
           </a>
         </div>
         {order.notes && <p className="order-note">{order.notes}</p>}
