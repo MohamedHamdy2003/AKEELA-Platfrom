@@ -50,6 +50,23 @@ import {
   type User,
 } from './models';
 
+export function ActivityBadge({
+  active,
+  activeLabel = 'نشط',
+  inactiveLabel = 'غير نشط',
+}: {
+  active: boolean;
+  activeLabel?: string;
+  inactiveLabel?: string;
+}) {
+  return (
+    <span className="activity-badge" data-active={active}>
+      <span aria-hidden="true" />
+      {active ? activeLabel : inactiveLabel}
+    </span>
+  );
+}
+
 export function money(value: string) {
   const [whole, fraction = '00'] = value.split('.');
   return (

@@ -12,7 +12,8 @@
     "./ui": "./src/ui.tsx",
     "./logout-confirmation": "./src/logout-confirmation.tsx",
     "./styles.css": "./src/styles.css",
-    "./screens": "./src/screens.tsx"
+    "./screens": "./src/screens.tsx",
+    "./detail-workspace": "./src/detail-workspace.tsx"
   },
   "dependencies": {
     "socket.io-client": "4.8.4",

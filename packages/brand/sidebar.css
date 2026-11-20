@@ -193,3 +193,40 @@
     transition: none !important;
   }
 }
+
+.portal[data-portal='admin'] .sidebar {
+  background: #122d29;
+  border-left: 1px solid rgb(255 255 255 / 8%);
+}
+.portal[data-portal='admin'] .sidebar nav button {
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: #b9cec8;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+.portal[data-portal='admin'] .sidebar nav button:hover {
+  background: rgb(255 255 255 / 6%);
+  color: #fff;
+}
+.portal[data-portal='admin'] .sidebar nav button.active {
+  background: #24453c;
+  border-color: rgb(185 160 106 / 30%);
+  color: #fff;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 8%);
+}
+.portal[data-portal='admin'] .sidebar nav button.active svg {
+  color: #e3c88e;
+}
+.portal[data-portal='admin'] .sidebar nav button.active:after {
+  height: 18px;
+  right: 6px;
+  width: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal[data-portal='admin'] .sidebar nav button {
+    transition: none;
+  }
+}

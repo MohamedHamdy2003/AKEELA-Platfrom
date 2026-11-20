@@ -73,7 +73,7 @@ async function seedRestaurants(
     const password = `Demo8!${randomBytes(24).toString('base64url')}`;
     const owner = await users.save(
       users.create({
-        full_name: `حساب تجريبي - ${fixture.title}`,
+        full_name: fixture.ownerName,
         email,
         phone_number: phone,
         password_hash: await crypto.hashPassword(password),
@@ -171,14 +171,45 @@ async function restrictWindowsReportFolder(folder: string): Promise<void> {
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  if (args.length > 1 || (args.length === 1 && args[0] !== '--report-only')) {
+  if (
+    args.length > 1 ||
+    (args.length === 1 &&
+      !['--report-only', '--refresh-demo-names'].includes(args[0]!))
+  ) {
     throw new DemoSetupError(
-      'Usage: npm run seed:demo-restaurants [-- --report-only]',
+      'Usage: npm run seed:demo-restaurants [-- --report-only|--refresh-demo-names]',
     );
   }
   loadEnv({ quiet: true });
   const settings = localSettings();
   const db = new DataSource(databaseOptions(settings));
+  if (args[0] === '--refresh-demo-names') {
+    try {
+      await db.initialize();
+      const changed = await db.transaction(async (manager) => {
+        await manager.query('SELECT pg_advisory_xact_lock(1794520001)');
+        let count = 0;
+        for (const fixture of demoRestaurants) {
+          const result = await manager.getRepository(User).update(
+            {
+              email: `${fixture.slug}@restaurants.akeela.test`,
+              role: 'Restaurant',
+              full_name: `حساب تجريبي - ${fixture.title}`,
+            },
+            { full_name: fixture.ownerName },
+          );
+          count += result.affected ?? 0;
+        }
+        return count;
+      });
+      console.log(
+        `Updated ${changed} local demo owner names. Login details and custom names are unchanged.`,
+      );
+    } finally {
+      if (db.isInitialized) await db.destroy();
+    }
+    return;
+  }
   const crypto = new AuthCryptoService(
     new ConfigService<Environment, true>(settings),
   );

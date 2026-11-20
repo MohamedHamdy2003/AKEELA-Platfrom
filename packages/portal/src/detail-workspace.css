@@ -4,6 +4,7 @@
   grid-template-columns: minmax(0, 1fr) 0px;
   gap: 0;
   align-items: start;
+  overflow-anchor: none;
   transition:
     grid-template-columns 280ms cubic-bezier(0.16, 1, 0.3, 1),
     column-gap 280ms ease;
@@ -31,7 +32,6 @@
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   border-radius: 16px;
-  border-top: 3px solid var(--p-accent, #155c47);
   box-shadow: 0 8px 28px rgb(19 42 38 / 5%);
   animation: admin-detail-enter 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -70,7 +70,7 @@
 }
 .admin-detail-close:hover {
   color: var(--p-accent);
-  background: #edf3ef;
+  background: var(--p-accent-soft);
 }
 .admin-detail-sheet .form-grid {
   grid-template-columns: minmax(0, 1fr);

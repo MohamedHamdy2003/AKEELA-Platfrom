@@ -1,0 +1,27 @@
+.activity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border: 1px solid rgb(190 45 58 / 16%);
+  border-radius: 8px;
+  background: rgb(190 45 58 / 8%);
+  color: #a32736;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.activity-badge[data-active='true'] {
+  border-color: rgb(20 121 77 / 18%);
+  background: rgb(20 121 77 / 9%);
+  color: #126e45;
+}
+.activity-badge > span {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: currentColor;
+}

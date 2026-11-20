@@ -41,6 +41,8 @@ For the local demo catalog, run `npm run seed:demo-restaurants` after migrations
 
 The command prints the path to a private local CSV with every account's role, email and status. That first export records the generated passwords for newly created demo accounts. Save it privately. Use `npm run seed:demo-restaurants -- --report-only` to refresh the account list without changing any accounts. Existing passwords stay hashed, and repeat seeding preserves existing accounts.
 
+Use `npm run seed:demo-restaurants -- --refresh-demo-names` to replace only the five original demo owner labels with natural sample names. Custom names, credentials and profile states stay unchanged. This command is local-only and creates no accounts. Sample contacts remain synthetic to avoid using real people's contact information.
+
 Swagger: `http://localhost:3000/api/v1/docs`. OpenAPI JSON: `http://localhost:3000/api/v1/docs-json`. All 81 REST endpoints include input/response schemas, examples, JWT authorization and mobile integration rules. See [SWAGGER.md](docs/SWAGGER.md). Try it out sends real requests to the selected API.
 
 Swagger has four role views: Customer, Restaurant, Admin and Delivery Company, each with its own feature groups. Use the top selector or `/api/v1/docs/customer`, `/restaurant`, `/admin` and `/delivery-company` under the same docs prefix. The full JSON remains unchanged for existing imports.

@@ -3,6 +3,7 @@ import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { query } from '@akeela/portal/api';
 import type { RestaurantReview } from '@akeela/portal/models';
 import {
+  ActivityBadge,
   Failure,
   Field,
   Pager,
@@ -136,7 +137,7 @@ export function Restaurants() {
                   </p>
                   <div className="account-meta">
                     <span>
-                      الحساب {item.owner?.is_active ? 'نشط' : 'غير نشط'}
+                      الحساب <ActivityBadge active={!!item.owner?.is_active} />
                     </span>
                   </div>
                 </div>
@@ -226,7 +227,13 @@ export function Restaurants() {
                           {labels[row.profile.activation_status]}
                         </span>
                       </td>
-                      <td>{row.profile.is_active ? 'مفتوح' : 'متوقف'}</td>
+                      <td>
+                        <ActivityBadge
+                          active={row.profile.is_active}
+                          activeLabel="مفتوح"
+                          inactiveLabel="متوقف"
+                        />
+                      </td>
                       <td>
                         <button
                           className="button compact"

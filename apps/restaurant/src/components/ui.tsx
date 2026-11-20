@@ -277,11 +277,19 @@ export function Badge({ status }: { status: OrderStatus }) {
     </span>
   );
 }
-export function Activity({ active }: { active: boolean }) {
+export function Activity({
+  active,
+  activeLabel = 'مفعّل',
+  inactiveLabel = 'متوقف',
+}: {
+  active: boolean;
+  activeLabel?: string;
+  inactiveLabel?: string;
+}) {
   return (
-    <span className={'activity ' + (active ? 'active' : '')}>
-      <span />
-      {active ? 'مفعّل' : 'متوقف'}
+    <span className="activity-badge" data-active={active}>
+      <span aria-hidden="true" />
+      {active ? activeLabel : inactiveLabel}
     </span>
   );
 }
