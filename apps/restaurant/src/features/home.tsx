@@ -11,6 +11,7 @@ import {
 import { useResource } from '../lib/use-resource';
 import type { Dashboard, OrderSummary, Profile } from '../lib/models';
 import {
+  Activity,
   Empty,
   Failure,
   TableSkeleton,
@@ -131,7 +132,14 @@ export function Home({
           >
             <span />
           </button>
-          {profile.is_active ? 'الخدمة مفعّلة' : 'الخدمة متوقفة'}
+          <span>
+            الخدمة{' '}
+            <Activity
+              active={profile.is_active}
+              activeLabel="مفعّلة"
+              inactiveLabel="متوقفة"
+            />
+          </span>
           <button className="text-button" onClick={() => navigate('profile')}>
             إدارة المطعم
           </button>

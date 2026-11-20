@@ -12,6 +12,7 @@
     "./icon.png": "./assets/icon.png",
     "./icon.webp": "./assets/icon.webp",
     "./botanical.png": "./assets/botanical.png",
-    "./botanical.webp": "./assets/botanical.webp"
+    "./botanical.webp": "./assets/botanical.webp",
+    "./activity.css": "./activity.css"
   }
 }
