@@ -24,6 +24,8 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
+- **Production release: Cross-portal UX polish & design consistency (2026-11-20)**: [Release 44806351358](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/44806351358) deployed `main` commit `c2f5542` via PR #50. Verify passed in 7m11s (repo, API, integration, 77 Playwright E2E scenarios across all 3 portals, production container smoke); 4 Docker images published to GHCR in 1m40s; VPS deployment completed in 1m8s. Live public endpoints (`api/health/live`, `api/health/ready`, `admin`, `restaurant`, `delivery`) all verified HTTP 200. Work now returns to dev-only policy.
+
 - Local demo setup adds five approved and active restaurant profiles with synthetic owner accounts using `npm run seed:demo-restaurants`. The command reports all local accounts to a private CSV and saves generated demo passwords only when it creates those accounts. Repeat runs preserve existing credentials and profile states. See the [local setup guide](../README.md#start-locally).
 
 - **Production release: Order lifecycle, auto-deliver scheduler & UI refinements (2026-11-20)**: [Release 44628147728](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/44628147728) deployed `main` commit `8432bd6` via PR #43. CI verification (repo, API, integration, E2E Playwright across all 3 portals, and full container production smoke) passed in 5m49s; 4 Docker images built and published to GHCR in 1m50s; SSH release deployment to the Hostinger VPS completed in 1m7s. Live verification confirmed all public endpoints healthy (HTTP 200 on api liveness/readiness, admin, restaurant, and delivery portals). Work now returns to dev-only policy.
