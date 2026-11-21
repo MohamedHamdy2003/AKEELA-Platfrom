@@ -6,6 +6,8 @@
 
 Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.
 
+Current one-time owner request (2026-11-21): upgrade the Admin dashboard Home (`نظرة عامة`) with executive analytics backed by `GET /api/v1/admin/analytics?range=today|7d|30d|90d|all` (KPIs with previous-period growth comparison, status breakdown donut, Cairo daily trend chart, 24-hour peak-hours chart, top/high-rejection restaurant leaderboards, top-selling items, live operational alerts, and platform asset totals), then promote from `dev` to `main` and deploy to the VPS server after green verification. Later work returns to dev-only policy.
+
 Current one-time owner request (2026-11-21): promote the completed `MailProvider` abstraction and multi-provider SMTP failover (`SMTP_FALLBACK_*` / `SMTP_FALLBACK_2_*`..`5_*` with smart cooldown and multi-provider `smtp:check`) from `dev` to `main` and deploy to the VPS server so the owner can switch production OTP delivery to Resend + Brevo on `mail.akeelaonline.tech`. Later work returns to dev-only policy.
 
 Current one-time owner request (2026-11-21): upgrade Gmail SMTP OTP emails (`Email_Verification` and `Password_Reset`) with a branded Arabic RTL HTML template and inline CID brand/hero images, then promote all pending `dev` pre-launch hardening improvements (HTTP headers/HSTS, Docker log rotation, `OrdersAutoDeliverService` cleanup, automated 15-minute Uptime Monitor workflow, and the new OTP email design) to `main` and deploy to the VPS server. Later work returns to dev-only policy.
@@ -30,7 +32,9 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
-- **Mail provider abstraction & multi-provider automatic failover (2026-11-21, ready for owner-authorized release)**:
+- **Production release: MailProvider abstraction & multi-provider SMTP failover (2026-11-21)**: [Release 44909104687](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/44909104687) deployed `main` commit `0d46f63` via PR #53. Verify passed in 5m41s (repo, 40 API tests including multi-provider failover/cooldown tests, PostgreSQL + Mailpit integration suite, 77 Playwright E2E scenarios, production container smoke); 4 Docker images published to GHCR in 1m28s; VPS deployment succeeded and all 5 live HTTPS endpoints returned HTTP 200. Ready for owner to switch `/opt/akeela/.env.production` to Resend + Brevo on `mail.akeelaonline.tech`. Work now returns to dev-only policy.
+
+- **Mail provider abstraction & multi-provider automatic failover (2026-11-21, released)**:
   - Decoupled `OtpMailService` behind a `MailProvider` interface (`apps/api/src/modules/auth/mail/`) with `SmtpMailProvider` and `FailoverMailProvider`.
   - Added optional ordered fallback SMTP configuration (`SMTP_FALLBACK_*` and `SMTP_FALLBACK_2_*`..`5_*`, inheriting `SMTP_FROM` when omitted, supporting shared custom subdomain `AKEELA <noreply@mail.akeelaonline.tech>` across providers like Resend and Brevo) in `auth.environment.ts`, `compose.production.yml`, and `npm run smtp:check`.
   - Added smart in-memory cooldown (60m for quota/rate limits, 15m for transient errors) with automatic primary recovery, recipient-error distinction, and unit tests in `apps/api/test/mail-failover.test.ts`.
@@ -121,7 +125,7 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 | 16: Public liveness/readiness                                         | Implemented                                                                                            |
 | PostgreSQL                                                            | Twenty table mappings, one history view, nine reversible migrations (including 13 performance indexes) |
 | Restaurant frontend                                                   | React/Vite/TypeScript, Arabic RTL, tab-scoped sessionStorage sessions, Leaflet location picker         |
-| API collection                                                        | 83 routes in specifications and matching Bruno folders                                                 |
+| API collection                                                        | 84 routes in specifications and matching Bruno folders                                                 |
 | Docker/Caddy                                                          | Persistent images/database/certificates, private API/database; local TLS smoke verified                |
 | CI/CD                                                                 | PR checks, main GHCR publication, optional pinned-SSH deployment; deployment disabled until configured |
 
@@ -133,12 +137,13 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 - Pending/Suspended restaurants may authenticate and read account/profile/dashboard, but cannot modify account/profile/catalog/images or handle orders. Password security operations remain available. Service is_active=false stops new sales only while activation stays Active.
 - Catalog writes recheck activation under transaction locks. Nested profile arrays are rejected before business work. Offer timestamps require explicit Z/offset and valid calendar dates.
 - PostgreSQL stores UTC instants; API timestamps use Africa/Cairo and its current offset. Restaurant hours are Cairo times. Over-limit repriced carts remain readable/removable; checkout/additions/edits enforce numeric storage limits.
-- Gmail authentication was verified earlier. Tests use Mailpit; Gmail TLS/authentication also passed inside the production API; inbox delivery still needs a real user flow.
+- Production OTP mail delivery verified on 2026-11-21: Resend (`smtp.resend.com:465`, primary) and Brevo (`smtp-relay.brevo.com:587`, automatic fallback) both passed live `npm run smtp:check:prod` on the VPS using verified custom subdomain `mail.akeelaonline.tech` (`AKEELA <noreply@mail.akeelaonline.tech>`), and real Gmail Inbox delivery of the branded Arabic RTL HTML + inline CID image OTP template was visually verified. Tests continue to use local Mailpit.
 
 ## Pending
 
 - Create/verify the real Delivery_Company account through Admin and set its company profile ID in DEFAULT_DELIVERY_COMPANY_ID before accepting customer orders. No company is seeded automatically.
 - Backup/restore automation explicitly deferred. Future delivery-fee Admin API and load testing remain unimplemented. Browser sessions now survive refresh; see AUTH.md.
+- Planned mail provider addition: add **Amazon SES** (pay-as-you-go, à la carte $0.10/1,000 emails) as an additional SMTP provider (`SMTP_FALLBACK_2_*` or primary via `FailoverMailProvider`, no code changes required) once the owner creates the AWS account and obtains SES Production Access.
 - The owner-authorized production init applied all eight migrations and provisioned the single Admin. No test/customer/restaurant/company/driver/catalog data was seeded on production. Tests truncate only dedicated test databases.
 
 ## Restaurant frontend

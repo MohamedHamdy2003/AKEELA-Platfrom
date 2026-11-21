@@ -36,6 +36,84 @@ export type OrderStatus =
   | 'Cancelled'
   | 'Failed';
 export type OrderStatusCounts = Record<OrderStatus, number>;
+export type AnalyticsRange = 'today' | '7d' | '30d' | '90d' | 'all';
+export interface AdminAnalyticsKpis {
+  delivered_gmv: string;
+  delivery_fees_total: string;
+  avg_order_value: string;
+  total_orders: number;
+  delivered_orders: number;
+  completion_rate: number;
+  rejection_rate: number;
+  cancellation_rate: number;
+  failure_rate: number;
+  new_customers: number;
+  new_restaurants: number;
+}
+export interface AdminAnalyticsPreviousKpis {
+  delivered_gmv: string;
+  delivery_fees_total: string;
+  avg_order_value: string;
+  total_orders: number;
+  delivered_orders: number;
+  new_customers: number;
+  new_restaurants: number;
+}
+export interface AdminAnalyticsDailyPoint {
+  date: string;
+  orders: number;
+  delivered: number;
+  gmv: string;
+}
+export interface AdminAnalyticsHourPoint {
+  hour: number;
+  orders: number;
+}
+export interface AdminAnalyticsRestaurant {
+  rest_id: string;
+  rest_title: string;
+  total_orders: number;
+  delivered_orders: number;
+  rejected_orders: number;
+  rejection_rate: number;
+  gmv: string;
+}
+export interface AdminAnalyticsTopItem {
+  rest_id: string;
+  rest_title: string;
+  item_name: string;
+  units_sold: number;
+  revenue: string;
+}
+export interface AdminAnalytics {
+  range: AnalyticsRange;
+  generated_at: string;
+  kpis: AdminAnalyticsKpis;
+  previous_kpis: AdminAnalyticsPreviousKpis | null;
+  status_breakdown: OrderStatusCounts;
+  daily_series: AdminAnalyticsDailyPoint[];
+  peak_hours: AdminAnalyticsHourPoint[];
+  top_restaurants: AdminAnalyticsRestaurant[];
+  attention_restaurants: AdminAnalyticsRestaurant[];
+  top_items: AdminAnalyticsTopItem[];
+  alerts: {
+    stale_pending_orders: number;
+    stale_accepted_orders: number;
+    pending_restaurants: number;
+    unverified_companies: number;
+  };
+  platform_totals: {
+    total_users: number;
+    customers: number;
+    restaurants_total: number;
+    restaurants_active: number;
+    restaurants_pending: number;
+    restaurants_suspended: number;
+    delivery_companies: number;
+    active_drivers: number;
+    inactive_drivers: number;
+  };
+}
 export const statuses: Record<OrderStatus, string> = {
   Pending: 'قيد الانتظار',
   Accepted: 'مقبول',

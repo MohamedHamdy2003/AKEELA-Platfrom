@@ -804,6 +804,15 @@ export const operations: OperationDoc[] = [
     model: 'OrderStatusCounts',
   },
   {
+    method: 'get',
+    path: '/api/v1/admin/analytics',
+    tag: '14. Order Assignment and Delivery',
+    summary:
+      'Return platform KPIs, trends, peak hours, restaurant rankings, top items, alerts, and totals.',
+    status: 200,
+    model: 'AdminAnalytics',
+  },
+  {
     method: 'put',
     path: '/api/v1/customer/avatar',
     tag: '15. Image Uploads',

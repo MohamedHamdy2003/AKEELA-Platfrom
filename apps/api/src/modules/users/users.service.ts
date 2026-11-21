@@ -173,6 +173,96 @@ export class UsersService {
     return new Map(rows.map((row) => [row.user_id, row]));
   }
 
+  async analyticsSummary(
+    since: Date | null,
+    prevSince: Date | null,
+  ): Promise<{
+    totals: {
+      total_users: number;
+      customers: number;
+      restaurants: number;
+      delivery_companies: number;
+      unverified_companies: number;
+    };
+    period: { new_customers: number; new_restaurants: number };
+    previous: { new_customers: number; new_restaurants: number } | null;
+  }> {
+    const repo = this.dataSource.getRepository(User);
+    const [roleRows, unverifiedCount, periodRows, prevRows] = await Promise.all(
+      [
+        repo
+          .createQueryBuilder('u')
+          .select('u.role', 'role')
+          .addSelect('COUNT(*)::int', 'count')
+          .groupBy('u.role')
+          .getRawMany<{ role: Role; count: number }>(),
+        repo
+          .createQueryBuilder('u')
+          .where("u.role = 'Delivery_Company' AND u.email_verified_at IS NULL")
+          .getCount(),
+        since
+          ? repo
+              .createQueryBuilder('u')
+              .select('u.role', 'role')
+              .addSelect('COUNT(*)::int', 'count')
+              .where("u.role IN ('Customer', 'Restaurant')")
+              .andWhere('u.created_at >= :since', { since })
+              .groupBy('u.role')
+              .getRawMany<{ role: Role; count: number }>()
+          : repo
+              .createQueryBuilder('u')
+              .select('u.role', 'role')
+              .addSelect('COUNT(*)::int', 'count')
+              .where("u.role IN ('Customer', 'Restaurant')")
+              .groupBy('u.role')
+              .getRawMany<{ role: Role; count: number }>(),
+        since && prevSince
+          ? repo
+              .createQueryBuilder('u')
+              .select('u.role', 'role')
+              .addSelect('COUNT(*)::int', 'count')
+              .where("u.role IN ('Customer', 'Restaurant')")
+              .andWhere(
+                'u.created_at >= :prevSince AND u.created_at < :since',
+                {
+                  prevSince,
+                  since,
+                },
+              )
+              .groupBy('u.role')
+              .getRawMany<{ role: Role; count: number }>()
+          : Promise.resolve(null),
+      ],
+    );
+
+    const byRole = new Map(roleRows.map((r) => [r.role, Number(r.count)]));
+    const total_users = roleRows.reduce((sum, r) => sum + Number(r.count), 0);
+    const periodMap = new Map(periodRows.map((r) => [r.role, Number(r.count)]));
+    const prevMap = prevRows
+      ? new Map(prevRows.map((r) => [r.role, Number(r.count)]))
+      : null;
+
+    return {
+      totals: {
+        total_users,
+        customers: byRole.get('Customer') ?? 0,
+        restaurants: byRole.get('Restaurant') ?? 0,
+        delivery_companies: byRole.get('Delivery_Company') ?? 0,
+        unverified_companies: unverifiedCount,
+      },
+      period: {
+        new_customers: periodMap.get('Customer') ?? 0,
+        new_restaurants: periodMap.get('Restaurant') ?? 0,
+      },
+      previous: prevMap
+        ? {
+            new_customers: prevMap.get('Customer') ?? 0,
+            new_restaurants: prevMap.get('Restaurant') ?? 0,
+          }
+        : null,
+    };
+  }
+
   async createAdminProfile(
     userId: string,
     manager: EntityManager,

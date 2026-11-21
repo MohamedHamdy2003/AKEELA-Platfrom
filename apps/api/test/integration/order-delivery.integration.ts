@@ -610,6 +610,48 @@ test('Features 13-14: restaurant acceptance and assigned delivery', async (t) =>
       assert.equal(summedOther, 0);
     },
   );
+  await t.test(
+    'admin analytics enforces role isolation, validates range, and returns accurate metrics',
+    async () => {
+      await api()
+        .get('/api/v1/admin/analytics')
+        .set('Authorization', auth(3))
+        .expect(403);
+      await api()
+        .get('/api/v1/admin/analytics?range=invalid')
+        .set('Authorization', auth(5))
+        .expect(422);
+
+      const analytics30 = await api()
+        .get('/api/v1/admin/analytics?range=30d')
+        .set('Authorization', auth(5))
+        .expect(200);
+      const data30 = analytics30.body.data;
+      assert.equal(data30.range, '30d');
+      assert.equal(data30.daily_series.length, 30);
+      assert.equal(data30.peak_hours.length, 24);
+      assert.ok(data30.previous_kpis !== null);
+      assert.ok(data30.kpis.delivered_orders >= 1);
+      assert.match(data30.kpis.delivered_gmv, /^\d+\.\d{2}$/);
+      assert.match(data30.kpis.avg_order_value, /^\d+\.\d{2}$/);
+      assert.ok(data30.top_restaurants.length >= 1);
+      assert.ok(data30.top_items.length >= 1);
+      assert.equal(typeof data30.alerts.stale_pending_orders, 'number');
+      assert.ok(data30.platform_totals.restaurants_total >= 1);
+      assert.ok(data30.platform_totals.active_drivers >= 1);
+
+      const analyticsAll = await api()
+        .get('/api/v1/admin/analytics?range=all')
+        .set('Authorization', auth(5))
+        .expect(200);
+      assert.equal(analyticsAll.body.data.range, 'all');
+      assert.equal(analyticsAll.body.data.previous_kpis, null);
+      const totalDb = Number(
+        (await db.query('SELECT count(*) FROM orders'))[0].count,
+      );
+      assert.equal(analyticsAll.body.data.kpis.total_orders, totalDb);
+    },
+  );
 });
 
 test('Realtime orders: authenticated role isolation, committed events, revocation and expiry', async () => {

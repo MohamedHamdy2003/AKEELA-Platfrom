@@ -175,3 +175,66 @@ test('large restaurant images stay contained and account details include the rol
   await expect(profile).toContainText('10:00:00');
   await expect(profile.getByRole('img', { name: 'صورة المطعم' })).toBeVisible();
 });
+test('admin executive analytics dashboard supports time ranges, chart toggles, leaderboards and mobile layout', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 1536, height: 960 });
+  const fixture = await portalFixture(page, 'Admin');
+  await login(page);
+
+  await expect(
+    page.getByRole('heading', { name: 'نظرة عامة', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('إجمالي المبيعات (GMV)')).toBeVisible();
+  await expect(page.getByText('منحنى الأداء اليومي')).toBeVisible();
+  await expect(page.getByText('توزيع حالات الطلبات')).toBeVisible();
+  await expect(page.getByText('أوقات الذروة (بتوقيت القاهرة)')).toBeVisible();
+  await expect(page.getByText('الأصناف الأكثر طلباً')).toBeVisible();
+  await expect(page.getByText('طبق كشري مخصوص')).toBeVisible();
+
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-admin-analytics-desktop.png'),
+    fullPage: true,
+  });
+
+  await page.getByRole('button', { name: '7 أيام', exact: true }).click();
+  await expect
+    .poll(
+      () =>
+        fixture.calls.filter((call) => call.path === '/admin/analytics').length,
+    )
+    .toBeGreaterThanOrEqual(2);
+
+  await page.getByRole('button', { name: 'الكل', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'الكل', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+
+  await page
+    .getByRole('button', { name: 'الطلبات', exact: true })
+    .last()
+    .click();
+  await expect(page.getByText('إجمالي الطلبات المستلمة يومياً')).toBeVisible();
+
+  await page.getByRole('button', { name: 'تحتاج متابعة', exact: true }).click();
+  await expect(page.getByText('برجر السريع')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-admin-analytics-mobile.png'),
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+
+  await page.getByRole('button', { name: /مطعم بانتظار التفعيل/ }).click();
+  await expect(
+    page.getByRole('heading', { name: 'المطاعم', exact: true }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+});

@@ -77,7 +77,8 @@ function feature(path: string): string {
   if (path.endsWith('/image') || path.endsWith('/avatar')) return 'Images';
   if (path.includes('/orders')) return 'Orders';
   if (path.includes('/cart')) return 'Cart';
-  if (path.endsWith('/dashboard')) return 'Dashboard';
+  if (path.endsWith('/dashboard') || path.endsWith('/analytics'))
+    return 'Dashboard';
   if (path === '/api/v1/restaurant/profile') return 'Restaurant Profile';
   if (path === '/api/v1/delivery-company/profile') return 'Company Profile';
   if (path.includes('/addresses')) return 'Addresses';

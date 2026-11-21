@@ -283,6 +283,7 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. |
 | GET | `/admin/orders/counts` | Return order counts grouped by status across the platform. |
 | GET | `/delivery-company/orders/counts` | Return assigned order counts grouped by status for the company. |
+| GET | `/admin/analytics` | Return platform KPIs, trends, peak hours, restaurant rankings, top items, alerts, and totals for a Cairo time window. |
 
 ## 15. Image Uploads
 

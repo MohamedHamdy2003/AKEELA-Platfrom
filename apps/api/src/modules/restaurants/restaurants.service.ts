@@ -173,6 +173,37 @@ export class RestaurantsService {
     return rows.map((row) => row.url);
   }
 
+  async activationSummary(): Promise<{
+    total: number;
+    active: number;
+    pending: number;
+    suspended: number;
+  }> {
+    const rows = await this.dataSource
+      .getRepository(RestaurantProfile)
+      .createQueryBuilder('r')
+      .select('r.activation_status', 'status')
+      .addSelect('COUNT(*)::int', 'count')
+      .groupBy('r.activation_status')
+      .getRawMany<{ status: string; count: number }>();
+    const map = new Map(rows.map((row) => [row.status, Number(row.count)]));
+    const active = map.get('Active') ?? 0;
+    const pending = map.get('Pending') ?? 0;
+    const suspended = map.get('Suspended') ?? 0;
+    return { total: active + pending + suspended, active, pending, suspended };
+  }
+
+  async titlesByIds(restIds: string[]): Promise<Map<string, string>> {
+    if (!restIds.length) return new Map();
+    const rows = await this.dataSource
+      .getRepository(RestaurantProfile)
+      .createQueryBuilder('r')
+      .select(['r.rest_id', 'r.rest_title'])
+      .where('r.rest_id IN (:...ids)', { ids: [...new Set(restIds)] })
+      .getMany();
+    return new Map(rows.map((row) => [row.rest_id, row.rest_title]));
+  }
+
   async profileById(
     restId: string,
     manager = this.dataSource.manager,

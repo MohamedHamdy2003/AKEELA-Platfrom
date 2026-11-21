@@ -24,6 +24,7 @@ import {
 } from '../modules/catalog/catalog.dto';
 import { ListDriversQuery } from '../modules/delivery/delivery.dto';
 import {
+  AdminAnalyticsQuery,
   ListOrdersQuery,
   OperationalOrdersQuery,
 } from '../modules/orders/orders.dto';
@@ -447,6 +448,7 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
       ListDriversQuery,
       ListOrdersQuery,
       OperationalOrdersQuery,
+      AdminAnalyticsQuery,
     ],
     operationIdFactory: (controller, method) =>
       `${controller.replace(/Controller$/, '')}_${method}`,
