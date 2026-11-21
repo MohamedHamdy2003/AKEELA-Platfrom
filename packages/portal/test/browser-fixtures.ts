@@ -320,6 +320,175 @@ export async function portalFixture(
           inactive_drivers: 2,
         },
       };
+    } else if (path === '/delivery-company/analytics') {
+      const range = url.searchParams.get('range') || '30d';
+      const scale =
+        range === 'today'
+          ? 1
+          : range === '7d'
+            ? 3
+            : range === '90d'
+              ? 18
+              : range === 'all'
+                ? 24
+                : 10;
+      const days =
+        range === 'today' ? 1 : range === '7d' ? 7 : range === '90d' ? 30 : 14;
+      const daily_series = Array.from({ length: days }, (_, idx) => {
+        const day = String(5 + idx).padStart(2, '0');
+        const delivered = Math.max(
+          1,
+          Math.round(((idx % 4) + 2) * (scale / 3)),
+        );
+        const failed = idx % 7 === 0 ? 1 : 0;
+        const assigned = delivered + failed + (idx === days - 1 ? 3 : 0);
+        return {
+          date: `2026-11-${day}`,
+          assigned,
+          delivered,
+          failed,
+          delivery_fees: (delivered * 30).toFixed(2),
+        };
+      });
+      const deliveredOrders = daily_series.reduce((s, p) => s + p.delivered, 0);
+      const failedOrders = daily_series.reduce((s, p) => s + p.failed, 0);
+      const acceptedCount = 2;
+      const pickedUpCount = 1;
+      const assignedOrders =
+        deliveredOrders + failedOrders + acceptedCount + pickedUpCount;
+      const closed = deliveredOrders + failedOrders;
+      const feesEarned = (deliveredOrders * 30).toFixed(2);
+      const codValue = (deliveredOrders * 235).toFixed(2);
+      data = {
+        range,
+        generated_at: now,
+        kpis: {
+          delivery_fees_earned: feesEarned,
+          avg_delivery_fee: '30.00',
+          cod_collected_value: codValue,
+          assigned_orders: assignedOrders,
+          delivered_orders: deliveredOrders,
+          failed_orders: failedOrders,
+          delivery_success_rate:
+            Math.round((deliveredOrders / closed) * 1000) / 10,
+          failure_rate: Math.round((failedOrders / closed) * 1000) / 10,
+          avg_fulfillment_minutes: range === '7d' ? 31.4 : 33.8,
+        },
+        previous_kpis:
+          range === 'all'
+            ? null
+            : {
+                delivery_fees_earned: (Number(feesEarned) * 0.86).toFixed(2),
+                cod_collected_value: (Number(codValue) * 0.85).toFixed(2),
+                assigned_orders: Math.max(1, Math.round(assignedOrders * 0.86)),
+                delivered_orders: Math.max(
+                  1,
+                  Math.round(deliveredOrders * 0.86),
+                ),
+                failed_orders: Math.max(1, failedOrders + 1),
+                avg_fulfillment_minutes: 37.9,
+              },
+        live_queue: {
+          unassigned_accepted: acceptedCount,
+          in_transit: pickedUpCount,
+          stale_unassigned: 1,
+          long_in_transit: 0,
+          inactive_driver_orders: 0,
+        },
+        status_breakdown: {
+          Accepted: acceptedCount,
+          Picked_Up: pickedUpCount,
+          Delivered: deliveredOrders,
+          Failed: failedOrders,
+        },
+        daily_series,
+        peak_hours: Array.from({ length: 24 }, (_, hour) => ({
+          hour,
+          orders:
+            hour === 20
+              ? 19
+              : hour === 21
+                ? 16
+                : hour >= 13 && hour <= 22
+                  ? 3 + (hour % 6)
+                  : hour >= 10
+                    ? 2
+                    : 0,
+        })),
+        fleet: {
+          total_drivers: 8,
+          active_drivers: 7,
+          inactive_drivers: 1,
+          busy_drivers: 3,
+          idle_active_drivers: 4,
+        },
+        driver_leaderboard: [
+          {
+            driver_id: '11',
+            driver_name: 'أحمد محمود',
+            driver_phone: '+201000000011',
+            is_active: true,
+            current_load: 1,
+            delivered_orders: Math.max(4, Math.round(deliveredOrders * 0.45)),
+            failed_orders: 0,
+            delivery_fees: (
+              Math.max(4, Math.round(deliveredOrders * 0.45)) * 30
+            ).toFixed(2),
+            avg_fulfillment_minutes: 29.5,
+            success_rate: 100,
+          },
+          {
+            driver_id: '12',
+            driver_name: 'كريم عبد الله',
+            driver_phone: '+201000000012',
+            is_active: true,
+            current_load: 2,
+            delivered_orders: Math.max(3, Math.round(deliveredOrders * 0.35)),
+            failed_orders: 1,
+            delivery_fees: (
+              Math.max(3, Math.round(deliveredOrders * 0.35)) * 30
+            ).toFixed(2),
+            avg_fulfillment_minutes: 34.2,
+            success_rate: 96.4,
+          },
+          {
+            driver_id: '13',
+            driver_name: 'مصطفى سامي',
+            driver_phone: '+201000000013',
+            is_active: true,
+            current_load: 0,
+            delivered_orders: Math.max(2, Math.round(deliveredOrders * 0.2)),
+            failed_orders: 0,
+            delivery_fees: (
+              Math.max(2, Math.round(deliveredOrders * 0.2)) * 30
+            ).toFixed(2),
+            avg_fulfillment_minutes: 36.1,
+            success_rate: 100,
+          },
+        ],
+        top_pickup_restaurants: [
+          {
+            rest_id: '7',
+            rest_title: 'مطعم بيت الشواية',
+            assigned_orders: Math.max(4, Math.round(assignedOrders * 0.48)),
+            delivered_orders: Math.max(3, Math.round(deliveredOrders * 0.5)),
+            failed_orders: 0,
+            delivery_fees: (
+              Math.max(3, Math.round(deliveredOrders * 0.5)) * 30
+            ).toFixed(2),
+          },
+          {
+            rest_id: '8',
+            rest_title: 'كشري الأصيل',
+            assigned_orders: Math.max(3, Math.round(assignedOrders * 0.32)),
+            delivered_orders: Math.max(2, Math.round(deliveredOrders * 0.32)),
+            failed_orders: 1,
+            delivery_fees: (
+              Math.max(2, Math.round(deliveredOrders * 0.32)) * 30
+            ).toFixed(2),
+          },
+        ],
+      };
     } else if (path.endsWith('/orders/counts')) {
       const counts = {
         Pending: 0,

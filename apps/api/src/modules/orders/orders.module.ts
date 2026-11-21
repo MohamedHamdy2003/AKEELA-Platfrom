@@ -3,6 +3,8 @@ import { OrderEventsGateway } from './order-events.gateway';
 import { OrdersAutoDeliverService } from './orders-auto-deliver.service';
 import { AdminAnalyticsService } from './admin-analytics.service';
 import { AdminAnalyticsController } from './admin-analytics.controller';
+import { DeliveryAnalyticsService } from './delivery-analytics.service';
+import { DeliveryAnalyticsController } from './delivery-analytics.controller';
 import { UsersModule } from '../users/users.module';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { DeliveryModule } from '../delivery/delivery.module';
@@ -26,6 +28,7 @@ import { CustomerOrdersController } from './customer-orders.controller';
     OrderEventsGateway,
     OrdersAutoDeliverService,
     AdminAnalyticsService,
+    DeliveryAnalyticsService,
   ],
   controllers: [
     CustomerOrdersController,
@@ -33,6 +36,7 @@ import { CustomerOrdersController } from './customer-orders.controller';
     AdminOrdersController,
     AdminAnalyticsController,
     DeliveryOrdersController,
+    DeliveryAnalyticsController,
   ],
   exports: [OrdersService],
 })

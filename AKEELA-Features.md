@@ -284,6 +284,7 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 | GET | `/admin/orders/counts` | Return order counts grouped by status across the platform. |
 | GET | `/delivery-company/orders/counts` | Return assigned order counts grouped by status for the company. |
 | GET | `/admin/analytics` | Return platform KPIs, trends, peak hours, restaurant rankings, top items, alerts, and totals for a Cairo time window. |
+| GET | `/delivery-company/analytics` | Return company-scoped dispatch KPIs, live queue alerts, fleet utilization, driver leaderboard, trends, peak hours, and top pickup restaurants. |
 
 ## 15. Image Uploads
 

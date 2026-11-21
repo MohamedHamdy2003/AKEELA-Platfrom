@@ -97,3 +97,81 @@ test('driver create/edit and mobile navigation', async ({ page }) => {
     ),
   ).toBeTruthy();
 });
+test('delivery executive analytics dashboard displays dispatch radar, fleet metrics, driver load tabs and responsive layout', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 1536, height: 960 });
+  const fixture = await portalFixture(page, 'Delivery_Company');
+  await login(page);
+
+  await expect(
+    page.getByRole('heading', { name: 'نظرة عامة', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('إيرادات رسوم التوصيل')).toBeVisible();
+  await expect(page.getByText('متوسط زمن التوصيل')).toBeVisible();
+  await expect(page.getByText('التحصيل النقدي (COD)')).toBeVisible();
+  await expect(page.getByText('منحنى التوصيل اليومي')).toBeVisible();
+  await expect(
+    page.getByText('ساعات ذروة التوصيل (تخطيط الورديات)'),
+  ).toBeVisible();
+  await expect(page.getByText('أداء وحمل السائقين')).toBeVisible();
+  await expect(page.getByText('أكثر المطاعم استلاماً')).toBeVisible();
+  await expect(page.getByText('كريم عبد الله')).toBeVisible();
+
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-delivery-analytics-desktop.png'),
+    fullPage: true,
+  });
+
+  await page.getByRole('button', { name: '7 أيام', exact: true }).click();
+  await expect
+    .poll(
+      () =>
+        fixture.calls.filter(
+          (call) => call.path === '/delivery-company/analytics',
+        ).length,
+    )
+    .toBeGreaterThanOrEqual(2);
+
+  await page.getByRole('button', { name: 'الكل', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'الكل', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+
+  await page
+    .getByRole('group', { name: 'معيار منحنى التوصيل' })
+    .getByRole('button', { name: 'رسوم التوصيل', exact: true })
+    .click();
+  await expect(
+    page.getByText('إيرادات رسوم التوصيل اليومية (EGP)'),
+  ).toBeVisible();
+
+  await page
+    .getByRole('group', { name: 'ترتيب قائمة السائقين' })
+    .getByRole('button', { name: 'الحمل الحالي', exact: true })
+    .click();
+  await expect(
+    page.getByText('ترتيب السائقين حسب عدد الطلبات المفتوحة عليهم الآن'),
+  ).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-delivery-analytics-mobile.png'),
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+
+  await page
+    .getByRole('button', { name: /طلب بانتظار سائق لأكثر من 15 دقيقة/ })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'طلبات الشركة', exact: true }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+});

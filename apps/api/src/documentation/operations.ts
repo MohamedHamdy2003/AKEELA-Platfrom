@@ -813,6 +813,15 @@ export const operations: OperationDoc[] = [
     model: 'AdminAnalytics',
   },
   {
+    method: 'get',
+    path: '/api/v1/delivery-company/analytics',
+    tag: '14. Order Assignment and Delivery',
+    summary:
+      'Return company-scoped dispatch KPIs, live queue alerts, fleet utilization, driver leaderboard, trends, peak hours, and top pickup restaurants.',
+    status: 200,
+    model: 'DeliveryAnalytics',
+  },
+  {
     method: 'put',
     path: '/api/v1/customer/avatar',
     tag: '15. Image Uploads',
