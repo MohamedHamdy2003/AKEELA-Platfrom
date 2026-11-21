@@ -1,7 +1,6 @@
 import { config as loadEnv } from 'dotenv';
-import { createTransport } from 'nodemailer';
 import { validateEnvironment } from '../config/environment';
-import { smtpOptions } from '../modules/auth/smtp.options';
+import { SmtpMailProvider } from '../modules/auth/mail/smtp-mail.provider';
 
 async function check(): Promise<void> {
   loadEnv({ quiet: true });
@@ -16,21 +15,24 @@ async function check(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  const transport = createTransport(smtpOptions(settings));
-  try {
-    await transport.verify();
-    console.log(
-      settings.SMTP_HOST === 'smtp.gmail.com'
-        ? 'Gmail SMTP connection, TLS, and authentication succeeded. No email was sent.'
-        : 'SMTP connection check succeeded. No email was sent.',
-    );
-  } catch {
-    console.error(
-      'SMTP check failed. Check host/port, TLS, and credentials. For Gmail use a Google App Password, not the account password. See docs/GMAIL.md.',
-    );
-    process.exitCode = 1;
-  } finally {
-    transport.close();
+
+  const total = settings.SMTP_PROVIDERS.length;
+  for (let i = 0; i < total; i += 1) {
+    const item = settings.SMTP_PROVIDERS[i]!;
+    const provider = new SmtpMailProvider(item);
+    try {
+      await provider.verify();
+      console.log(
+        `[${i + 1}/${total}] ${item.name} (${item.host}:${item.port}): SMTP connection, TLS, and authentication succeeded. No email was sent.`,
+      );
+    } catch {
+      console.error(
+        `[${i + 1}/${total}] ${item.name} (${item.host}:${item.port}): SMTP check failed. Check host/port, TLS, and credentials. See docs/GMAIL.md.`,
+      );
+      process.exitCode = 1;
+    } finally {
+      provider.close();
+    }
   }
 }
 

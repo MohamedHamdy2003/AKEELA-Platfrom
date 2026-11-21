@@ -1,3 +1,14 @@
+export interface SmtpProviderConfig {
+  name: string;
+  host: string;
+  port: number;
+  secure: boolean;
+  requireTls: boolean;
+  user: string;
+  password: string;
+  from: string;
+}
+
 export interface AuthEnvironment {
   JWT_SECRET: string;
   JWT_ISSUER: string;
@@ -18,7 +29,19 @@ export interface AuthEnvironment {
   SMTP_USER: string;
   SMTP_PASSWORD: string;
   SMTP_FROM: string;
+  SMTP_PROVIDERS: SmtpProviderConfig[];
   TRUST_PROXY: boolean;
+}
+
+function inferProviderName(host: string, fallbackLabel: string): string {
+  if (host.includes('resend')) return 'resend';
+  if (host.includes('brevo') || host.includes('sendinblue')) return 'brevo';
+  if (host === 'smtp.gmail.com') return 'gmail';
+  if (host.includes('amazonaws')) return 'ses';
+  if (host.includes('postmark')) return 'postmark';
+  if (host.includes('mailgun')) return 'mailgun';
+  if (host.includes('hostinger') || host.includes('titan')) return 'hostinger';
+  return fallbackLabel;
 }
 
 export function validateAuthEnvironment(
@@ -54,43 +77,130 @@ export function validateAuthEnvironment(
   const otpSecret = secret('OTP_SECRET');
   if (jwtSecret === otpSecret)
     throw new Error('JWT_SECRET and OTP_SECRET must be different.');
-  const smtpHost = text('SMTP_HOST', 'localhost').trim().toLowerCase();
-  const smtpPort = integer('SMTP_PORT', 11025, 65535);
-  const smtpUser =
-    typeof input.SMTP_USER === 'string' ? input.SMTP_USER.trim() : '';
-  let smtpPassword =
-    typeof input.SMTP_PASSWORD === 'string' ? input.SMTP_PASSWORD : '';
-  const smtpFrom = text('SMTP_FROM', 'AKEELA <noreply@example.com>');
-  if (Boolean(smtpUser) !== Boolean(smtpPassword))
-    throw new Error('SMTP_USER and SMTP_PASSWORD must be provided together.');
-  const secure = bool('SMTP_SECURE', false);
-  const requireTls = bool('SMTP_REQUIRE_TLS', input.NODE_ENV === 'production');
-  if (input.NODE_ENV === 'production' && !secure && !requireTls)
-    throw new Error('Production SMTP requires TLS.');
-  if (smtpHost === 'smtp.gmail.com') {
-    smtpPassword = smtpPassword.replace(/\s/g, '');
-    if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(smtpUser) ||
-      !/^[A-Za-z0-9]{16}$/.test(smtpPassword)
-    )
+  const validateProvider = (
+    prefix: string,
+    defaults: {
+      host?: string;
+      port: number;
+      from: string;
+      label: string;
+    },
+  ): SmtpProviderConfig => {
+    const isFallback = prefix !== 'SMTP';
+    const opt = (key: string): unknown => {
+      const raw = input[key];
+      return isFallback && raw === '' ? undefined : raw;
+    };
+    const rawHost = opt(`${prefix}_HOST`);
+    const host =
+      typeof rawHost === 'string' && rawHost.trim()
+        ? rawHost.trim().toLowerCase()
+        : (defaults.host ?? '');
+    if (!host) throw new Error(`${prefix}_HOST is required.`);
+    const portRaw = opt(`${prefix}_PORT`);
+    const port =
+      portRaw === undefined
+        ? defaults.port
+        : integer(`${prefix}_PORT`, defaults.port, 65535);
+    const user =
+      typeof input[`${prefix}_USER`] === 'string'
+        ? (input[`${prefix}_USER`] as string).trim()
+        : '';
+    let password =
+      typeof input[`${prefix}_PASSWORD`] === 'string'
+        ? (input[`${prefix}_PASSWORD`] as string)
+        : '';
+    const rawFrom = opt(`${prefix}_FROM`);
+    const from =
+      typeof rawFrom === 'string' && rawFrom.trim()
+        ? rawFrom.trim()
+        : defaults.from;
+    if (!from || /[\r\n]/.test(from))
+      throw new Error(`${prefix}_FROM must be a valid single-line sender.`);
+    if (Boolean(user) !== Boolean(password))
       throw new Error(
-        'Gmail requires SMTP_USER and a 16-character Google App Password in SMTP_PASSWORD.',
+        `${prefix}_USER and ${prefix}_PASSWORD must be provided together.`,
       );
-    if (!(
-      (smtpPort === 465 && secure) ||
-      (smtpPort === 587 && !secure && requireTls)
-    ))
-      throw new Error(
-        'Gmail requires port 465 with SMTP_SECURE=true, or port 587 with required STARTTLS.',
+    const secureRaw = opt(`${prefix}_SECURE`);
+    const secure =
+      secureRaw === undefined ? false : bool(`${prefix}_SECURE`, false);
+    const requireTlsRaw = opt(`${prefix}_REQUIRE_TLS`);
+    const requireTls =
+      requireTlsRaw === undefined
+        ? input.NODE_ENV === 'production'
+        : bool(`${prefix}_REQUIRE_TLS`, input.NODE_ENV === 'production');
+    if (input.NODE_ENV === 'production' && !secure && !requireTls)
+      throw new Error(`Production ${prefix} requires TLS.`);
+    if (host === 'smtp.gmail.com') {
+      password = password.replace(/\s/g, '');
+      if (
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user) ||
+        !/^[A-Za-z0-9]{16}$/.test(password)
+      )
+        throw new Error(
+          `Gmail requires ${prefix}_USER and a 16-character Google App Password in ${prefix}_PASSWORD.`,
+        );
+      if (!(
+        (port === 465 && secure) ||
+        (port === 587 && !secure && requireTls)
+      ))
+        throw new Error(
+          'Gmail requires port 465 with SMTP_SECURE=true, or port 587 with required STARTTLS.',
+        );
+      const fromAddress = (from.match(/<([^<>]+)>/)?.[1] ?? from)
+        .trim()
+        .toLowerCase();
+      if (fromAddress !== user.toLowerCase())
+        throw new Error(
+          `For Gmail, ${prefix}_FROM must use the authenticated ${prefix}_USER address.`,
+        );
+    }
+    const rawName = input[`${prefix}_NAME`];
+    const name =
+      typeof rawName === 'string' && rawName.trim()
+        ? rawName.trim().toLowerCase()
+        : inferProviderName(host, defaults.label);
+    return {
+      name,
+      host,
+      port,
+      secure,
+      requireTls,
+      user,
+      password,
+      from,
+    };
+  };
+
+  const primary = validateProvider('SMTP', {
+    host: 'localhost',
+    port: 11025,
+    from: 'AKEELA <noreply@example.com>',
+    label: 'primary',
+  });
+
+  const providers: SmtpProviderConfig[] = [primary];
+  const fallbackPrefixes = [
+    ['SMTP_FALLBACK', 'fallback-1'],
+    ['SMTP_FALLBACK_2', 'fallback-2'],
+    ['SMTP_FALLBACK_3', 'fallback-3'],
+    ['SMTP_FALLBACK_4', 'fallback-4'],
+    ['SMTP_FALLBACK_5', 'fallback-5'],
+  ] as const;
+
+  for (const [prefix, label] of fallbackPrefixes) {
+    const rawHost = input[`${prefix}_HOST`];
+    if (typeof rawHost === 'string' && rawHost.trim()) {
+      providers.push(
+        validateProvider(prefix, {
+          port: 587,
+          from: primary.from,
+          label,
+        }),
       );
-    const fromAddress = (smtpFrom.match(/<([^<>]+)>/)?.[1] ?? smtpFrom)
-      .trim()
-      .toLowerCase();
-    if (/[\r\n]/.test(smtpFrom) || fromAddress !== smtpUser.toLowerCase())
-      throw new Error(
-        'For Gmail, SMTP_FROM must use the authenticated SMTP_USER address.',
-      );
+    }
   }
+
   return {
     JWT_SECRET: jwtSecret,
     OTP_SECRET: otpSecret,
@@ -108,13 +218,14 @@ export function validateAuthEnvironment(
     AUTH_RATE_WINDOW_SECONDS: integer('AUTH_RATE_WINDOW_SECONDS', 900, 86400),
     AUTH_RATE_IP_LIMIT: integer('AUTH_RATE_IP_LIMIT', 60, 10000),
     AUTH_RATE_ACCOUNT_LIMIT: integer('AUTH_RATE_ACCOUNT_LIMIT', 10, 10000),
-    SMTP_HOST: smtpHost,
-    SMTP_PORT: smtpPort,
-    SMTP_SECURE: secure,
-    SMTP_REQUIRE_TLS: requireTls,
-    SMTP_USER: smtpUser,
-    SMTP_PASSWORD: smtpPassword,
-    SMTP_FROM: smtpFrom,
+    SMTP_HOST: primary.host,
+    SMTP_PORT: primary.port,
+    SMTP_SECURE: primary.secure,
+    SMTP_REQUIRE_TLS: primary.requireTls,
+    SMTP_USER: primary.user,
+    SMTP_PASSWORD: primary.password,
+    SMTP_FROM: primary.from,
+    SMTP_PROVIDERS: providers,
     TRUST_PROXY: bool('TRUST_PROXY', false),
   };
 }
