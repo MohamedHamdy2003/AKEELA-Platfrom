@@ -6,6 +6,8 @@
 
 Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.
 
+Current one-time owner request (2026-11-21): promote the completed `MailProvider` abstraction and multi-provider SMTP failover (`SMTP_FALLBACK_*` / `SMTP_FALLBACK_2_*`..`5_*` with smart cooldown and multi-provider `smtp:check`) from `dev` to `main` and deploy to the VPS server so the owner can switch production OTP delivery to Resend + Brevo on `mail.akeelaonline.tech`. Later work returns to dev-only policy.
+
 Current one-time owner request (2026-11-21): upgrade Gmail SMTP OTP emails (`Email_Verification` and `Password_Reset`) with a branded Arabic RTL HTML template and inline CID brand/hero images, then promote all pending `dev` pre-launch hardening improvements (HTTP headers/HSTS, Docker log rotation, `OrdersAutoDeliverService` cleanup, automated 15-minute Uptime Monitor workflow, and the new OTP email design) to `main` and deploy to the VPS server. Later work returns to dev-only policy.
 
 Current one-time owner request (2026-11-20): implement all performance refinements and project-wide hardening improvements (auto-deliver outer scan cleanup, `ArabicDateFields` deduplication, `GET /admin/orders/counts` and `GET /delivery-company/orders/counts` single-query status counts, transaction-consistent `UsersService.resolveProfiles`, 24-hour orphan WebP image cleanup, Socket.IO room-scoped broadcasts, expired auth session/challenge cleanup, PostgreSQL pool tuning, general per-IP API rate limiting, Compose container memory limits, Caddy security headers, lazy-loaded Leaflet map in Restaurant, ErrorBoundary and Google Maps coordinate links in Admin/Delivery, and Node 24 pinned GitHub Actions), push to `dev`, then promote all pending `dev` performance and hardening changes to `main` and deploy to the VPS server. Backups remain deferred by the owner, and `SWAGGER_ENABLED=true` remains active for the mobile testing window. Later work returns to dev-only policy.
@@ -28,7 +30,7 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
-- **Mail provider abstraction & multi-provider automatic failover (2026-11-21, dev-only)**:
+- **Mail provider abstraction & multi-provider automatic failover (2026-11-21, ready for owner-authorized release)**:
   - Decoupled `OtpMailService` behind a `MailProvider` interface (`apps/api/src/modules/auth/mail/`) with `SmtpMailProvider` and `FailoverMailProvider`.
   - Added optional ordered fallback SMTP configuration (`SMTP_FALLBACK_*` and `SMTP_FALLBACK_2_*`..`5_*`, inheriting `SMTP_FROM` when omitted, supporting shared custom subdomain `AKEELA <noreply@mail.akeelaonline.tech>` across providers like Resend and Brevo) in `auth.environment.ts`, `compose.production.yml`, and `npm run smtp:check`.
   - Added smart in-memory cooldown (60m for quota/rate limits, 15m for transient errors) with automatic primary recovery, recipient-error distinction, and unit tests in `apps/api/test/mail-failover.test.ts`.
