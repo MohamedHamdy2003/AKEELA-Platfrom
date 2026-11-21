@@ -75,6 +75,7 @@ test('HTTP bootstrap enforces CORS and consistent unknown-route errors', async (
       allowed.headers['access-control-allow-origin'],
       'https://dashboard.example.com',
     );
+    assert.equal(allowed.headers['x-powered-by'], undefined);
     const denied = await request(app.getHttpServer())
       .get('/api/v1/unknown')
       .set('Origin', 'https://untrusted.example.com')

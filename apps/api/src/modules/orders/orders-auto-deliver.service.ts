@@ -4,7 +4,9 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
+import { Environment } from '../../config/environment';
 import { Order } from './entities/order.entity';
 import { OrderEventsGateway } from './order-events.gateway';
 
@@ -17,9 +19,11 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly db: DataSource,
     private readonly events: OrderEventsGateway,
+    private readonly config: ConfigService<Environment, true>,
   ) {}
 
   onModuleInit() {
+    if (this.config.get('NODE_ENV', { infer: true }) === 'test') return;
     // Check every 5 minutes; first run after 1 minute to let the app warm up.
     this.timer = setTimeout(() => {
       void this.autoDeliver();
@@ -29,6 +33,7 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
         },
         5 * 60 * 1000,
       );
+      this.timer.unref?.();
     }, 60 * 1000);
     this.timer.unref?.();
   }
