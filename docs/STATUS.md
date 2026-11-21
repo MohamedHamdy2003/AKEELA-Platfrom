@@ -135,12 +135,13 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 - Pending/Suspended restaurants may authenticate and read account/profile/dashboard, but cannot modify account/profile/catalog/images or handle orders. Password security operations remain available. Service is_active=false stops new sales only while activation stays Active.
 - Catalog writes recheck activation under transaction locks. Nested profile arrays are rejected before business work. Offer timestamps require explicit Z/offset and valid calendar dates.
 - PostgreSQL stores UTC instants; API timestamps use Africa/Cairo and its current offset. Restaurant hours are Cairo times. Over-limit repriced carts remain readable/removable; checkout/additions/edits enforce numeric storage limits.
-- Gmail authentication was verified earlier. Tests use Mailpit; Gmail TLS/authentication also passed inside the production API; inbox delivery still needs a real user flow.
+- Production OTP mail delivery verified on 2026-11-21: Resend (`smtp.resend.com:465`, primary) and Brevo (`smtp-relay.brevo.com:587`, automatic fallback) both passed live `npm run smtp:check:prod` on the VPS using verified custom subdomain `mail.akeelaonline.tech` (`AKEELA <noreply@mail.akeelaonline.tech>`), and real Gmail Inbox delivery of the branded Arabic RTL HTML + inline CID image OTP template was visually verified. Tests continue to use local Mailpit.
 
 ## Pending
 
 - Create/verify the real Delivery_Company account through Admin and set its company profile ID in DEFAULT_DELIVERY_COMPANY_ID before accepting customer orders. No company is seeded automatically.
 - Backup/restore automation explicitly deferred. Future delivery-fee Admin API and load testing remain unimplemented. Browser sessions now survive refresh; see AUTH.md.
+- Planned mail provider addition: add **Amazon SES** (pay-as-you-go, à la carte $0.10/1,000 emails) as an additional SMTP provider (`SMTP_FALLBACK_2_*` or primary via `FailoverMailProvider`, no code changes required) once the owner creates the AWS account and obtains SES Production Access.
 - The owner-authorized production init applied all eight migrations and provisioned the single Admin. No test/customer/restaurant/company/driver/catalog data was seeded on production. Tests truncate only dedicated test databases.
 
 ## Restaurant frontend
