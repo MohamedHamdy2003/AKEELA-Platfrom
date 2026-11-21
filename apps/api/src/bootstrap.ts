@@ -25,10 +25,9 @@ export function configureApplication(
         maxAge: '1y',
       }),
     );
-  app
-    .getHttpAdapter()
-    .getInstance()
-    .set('trust proxy', trustProxy ? 1 : false);
+  const express = app.getHttpAdapter().getInstance();
+  express.disable('x-powered-by');
+  express.set('trust proxy', trustProxy ? 1 : false);
   app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalPipes(
     {

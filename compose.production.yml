@@ -1,20 +1,28 @@
 # Template only. Requires server-side secrets and an actual domain before deployment.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
 services:
   admin:
     image: ${ADMIN_IMAGE:-akeela-admin:local}
     restart: unless-stopped
     mem_limit: 64m
     networks: [edge]
+    logging: *default-logging
   restaurant:
     image: ${RESTAURANT_IMAGE:-akeela-restaurant:local}
     restart: unless-stopped
     mem_limit: 64m
     networks: [edge]
+    logging: *default-logging
   delivery:
     image: ${DELIVERY_IMAGE:-akeela-delivery:local}
     restart: unless-stopped
     mem_limit: 64m
     networks: [edge]
+    logging: *default-logging
   api:
     image: ${API_IMAGE:-akeela-api:local}
     restart: unless-stopped
@@ -70,16 +78,13 @@ services:
       retries: 6
       start_period: 20s
     stop_grace_period: 30s
-    logging:
-      driver: json-file
-      options:
-        max-size: '10m'
-        max-file: '3'
+    logging: *default-logging
   init:
     image: ${API_IMAGE:-akeela-api:local}
     restart: 'no'
     init: true
     mem_limit: 512m
+    logging: *default-logging
     command:
       ['sh', '-c', 'npm run migration:run:prod && npm run create:admin:prod']
     environment:
@@ -97,6 +102,7 @@ services:
     image: postgres:17
     restart: unless-stopped
     mem_limit: 768m
+    logging: *default-logging
     environment:
       POSTGRES_USER: akeela
       POSTGRES_DB: akeela
@@ -113,6 +119,7 @@ services:
     image: caddy:2
     restart: unless-stopped
     mem_limit: 128m
+    logging: *default-logging
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}

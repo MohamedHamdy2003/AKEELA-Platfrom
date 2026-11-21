@@ -1,0 +1,97 @@
+name: Uptime Monitor
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: production-uptime
+  cancel-in-progress: true
+jobs:
+  check:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Probe production HTTPS endpoints and TLS certificates
+        id: probe
+        shell: bash
+        run: |
+          set -uo pipefail
+          failures=()
+          check_endpoint() {
+            local name="$1"
+            local url="$2"
+            local pattern="${3:-}"
+            local body
+            body="$(curl -fsSL --retry 3 --retry-all-errors --retry-delay 5 --max-time 15 "$url" 2>&1)" || {
+              failures+=("$name ($url): request failed")
+              return
+            }
+            if [[ -n "$pattern" ]] && ! grep -q "$pattern" <<<"$body"; then
+              failures+=("$name ($url): unexpected response body")
+            fi
+          }
+
+          check_endpoint "API Live" "https://api.akeelaonline.tech/api/v1/health/live" '"status":"ok"'
+          check_endpoint "API Ready (DB)" "https://api.akeelaonline.tech/api/v1/health/ready" '"status":"ok"'
+          check_endpoint "Admin Portal" "https://admin.akeelaonline.tech/" '<div id="root">'
+          check_endpoint "Restaurant Portal" "https://restaurant.akeelaonline.tech/" '<div id="root">'
+          check_endpoint "Delivery Portal" "https://delivery.akeelaonline.tech/" '<div id="root">'
+
+          for host in api.akeelaonline.tech admin.akeelaonline.tech restaurant.akeelaonline.tech delivery.akeelaonline.tech; do
+            end_date="$(echo | timeout 10 openssl s_client -servername "$host" -connect "$host:443" 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2 || true)"
+            if [[ -z "$end_date" ]]; then
+              failures+=("TLS ($host): could not read certificate")
+            else
+              expiry_epoch="$(date -d "$end_date" +%s)"
+              now_epoch="$(date +%s)"
+              days_left="$(( (expiry_epoch - now_epoch) / 86400 ))"
+              echo "TLS $host: ${days_left} days remaining"
+              if (( days_left < 14 )); then
+                failures+=("TLS ($host): expires in ${days_left} day(s)")
+              fi
+            fi
+          done
+
+          if (( ${#failures[@]} > 0 )); then
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            {
+              echo "details<<EOF"
+              printf -- '- %s\n' "${failures[@]}"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            printf 'FAILED:\n'
+            printf -- '- %s\n' "${failures[@]}"
+          else
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+            echo "All 5 production endpoints and TLS certificates are healthy."
+          fi
+
+      - name: Open or close GitHub uptime incident issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROBE_STATUS: ${{ steps.probe.outputs.status }}
+          PROBE_DETAILS: ${{ steps.probe.outputs.details }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          issue_number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'in:title "[Uptime Alert] Production health check failed"' --json number --jq '.[0].number // empty')"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          if [[ "$PROBE_STATUS" == "failed" ]]; then
+            body=$(printf 'Production uptime check failed at %s UTC.\n\n%s\n\nWorkflow run: %s' "$(date -u '+%Y-%m-%d %H:%M:%S')" "$PROBE_DETAILS" "$run_url")
+            if [[ -z "$issue_number" ]]; then
+              gh issue create --repo "$GITHUB_REPOSITORY" \
+                --title "[Uptime Alert] Production health check failed" \
+                --body "$body"
+            else
+              gh issue comment "$issue_number" --repo "$GITHUB_REPOSITORY" --body "$body"
+            fi
+            exit 1
+          elif [[ -n "$issue_number" ]]; then
+            gh issue close "$issue_number" --repo "$GITHUB_REPOSITORY" \
+              --comment "Production health check recovered at $(date -u '+%Y-%m-%d %H:%M:%S') UTC. All 5 endpoints and TLS certificates passed. ($run_url)"
+          fi

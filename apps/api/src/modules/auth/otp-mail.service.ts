@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { createTransport } from 'nodemailer';
 import { Environment } from '../../config/environment';
 import { smtpOptions } from './smtp.options';
+import { buildOtpEmail } from './otp-mail.template';
 
 @Injectable()
 export class OtpMailService {
@@ -21,14 +22,15 @@ export class OtpMailService {
   }
   async send(email: string, purpose: string, code: string): Promise<boolean> {
     try {
+      const ttlSeconds = this.config.get('OTP_TTL_SECONDS', { infer: true });
+      const content = buildOtpEmail(purpose, code, ttlSeconds);
       await this.transport.sendMail({
         from: this.config.get('SMTP_FROM', { infer: true }),
         to: email,
-        subject:
-          purpose === 'Email_Verification'
-            ? 'AKEELA: Verify your email'
-            : 'AKEELA: Reset your password',
-        text: `Your AKEELA code is ${code}. It expires in ${this.config.get('OTP_TTL_SECONDS', { infer: true })} seconds. If you did not request it, ignore this email.`,
+        subject: content.subject,
+        text: content.text,
+        html: content.html,
+        attachments: content.attachments,
         disableFileAccess: true,
         disableUrlAccess: true,
       });
