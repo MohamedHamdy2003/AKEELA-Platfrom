@@ -114,6 +114,84 @@ export interface AdminAnalytics {
     inactive_drivers: number;
   };
 }
+export interface DeliveryAnalyticsKpis {
+  delivery_fees_earned: string;
+  avg_delivery_fee: string;
+  cod_collected_value: string;
+  assigned_orders: number;
+  delivered_orders: number;
+  failed_orders: number;
+  delivery_success_rate: number;
+  failure_rate: number;
+  avg_fulfillment_minutes: number | null;
+}
+export interface DeliveryAnalyticsPreviousKpis {
+  delivery_fees_earned: string;
+  cod_collected_value: string;
+  assigned_orders: number;
+  delivered_orders: number;
+  failed_orders: number;
+  avg_fulfillment_minutes: number | null;
+}
+export interface DeliveryAnalyticsLiveQueue {
+  unassigned_accepted: number;
+  in_transit: number;
+  stale_unassigned: number;
+  long_in_transit: number;
+  inactive_driver_orders: number;
+}
+export interface DeliveryAnalyticsStatusBreakdown {
+  Accepted: number;
+  Picked_Up: number;
+  Delivered: number;
+  Failed: number;
+}
+export interface DeliveryAnalyticsDailyPoint {
+  date: string;
+  assigned: number;
+  delivered: number;
+  failed: number;
+  delivery_fees: string;
+}
+export interface DeliveryAnalyticsDriver {
+  driver_id: string;
+  driver_name: string;
+  driver_phone: string;
+  is_active: boolean;
+  current_load: number;
+  delivered_orders: number;
+  failed_orders: number;
+  delivery_fees: string;
+  avg_fulfillment_minutes: number | null;
+  success_rate: number;
+}
+export interface DeliveryAnalyticsRestaurant {
+  rest_id: string;
+  rest_title: string;
+  assigned_orders: number;
+  delivered_orders: number;
+  failed_orders: number;
+  delivery_fees: string;
+}
+export interface DeliveryAnalytics {
+  range: AnalyticsRange;
+  generated_at: string;
+  kpis: DeliveryAnalyticsKpis;
+  previous_kpis: DeliveryAnalyticsPreviousKpis | null;
+  live_queue: DeliveryAnalyticsLiveQueue;
+  status_breakdown: DeliveryAnalyticsStatusBreakdown;
+  daily_series: DeliveryAnalyticsDailyPoint[];
+  peak_hours: AdminAnalyticsHourPoint[];
+  fleet: {
+    total_drivers: number;
+    active_drivers: number;
+    inactive_drivers: number;
+    busy_drivers: number;
+    idle_active_drivers: number;
+  };
+  driver_leaderboard: DeliveryAnalyticsDriver[];
+  top_pickup_restaurants: DeliveryAnalyticsRestaurant[];
+}
 export const statuses: Record<OrderStatus, string> = {
   Pending: 'قيد الانتظار',
   Accepted: 'مقبول',

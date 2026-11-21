@@ -652,6 +652,44 @@ test('Features 13-14: restaurant acceptance and assigned delivery', async (t) =>
       assert.equal(analyticsAll.body.data.kpis.total_orders, totalDb);
     },
   );
+  await t.test(
+    'delivery company analytics enforces company isolation, validates range, and returns fleet & SLA metrics',
+    async () => {
+      await api()
+        .get('/api/v1/delivery-company/analytics')
+        .set('Authorization', auth(5))
+        .expect(403);
+      await api()
+        .get('/api/v1/delivery-company/analytics?range=bad')
+        .set('Authorization', auth(3))
+        .expect(422);
+
+      const analytics30 = await api()
+        .get('/api/v1/delivery-company/analytics?range=30d')
+        .set('Authorization', auth(3))
+        .expect(200);
+      const data30 = analytics30.body.data;
+      assert.equal(data30.range, '30d');
+      assert.equal(data30.daily_series.length, 30);
+      assert.equal(data30.peak_hours.length, 24);
+      assert.ok(data30.previous_kpis !== null);
+      assert.ok(data30.kpis.delivered_orders >= 1);
+      assert.match(data30.kpis.delivery_fees_earned, /^\d+\.\d{2}$/);
+      assert.match(data30.kpis.cod_collected_value, /^\d+\.\d{2}$/);
+      assert.ok(data30.fleet.active_drivers >= 1);
+      assert.ok(data30.driver_leaderboard.length >= 1);
+      assert.ok(data30.top_pickup_restaurants.length >= 1);
+
+      const otherCompany = await api()
+        .get('/api/v1/delivery-company/analytics?range=all')
+        .set('Authorization', auth(4))
+        .expect(200);
+      assert.equal(otherCompany.body.data.previous_kpis, null);
+      assert.equal(otherCompany.body.data.kpis.assigned_orders, 0);
+      assert.equal(otherCompany.body.data.kpis.delivery_fees_earned, '0.00');
+      assert.equal(otherCompany.body.data.top_pickup_restaurants.length, 0);
+    },
+  );
 });
 
 test('Realtime orders: authenticated role isolation, committed events, revocation and expiry', async () => {

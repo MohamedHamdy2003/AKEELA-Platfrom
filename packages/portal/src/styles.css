@@ -248,6 +248,162 @@ bdi,
   border-bottom: 1px solid var(--p-line);
   background: #ffffffe8;
 }
+.topbar.has-brand {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(10px);
+}
+.topbar.has-brand .breadcrumb {
+  justify-self: start;
+  min-width: 0;
+}
+.topbar.has-brand .account-name small {
+  text-transform: uppercase;
+}
+.topbar.has-brand .account-tools {
+  justify-self: end;
+  min-width: 0;
+}
+.topbar-brand {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 16px;
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--p-accent-soft), #ffffff 40%),
+    #ffffff
+  );
+  border: 1px solid color-mix(in srgb, var(--p-accent), transparent 76%);
+  box-shadow: 0 2px 10px rgb(7 56 75 / 6%);
+  max-width: 340px;
+  min-width: 0;
+  transition:
+    border-color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+.topbar-brand:hover {
+  border-color: color-mix(in srgb, var(--p-accent), transparent 40%);
+  box-shadow: 0 6px 18px rgb(7 56 75 / 11%);
+  transform: translateY(-1px);
+}
+.topbar-brand-crest {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--p-sidebar), var(--p-accent));
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 22%);
+}
+.topbar-brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  line-height: 1.25;
+}
+.topbar-brand-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-sidebar);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.topbar-brand-name.is-latin {
+  letter-spacing: 0.14em;
+  font-size: 13.5px;
+}
+.topbar-brand-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--p-accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.sidebar-partner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 11px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 7%);
+  border: 1px solid color-mix(in srgb, var(--p-gold), transparent 68%);
+  text-align: right;
+  min-width: 0;
+  transition:
+    background-color 160ms var(--ease-out),
+    border-color 160ms var(--ease-out);
+}
+.sidebar-partner:hover {
+  background: rgb(255 255 255 / 12%);
+  border-color: color-mix(in srgb, var(--p-gold), transparent 36%);
+}
+.sidebar-partner-crest {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--p-accent), var(--p-gold));
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 22%);
+}
+.sidebar-partner-meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.sidebar-partner-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-partner-name.is-latin {
+  letter-spacing: 0.08em;
+}
+.sidebar-partner-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--p-gold), #ffffff 42%);
+  white-space: nowrap;
+}
+.sidebar-partner-code i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #34d399;
+  flex-shrink: 0;
+}
 .breadcrumb,
 .account-tools {
   display: flex;
@@ -1342,6 +1498,39 @@ dialog p {
   }
   .topbar {
     padding: 0 15px;
+  }
+  .topbar.has-brand {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  .topbar.has-brand .connection {
+    max-width: none;
+    white-space: nowrap;
+  }
+  .topbar.has-brand .breadcrumb > span,
+  .topbar.has-brand .breadcrumb > strong {
+    display: none;
+  }
+  .topbar-brand {
+    padding: 4px 10px 4px 12px;
+    gap: 7px;
+    max-width: 100%;
+  }
+  .topbar-brand-crest {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+    border-radius: 7px;
+  }
+  .topbar-brand-name {
+    font-size: 12px;
+  }
+  .topbar-brand-name.is-latin {
+    letter-spacing: 0.09em;
+    font-size: 11.5px;
+  }
+  .topbar-brand-sub {
+    display: none;
   }
   .account-name {
     display: none;

@@ -11,15 +11,15 @@ API paths omit `/api/v1`. Configure the full API base URL; the backend domain is
 
 ## Screens and Features
 
-| Screen                          | Features                                                                                       |
-| ------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Login / Verify Email / Recovery | Access the Admin-created company account; email verification and password recovery.            |
-| Home / Assigned Orders          | Show assigned orders and navigation to drivers/profile; no fleet analytics API exists.         |
-| Order Details / Dispatch        | Read pickup/delivery locations and saved items, assign/change driver, confirm pickup/delivery. |
-| Order History                   | Use status/date filters to view completed/final assigned orders.                               |
-| Drivers                         | List, create and edit own drivers; enable/disable activity.                                    |
-| Company Profile                 | Read/edit company contact details.                                                             |
-| My Account                      | Read/edit login account full name/phone, change password and logout.                           |
+| Screen                          | Features                                                                                                                                              |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Login / Verify Email / Recovery | Access the Admin-created company account; email verification and password recovery.                                                                   |
+| Home / Dispatch Analytics       | Live dispatch radar, company-scoped delivery KPIs, fleet utilization, driver leaderboard, daily trends, peak shift hours, and top pickup restaurants. |
+| Order Details / Dispatch        | Read pickup/delivery locations and saved items, assign/change driver, confirm pickup/delivery.                                                        |
+| Order History                   | Use status/date filters to view completed/final assigned orders.                                                                                      |
+| Drivers                         | List, create and edit own drivers; enable/disable activity.                                                                                           |
+| Company Profile                 | Read/edit company contact details.                                                                                                                    |
+| My Account                      | Read/edit login account full name/phone, change password and logout.                                                                                  |
 
 ## 01. Authentication and Account
 
@@ -60,11 +60,12 @@ API paths omit `/api/v1`. Configure the full API base URL; the backend domain is
 
 ## 03. Assigned Orders and History
 
-| Method | API                                   | Screen action                                                                                     |
-| ------ | ------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| GET    | `/delivery-company/orders`            | List only assigned company orders; `page`, `per_page`, optional `status`, `date_from`, `date_to`. |
-| GET    | `/delivery-company/orders/counts`     | Fetch assigned company order counts grouped by status for the metrics strip.                      |
-| GET    | `/delivery-company/orders/{order_id}` | Load saved order data plus current restaurant pickup details.                                     |
+| Method | API                                   | Screen action                                                                                                                                                                    |
+| ------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/delivery-company/orders`            | List only assigned company orders; `page`, `per_page`, optional `status`, `date_from`, `date_to`.                                                                                |
+| GET    | `/delivery-company/orders/counts`     | Fetch assigned company order counts grouped by status for the metrics strip.                                                                                                     |
+| GET    | `/delivery-company/analytics`         | Fetch company-scoped dispatch KPIs, live queue alerts, fleet utilization, driver leaderboard, trends, peak hours, and top pickup restaurants (`range=today\|7d\|30d\|90d\|all`). |
+| GET    | `/delivery-company/orders/{order_id}` | Load saved order data plus current restaurant pickup details.                                                                                                                    |
 
 - Orders arrive after the restaurant accepts; the company does not browse/claim Pending orders or accept company assignments manually. Backend configuration selects the company.
 - List fields: order ID, restaurant ID, company/driver ID, status, total and timestamps. Use details to read full saved items/addons, address, coordinates, notes and fee.
@@ -104,7 +105,7 @@ API paths omit `/api/v1`. Configure the full API base URL; the backend domain is
 - OTP actions respect cooldown/expiry/errors; recovery messaging stays generic. Socket.IO notifications invalidate order REST reads; reconnect also refreshes. See [realtime](../REALTIME.md).
 - Build order: auth → company profile → drivers → assigned orders/details → assignment → pickup/delivery → history/account/security → responsive/error checks.
 - Implemented stack: React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
-- Out of scope: driver accounts, tracking, payouts, financial reports, delivery-fee settings, multiple-company routing, payments and new backend endpoints.
+- Out of scope: driver accounts, live GPS tracking, automated driver payouts, delivery-fee settings, multiple-company routing, and online payment settlements.
 
 Monorepo location: `apps/delivery`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
 

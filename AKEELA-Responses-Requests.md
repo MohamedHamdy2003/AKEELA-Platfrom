@@ -261,6 +261,7 @@ Checkout calculates current server prices and creates a Pending order directly. 
 | GET | `/admin/orders/counts` | Return order counts grouped by status across the platform. | No body | `200` · OrderStatusCounts |
 | GET | `/delivery-company/orders/counts` | Return assigned order counts grouped by status for the company. | No body | `200` · OrderStatusCounts |
 | GET | `/admin/analytics` | Return platform KPIs, trends, peak hours, restaurant rankings, top items, alerts, and totals. | Query: `range=30d` | `200` · AdminAnalytics |
+| GET | `/delivery-company/analytics` | Return company-scoped dispatch KPIs, live queue alerts, fleet utilization, driver leaderboard, trends, peak hours, and top pickup restaurants. | Query: `range=30d` | `200` · DeliveryAnalytics |
 
 List date filters use valid `YYYY-MM-DD` dates in Africa/Cairo. Both bounds include their whole local day; `date_from` must not follow `date_to`. Delivery pickup details use the current restaurant address/coordinates; the customer delivery address and prices remain order snapshots. Only acceptance retries from Accepted are idempotent; other invalid/final-state transitions return `409 CONFLICT`.
 
@@ -905,6 +906,93 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
     "active_drivers": 6,
     "inactive_drivers": 1
   }
+}
+```
+
+### DeliveryAnalytics
+
+```json
+{
+  "range": "30d",
+  "generated_at": "2026-11-19T12:00:00.000+02:00",
+  "kpis": {
+    "delivery_fees_earned": "1440.00",
+    "avg_delivery_fee": "30.00",
+    "cod_collected_value": "12450.00",
+    "assigned_orders": 51,
+    "delivered_orders": 48,
+    "failed_orders": 1,
+    "delivery_success_rate": 98,
+    "failure_rate": 2,
+    "avg_fulfillment_minutes": 34.5
+  },
+  "previous_kpis": {
+    "delivery_fees_earned": "1200.00",
+    "cod_collected_value": "10200.00",
+    "assigned_orders": 42,
+    "delivered_orders": 40,
+    "failed_orders": 1,
+    "avg_fulfillment_minutes": 38.2
+  },
+  "live_queue": {
+    "unassigned_accepted": 1,
+    "in_transit": 1,
+    "stale_unassigned": 0,
+    "long_in_transit": 0,
+    "inactive_driver_orders": 0
+  },
+  "status_breakdown": {
+    "Accepted": 1,
+    "Picked_Up": 1,
+    "Delivered": 48,
+    "Failed": 1
+  },
+  "daily_series": [
+    {
+      "date": "2026-11-19",
+      "assigned": 6,
+      "delivered": 5,
+      "failed": 0,
+      "delivery_fees": "150.00"
+    }
+  ],
+  "peak_hours": [
+    {
+      "hour": 20,
+      "orders": 14
+    }
+  ],
+  "fleet": {
+    "total_drivers": 7,
+    "active_drivers": 6,
+    "inactive_drivers": 1,
+    "busy_drivers": 1,
+    "idle_active_drivers": 5
+  },
+  "driver_leaderboard": [
+    {
+      "driver_id": "30",
+      "driver_name": "Ahmed Hassan",
+      "driver_phone": "+201000000011",
+      "is_active": true,
+      "current_load": 1,
+      "delivered_orders": 22,
+      "failed_orders": 0,
+      "delivery_fees": "660.00",
+      "avg_fulfillment_minutes": 31.2,
+      "success_rate": 100
+    }
+  ],
+  "top_pickup_restaurants": [
+    {
+      "rest_id": "10",
+      "rest_title": "AKEELA Grill",
+      "assigned_orders": 24,
+      "delivered_orders": 22,
+      "failed_orders": 0,
+      "delivery_fees": "660.00"
+    }
+  ]
 }
 ```
 

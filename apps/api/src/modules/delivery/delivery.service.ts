@@ -173,6 +173,26 @@ export class DeliveryService {
     return { active, inactive };
   }
 
+  async companyDrivers(companyId: string): Promise<
+    Array<{
+      driver_id: string;
+      driver_name: string;
+      driver_phone: string;
+      is_active: boolean;
+    }>
+  > {
+    return this.dataSource.getRepository(DeliveryDriver).find({
+      select: {
+        driver_id: true,
+        driver_name: true,
+        driver_phone: true,
+        is_active: true,
+      },
+      where: { company_id: companyId },
+      order: { driver_id: 'ASC' },
+    });
+  }
+
   async create(
     userId: string,
     input: DeliveryCompanyRegistration,
