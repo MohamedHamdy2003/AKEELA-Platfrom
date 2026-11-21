@@ -30,7 +30,9 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
-- **Mail provider abstraction & multi-provider automatic failover (2026-11-21, ready for owner-authorized release)**:
+- **Production release: MailProvider abstraction & multi-provider SMTP failover (2026-11-21)**: [Release 44909104687](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/44909104687) deployed `main` commit `0d46f63` via PR #53. Verify passed in 5m41s (repo, 40 API tests including multi-provider failover/cooldown tests, PostgreSQL + Mailpit integration suite, 77 Playwright E2E scenarios, production container smoke); 4 Docker images published to GHCR in 1m28s; VPS deployment succeeded and all 5 live HTTPS endpoints returned HTTP 200. Ready for owner to switch `/opt/akeela/.env.production` to Resend + Brevo on `mail.akeelaonline.tech`. Work now returns to dev-only policy.
+
+- **Mail provider abstraction & multi-provider automatic failover (2026-11-21, released)**:
   - Decoupled `OtpMailService` behind a `MailProvider` interface (`apps/api/src/modules/auth/mail/`) with `SmtpMailProvider` and `FailoverMailProvider`.
   - Added optional ordered fallback SMTP configuration (`SMTP_FALLBACK_*` and `SMTP_FALLBACK_2_*`..`5_*`, inheriting `SMTP_FROM` when omitted, supporting shared custom subdomain `AKEELA <noreply@mail.akeelaonline.tech>` across providers like Resend and Brevo) in `auth.environment.ts`, `compose.production.yml`, and `npm run smtp:check`.
   - Added smart in-memory cooldown (60m for quota/rate limits, 15m for transient errors) with automatic primary recovery, recipient-error distinction, and unit tests in `apps/api/test/mail-failover.test.ts`.
