@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { User } from '@akeela/portal/models';
+import type { Company, User } from '@akeela/portal/models';
 import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
 import { AccountScreen, OrdersBoard } from '@akeela/portal/screens';
 import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
@@ -80,6 +80,34 @@ function DeliveryWorkspace() {
     }
     setRoute(key);
   };
+  const company = (user?.profile ?? null) as Partial<Company> | null;
+  const companyName =
+    typeof company?.company_name === 'string' && company.company_name.trim()
+      ? company.company_name.trim()
+      : 'إدارة التوصيل';
+  const companyId =
+    typeof company?.company_id === 'string' ? company.company_id : undefined;
+
+  useEffect(() => {
+    document.title = user
+      ? `${companyName.toUpperCase()} — AKEELA`
+      : 'AKEELA - إدارة التوصيل';
+  }, [user, companyName]);
+
+  const handleCompanyUpdated = (updated: Company) => {
+    setUser((current) =>
+      current
+        ? {
+            ...current,
+            profile: {
+              ...current.profile,
+              ...updated,
+            },
+          }
+        : current,
+    );
+  };
+
   if (restoring || restoreError)
     return (
       <main
@@ -115,6 +143,12 @@ function DeliveryWorkspace() {
       route={route}
       navigate={navigate}
       status={status}
+      brandIdentity={{
+        name: companyName,
+        subtitle: 'شريك التوصيل الرسمي',
+        code: companyId ? `معرّف الشركة #${companyId}` : undefined,
+        onClick: () => navigate('profile'),
+      }}
       logout={async () => {
         await api.request('/auth/logout', { method: 'POST' });
         api.clearSession();
@@ -122,7 +156,9 @@ function DeliveryWorkspace() {
         setRoute('home');
       }}
     >
-      {route === 'home' && <Home revision={revision} navigate={navigate} />}
+      {route === 'home' && (
+        <Home revision={revision} navigate={navigate} company={company} />
+      )}
       {route === 'orders' && (
         <OrdersBoard
           api={api}
@@ -142,7 +178,9 @@ function DeliveryWorkspace() {
         />
       )}
       {route === 'drivers' && <Drivers />}
-      {route === 'profile' && <CompanyProfile />}
+      {route === 'profile' && (
+        <CompanyProfile onUpdated={handleCompanyUpdated} />
+      )}
       {route === 'account' && (
         <AccountScreen api={api} user={user} updated={setUser} />
       )}

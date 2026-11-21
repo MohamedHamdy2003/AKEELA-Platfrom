@@ -109,6 +109,18 @@ test('delivery executive analytics dashboard displays dispatch radar, fleet metr
   await expect(
     page.getByRole('heading', { name: 'نظرة عامة', exact: true }),
   ).toBeVisible();
+  const topbarBrand = page.locator('.topbar-brand');
+  await expect(topbarBrand).toBeVisible();
+  await expect(topbarBrand.locator('.topbar-brand-name')).toContainText(
+    'شركة أكيلة للتوصيل',
+  );
+  await expect(topbarBrand.locator('.topbar-brand-name')).toHaveCSS(
+    'text-transform',
+    'uppercase',
+  );
+  await expect(page.locator('.sidebar-partner-name')).toContainText(
+    'شركة أكيلة للتوصيل',
+  );
   await expect(page.getByText('إيرادات رسوم التوصيل')).toBeVisible();
   await expect(page.getByText('متوسط زمن التوصيل')).toBeVisible();
   await expect(page.getByText('التحصيل النقدي (COD)')).toBeVisible();
@@ -173,5 +185,21 @@ test('delivery executive analytics dashboard displays dispatch radar, fleet metr
   await expect(
     page.getByRole('heading', { name: 'طلبات الشركة', exact: true }),
   ).toBeVisible();
+
+  await page.setViewportSize({ width: 1536, height: 960 });
+  await page.locator('.topbar-brand').click();
+  await expect(
+    page.getByRole('heading', { name: 'بيانات الشركة', exact: true }),
+  ).toBeVisible();
+  await page.getByLabel('اسم الشركة', { exact: true }).fill('bosta express');
+  await page.getByRole('button', { name: 'حفظ البيانات', exact: true }).click();
+  await expect(page.locator('.topbar-brand-name')).toContainText(
+    'bosta express',
+  );
+  await expect(page.locator('.topbar-brand-name')).toHaveClass(/is-latin/);
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-delivery-branded-profile.png'),
+    fullPage: true,
+  });
   expect(errors).toEqual([]);
 });

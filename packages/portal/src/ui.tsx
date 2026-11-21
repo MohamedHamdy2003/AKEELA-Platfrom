@@ -500,6 +500,24 @@ const navIcons: Record<string, typeof Home> = {
   profile: Building2,
   account: UserRound,
 };
+function brandMonogram(name: string): string {
+  const cleaned = name.trim();
+  if (!cleaned) return 'AK';
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const meaningful =
+    words.length > 1 && ['شركة', 'مؤسسة', 'مجموعة'].includes(words[0]!)
+      ? words.slice(1)
+      : words;
+  if (meaningful.length >= 2) {
+    return (
+      meaningful[0]!.slice(0, 1) + meaningful[1]!.slice(0, 1)
+    ).toUpperCase();
+  }
+  return meaningful[0]!.slice(0, 2).toUpperCase();
+}
+function isLatinName(name: string): boolean {
+  return /[A-Za-z]/.test(name) && !/[\u0600-\u06FF]/.test(name);
+}
 export function Shell({
   user,
   appName,
@@ -509,6 +527,7 @@ export function Shell({
   navigate,
   status,
   logout,
+  brandIdentity,
   children,
 }: {
   user: User;
@@ -519,6 +538,12 @@ export function Shell({
   navigate: (key: string) => void;
   status: string;
   logout: () => Promise<void>;
+  brandIdentity?: {
+    name: string;
+    subtitle?: string;
+    code?: string;
+    onClick?: () => void;
+  };
   children: ReactNode;
 }) {
   const [drawer, setDrawer] = useState(false);
@@ -625,6 +650,37 @@ export function Shell({
           </picture>
           <small className="brand-label">{appName}</small>
         </div>
+        {brandIdentity && (
+          <button
+            type="button"
+            className="sidebar-partner"
+            title={brandIdentity.name}
+            onClick={() => {
+              brandIdentity.onClick?.();
+              setDrawer(false);
+            }}
+          >
+            <span className="sidebar-partner-crest" aria-hidden="true">
+              {brandMonogram(brandIdentity.name)}
+            </span>
+            <span className="sidebar-partner-meta">
+              <strong
+                className={
+                  'sidebar-partner-name' +
+                  (isLatinName(brandIdentity.name) ? ' is-latin' : '')
+                }
+              >
+                <bdi>{brandIdentity.name}</bdi>
+              </strong>
+              {brandIdentity.code && (
+                <small className="sidebar-partner-code">
+                  <i aria-hidden="true" />
+                  {brandIdentity.code}
+                </small>
+              )}
+            </span>
+          </button>
+        )}
         <button
           className="drawer-close"
           aria-label="إغلاق القائمة"
@@ -700,7 +756,7 @@ export function Shell({
         />
       )}
       <div className="workspace" inert={compact && drawer}>
-        <header className="topbar">
+        <header className={'topbar' + (brandIdentity ? ' has-brand' : '')}>
           <div className="breadcrumb">
             <button
               ref={menuTrigger}
@@ -716,6 +772,34 @@ export function Shell({
             <span>/</span>
             <strong>{navigation.find(([key]) => key === route)?.[1]}</strong>
           </div>
+          {brandIdentity && (
+            <button
+              type="button"
+              className="topbar-brand"
+              aria-label={`ملف الشركة: ${brandIdentity.name}`}
+              title={brandIdentity.name}
+              onClick={brandIdentity.onClick}
+            >
+              <span className="topbar-brand-crest" aria-hidden="true">
+                {brandMonogram(brandIdentity.name)}
+              </span>
+              <span className="topbar-brand-text">
+                <span
+                  className={
+                    'topbar-brand-name' +
+                    (isLatinName(brandIdentity.name) ? ' is-latin' : '')
+                  }
+                >
+                  <bdi>{brandIdentity.name}</bdi>
+                </span>
+                {brandIdentity.subtitle && (
+                  <small className="topbar-brand-sub">
+                    {brandIdentity.subtitle}
+                  </small>
+                )}
+              </span>
+            </button>
+          )}
           <div className="account-tools">
             <span className={'connection ' + status} role="status">
               <i />
@@ -728,7 +812,7 @@ export function Shell({
             <span className="avatar">{user.full_name.slice(0, 1)}</span>
             <span className="account-name">
               {user.full_name}
-              <small>{appName}</small>
+              <small>{brandIdentity?.name ?? appName}</small>
             </span>
           </div>
         </header>
@@ -742,7 +826,9 @@ export function Shell({
           {children}
         </main>
         <footer className="workspace-footer">
-          AKEELA · التشغيل بتوقيت مصر · EGP
+          {brandIdentity
+            ? `${brandIdentity.name.toUpperCase()} · مدعوم بواسطة AKEELA · التشغيل بتوقيت مصر · EGP`
+            : 'AKEELA · التشغيل بتوقيت مصر · EGP'}
         </footer>
       </div>
     </div>

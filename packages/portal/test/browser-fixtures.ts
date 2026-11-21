@@ -19,6 +19,7 @@ export async function portalFixture(
       company_address: 'الإسماعيلية',
       company_phone: '+201000000003',
       company_email: null,
+      is_active: true,
     },
   };
   const driver = {
@@ -583,8 +584,12 @@ export async function portalFixture(
         data = [driver];
         total = 1;
       }
-    } else if (path === '/delivery-company/profile') data = user.profile;
-    else if (path.startsWith('/auth/')) data = null;
+    } else if (path === '/delivery-company/profile') {
+      if (method === 'PATCH' && body && typeof body === 'object') {
+        Object.assign(user.profile, body);
+      }
+      data = user.profile;
+    } else if (path.startsWith('/auth/')) data = null;
     else throw new Error('Unhandled fixture route ' + method + ' ' + path);
     await route.fulfill({
       json: {

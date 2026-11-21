@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Banknote,
+  Building2,
   CheckCircle2,
   Clock,
+  MapPin,
   PackageCheck,
+  Phone,
   RefreshCw,
   ShieldAlert,
   ShieldCheck,
@@ -16,14 +19,12 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
-import type { AnalyticsRange, DeliveryAnalytics } from '@akeela/portal/models';
-import {
-  Failure,
-  PageTitle,
-  dateTime,
-  money,
-  useResource,
-} from '@akeela/portal/ui';
+import type {
+  AnalyticsRange,
+  Company,
+  DeliveryAnalytics,
+} from '@akeela/portal/models';
+import { Failure, dateTime, money, useResource } from '@akeela/portal/ui';
 import { api } from '../lib/api';
 import {
   DeliveryPeakHoursChart,
@@ -102,9 +103,11 @@ function DeliveryAnalyticsSkeleton() {
 export function Home({
   revision,
   navigate,
+  company,
 }: {
   revision: number;
   navigate: (key: string) => void;
+  company?: Partial<Company> | null;
 }) {
   const [range, setRange] = useState<AnalyticsRange>('30d');
   const [driverTab, setDriverTab] = useState<'delivered' | 'load'>('delivered');
@@ -165,19 +168,72 @@ export function Home({
         )
       : 0;
 
+  const companyName =
+    typeof company?.company_name === 'string' && company.company_name.trim()
+      ? company.company_name.trim()
+      : 'إدارة التوصيل';
+  const isLatinCompany =
+    /[A-Za-z]/.test(companyName) && !/[\u0600-\u06FF]/.test(companyName);
+
   return (
     <div
       className="del-home"
       data-refreshing={analytics.loading && Boolean(data)}
     >
-      <div className="del-home-head">
-        <PageTitle
-          title="نظرة عامة"
-          description="مركز عمليات التوزيع والأسطول ومؤشرات كفاءة التسليم بتوقيت القاهرة."
-        />
+      <section
+        className="del-hero"
+        aria-label="هوية شركة التوصيل والفترة الزمنية"
+      >
+        <div className="del-hero-brand">
+          <div className="del-hero-eyebrow">
+            <span className="del-hero-live-dot" aria-hidden="true" />
+            <span>مركز عمليات الشريك</span>
+            {company?.company_id && (
+              <span className="del-hero-id numeric">#{company.company_id}</span>
+            )}
+          </div>
+          <div className="del-hero-titles">
+            <h1 className="del-hero-title">نظرة عامة</h1>
+            <span
+              className={
+                'del-hero-company' + (isLatinCompany ? ' is-latin' : '')
+              }
+            >
+              <bdi>{companyName}</bdi>
+            </span>
+          </div>
+          <p className="del-hero-desc">
+            مركز عمليات التوزيع والأسطول ومؤشرات كفاءة التسليم بتوقيت القاهرة.
+          </p>
+          {(company?.company_address || company?.company_phone) && (
+            <div className="del-hero-meta">
+              {company?.company_address && (
+                <span>
+                  <MapPin size={13} aria-hidden="true" />
+                  {company.company_address}
+                </span>
+              )}
+              {company?.company_phone && (
+                <span className="numeric">
+                  <Phone size={13} aria-hidden="true" />
+                  <bdi>{company.company_phone}</bdi>
+                </span>
+              )}
+              <button
+                type="button"
+                className="del-hero-link"
+                onClick={() => navigate('profile')}
+              >
+                <Building2 size={13} aria-hidden="true" />
+                تحديث بيانات الشركة
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="del-home-controls">
           <div
-            className="del-seg"
+            className="del-seg del-seg-hero"
             role="group"
             aria-label="الفترة الزمنية لتحليلات التوصيل"
           >
@@ -196,7 +252,8 @@ export function Home({
           <button
             type="button"
             className={
-              'del-refresh-btn' + (analytics.loading ? ' spinning' : '')
+              'del-refresh-btn del-refresh-hero' +
+              (analytics.loading ? ' spinning' : '')
             }
             aria-label="تحديث التحليلات"
             title={
@@ -210,7 +267,7 @@ export function Home({
             <RefreshCw size={16} aria-hidden="true" />
           </button>
         </div>
-      </div>
+      </section>
 
       {Boolean(analytics.error) && (
         <Failure error={analytics.error} retry={analytics.reload} />
