@@ -260,6 +260,7 @@ Checkout calculates current server prices and creates a Pending order directly. 
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. | No body | `200` · OrderState |
 | GET | `/admin/orders/counts` | Return order counts grouped by status across the platform. | No body | `200` · OrderStatusCounts |
 | GET | `/delivery-company/orders/counts` | Return assigned order counts grouped by status for the company. | No body | `200` · OrderStatusCounts |
+| GET | `/admin/analytics` | Return platform KPIs, trends, peak hours, restaurant rankings, top items, alerts, and totals. | Query: `range=30d` | `200` · AdminAnalytics |
 
 List date filters use valid `YYYY-MM-DD` dates in Africa/Cairo. Both bounds include their whole local day; `date_from` must not follow `date_to`. Delivery pickup details use the current restaurant address/coordinates; the customer delivery address and prices remain order snapshots. Only acceptance retries from Accepted are idempotent; other invalid/final-state transitions return `409 CONFLICT`.
 
@@ -802,6 +803,108 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
   "Rejected": 1,
   "Cancelled": 2,
   "Failed": 0
+}
+```
+
+### AdminAnalytics
+
+```json
+{
+  "range": "30d",
+  "generated_at": "2026-11-19T12:00:00.000+02:00",
+  "kpis": {
+    "delivered_gmv": "12450.00",
+    "delivery_fees_total": "1440.00",
+    "avg_order_value": "259.38",
+    "total_orders": 60,
+    "delivered_orders": 48,
+    "completion_rate": 80,
+    "rejection_rate": 6.7,
+    "cancellation_rate": 8.3,
+    "failure_rate": 1.7,
+    "new_customers": 24,
+    "new_restaurants": 3
+  },
+  "previous_kpis": {
+    "delivered_gmv": "10200.00",
+    "delivery_fees_total": "1200.00",
+    "avg_order_value": "255.00",
+    "total_orders": 50,
+    "delivered_orders": 40,
+    "new_customers": 18,
+    "new_restaurants": 2
+  },
+  "status_breakdown": {
+    "Pending": 1,
+    "Accepted": 1,
+    "Picked_Up": 0,
+    "Delivered": 48,
+    "Rejected": 4,
+    "Cancelled": 5,
+    "Failed": 1
+  },
+  "daily_series": [
+    {
+      "date": "2026-11-19",
+      "orders": 6,
+      "delivered": 5,
+      "gmv": "1290.00"
+    }
+  ],
+  "peak_hours": [
+    {
+      "hour": 20,
+      "orders": 14
+    }
+  ],
+  "top_restaurants": [
+    {
+      "rest_id": "10",
+      "rest_title": "AKEELA Grill",
+      "total_orders": 24,
+      "delivered_orders": 22,
+      "rejected_orders": 1,
+      "rejection_rate": 4.2,
+      "gmv": "5840.00"
+    }
+  ],
+  "attention_restaurants": [
+    {
+      "rest_id": "12",
+      "rest_title": "Express Corner",
+      "total_orders": 10,
+      "delivered_orders": 7,
+      "rejected_orders": 3,
+      "rejection_rate": 30,
+      "gmv": "1680.00"
+    }
+  ],
+  "top_items": [
+    {
+      "rest_id": "10",
+      "rest_title": "AKEELA Grill",
+      "item_name": "Grilled Chicken Meal",
+      "units_sold": 32,
+      "revenue": "3200.00"
+    }
+  ],
+  "alerts": {
+    "stale_pending_orders": 1,
+    "stale_accepted_orders": 0,
+    "pending_restaurants": 2,
+    "unverified_companies": 0
+  },
+  "platform_totals": {
+    "total_users": 86,
+    "customers": 72,
+    "restaurants_total": 12,
+    "restaurants_active": 9,
+    "restaurants_pending": 2,
+    "restaurants_suspended": 1,
+    "delivery_companies": 1,
+    "active_drivers": 6,
+    "inactive_drivers": 1
+  }
 }
 ```
 

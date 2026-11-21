@@ -136,7 +136,191 @@ export async function portalFixture(
       };
     else if (path === '/me') data = user;
     else if (path === '/auth/logout') data = null;
-    else if (path.endsWith('/orders/counts')) {
+    else if (path === '/admin/analytics') {
+      const range = url.searchParams.get('range') || '30d';
+      const scale =
+        range === 'today'
+          ? 1
+          : range === '7d'
+            ? 3
+            : range === '90d'
+              ? 18
+              : range === 'all'
+                ? 24
+                : 10;
+      const days =
+        range === 'today' ? 1 : range === '7d' ? 7 : range === '90d' ? 30 : 14;
+      const daily_series = Array.from({ length: days }, (_, idx) => {
+        const day = String(5 + idx).padStart(2, '0');
+        const o = Math.max(1, Math.round(((idx % 5) + 2) * (scale / 3)));
+        const d = Math.max(1, o - 1);
+        return {
+          date: `2026-11-${day}`,
+          orders: o,
+          delivered: d,
+          gmv: (d * 245).toFixed(2),
+        };
+      });
+      const totalOrders = daily_series.reduce((acc, p) => acc + p.orders, 0);
+      const deliveredOrders = daily_series.reduce(
+        (acc, p) => acc + p.delivered,
+        0,
+      );
+      const deliveredGmv = daily_series
+        .reduce((acc, p) => acc + Number(p.gmv), 0)
+        .toFixed(2);
+      const deliveryFees = (deliveredOrders * 30).toFixed(2);
+      const avgOrder = (Number(deliveredGmv) / deliveredOrders).toFixed(2);
+      const rejected = Math.max(
+        1,
+        Math.floor((totalOrders - deliveredOrders) * 0.45),
+      );
+      const cancelled = Math.max(
+        1,
+        Math.floor((totalOrders - deliveredOrders) * 0.3),
+      );
+      const failed = 1;
+      const accepted = 1;
+      const pickedUp = 1;
+      const activePending = Math.max(
+        0,
+        totalOrders -
+          deliveredOrders -
+          rejected -
+          cancelled -
+          failed -
+          accepted -
+          pickedUp,
+      );
+      const exactTotal =
+        deliveredOrders +
+        rejected +
+        cancelled +
+        failed +
+        accepted +
+        pickedUp +
+        activePending;
+      data = {
+        range,
+        generated_at: now,
+        kpis: {
+          delivered_gmv: deliveredGmv,
+          delivery_fees_total: deliveryFees,
+          avg_order_value: avgOrder,
+          total_orders: exactTotal,
+          delivered_orders: deliveredOrders,
+          completion_rate:
+            Math.round((deliveredOrders / exactTotal) * 1000) / 10,
+          rejection_rate: Math.round((rejected / exactTotal) * 1000) / 10,
+          cancellation_rate: Math.round((cancelled / exactTotal) * 1000) / 10,
+          failure_rate: Math.round((failed / exactTotal) * 1000) / 10,
+          new_customers: 4 * scale,
+          new_restaurants: Math.max(1, Math.round(scale / 3)),
+        },
+        previous_kpis:
+          range === 'all'
+            ? null
+            : {
+                delivered_gmv: (Number(deliveredGmv) * 0.84).toFixed(2),
+                delivery_fees_total: (Number(deliveryFees) * 0.85).toFixed(2),
+                avg_order_value: (Number(avgOrder) * 0.96).toFixed(2),
+                total_orders: Math.max(1, Math.round(exactTotal * 0.85)),
+                delivered_orders: Math.max(
+                  1,
+                  Math.round(deliveredOrders * 0.84),
+                ),
+                new_customers: Math.max(1, Math.round(3 * scale)),
+                new_restaurants: 1,
+              },
+        status_breakdown: {
+          Pending: activePending,
+          Accepted: accepted,
+          Picked_Up: pickedUp,
+          Delivered: deliveredOrders,
+          Rejected: rejected,
+          Cancelled: cancelled,
+          Failed: failed,
+        },
+        daily_series,
+        peak_hours: Array.from({ length: 24 }, (_, hour) => ({
+          hour,
+          orders:
+            hour === 20
+              ? 18
+              : hour === 21
+                ? 15
+                : hour >= 13 && hour <= 22
+                  ? 4 + (hour % 6)
+                  : hour >= 10
+                    ? 2
+                    : 0,
+        })),
+        top_restaurants: [
+          {
+            rest_id: '7',
+            rest_title: 'مطعم بيت الشواية',
+            total_orders: Math.max(5, Math.round(totalOrders * 0.45)),
+            delivered_orders: Math.max(4, Math.round(deliveredOrders * 0.48)),
+            rejected_orders: 1,
+            rejection_rate: 4.5,
+            gmv: (Number(deliveredGmv) * 0.5).toFixed(2),
+          },
+          {
+            rest_id: '8',
+            rest_title: 'كشري الأصيل',
+            total_orders: Math.max(3, Math.round(totalOrders * 0.3)),
+            delivered_orders: Math.max(2, Math.round(deliveredOrders * 0.32)),
+            rejected_orders: 0,
+            rejection_rate: 0,
+            gmv: (Number(deliveredGmv) * 0.32).toFixed(2),
+          },
+        ],
+        attention_restaurants: [
+          {
+            rest_id: '9',
+            rest_title: 'برجر السريع',
+            total_orders: 12,
+            delivered_orders: 8,
+            rejected_orders: 4,
+            rejection_rate: 33.3,
+            gmv: '1920.00',
+          },
+        ],
+        top_items: [
+          {
+            rest_id: '7',
+            rest_title: 'مطعم بيت الشواية',
+            item_name: 'وجبة دجاج مشوي',
+            units_sold: 28,
+            revenue: '4200.00',
+          },
+          {
+            rest_id: '8',
+            rest_title: 'كشري الأصيل',
+            item_name: 'طبق كشري مخصوص',
+            units_sold: 41,
+            revenue: '2460.00',
+          },
+        ],
+        alerts: {
+          stale_pending_orders: 1,
+          stale_accepted_orders: 0,
+          pending_restaurants: 1,
+          unverified_companies: 0,
+        },
+        platform_totals: {
+          total_users: 148,
+          customers: 132,
+          restaurants_total: 14,
+          restaurants_active: 11,
+          restaurants_pending: 1,
+          restaurants_suspended: 2,
+          delivery_companies: 1,
+          active_drivers: 8,
+          inactive_drivers: 2,
+        },
+      };
+    } else if (path.endsWith('/orders/counts')) {
       const counts = {
         Pending: 0,
         Accepted: 0,

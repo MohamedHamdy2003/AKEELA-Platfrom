@@ -120,3 +120,23 @@ export class AssignDriverDto {
   driver_id!: string;
 }
 export class EmptyOrderActionDto {}
+
+export const ANALYTICS_RANGES = ['today', '7d', '30d', '90d', 'all'] as const;
+export type AnalyticsRange = (typeof ANALYTICS_RANGES)[number];
+
+export class AdminAnalyticsQuery {
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Analytics window in Africa/Cairo time: today, 7d, 30d (default), 90d, or all.',
+    enum: ['today', '7d', '30d', '90d', 'all'],
+    required: false,
+    nullable: true,
+    example: '30d',
+  })
+  @IsOptional()
+  @IsIn(ANALYTICS_RANGES, {
+    message: 'Choose today, 7d, 30d, 90d, or all.',
+  })
+  range?: AnalyticsRange;
+}

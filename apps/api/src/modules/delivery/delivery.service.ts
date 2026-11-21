@@ -156,6 +156,23 @@ export class DeliveryService {
     return new Map(rows.map((row) => [row.user_id, row]));
   }
 
+  async driverCounts(): Promise<{ active: number; inactive: number }> {
+    const rows = await this.dataSource
+      .getRepository(DeliveryDriver)
+      .createQueryBuilder('d')
+      .select('d.is_active', 'is_active')
+      .addSelect('COUNT(*)::int', 'count')
+      .groupBy('d.is_active')
+      .getRawMany<{ is_active: boolean; count: number }>();
+    let active = 0;
+    let inactive = 0;
+    for (const row of rows) {
+      if (row.is_active) active = Number(row.count);
+      else inactive = Number(row.count);
+    }
+    return { active, inactive };
+  }
+
   async create(
     userId: string,
     input: DeliveryCompanyRegistration,

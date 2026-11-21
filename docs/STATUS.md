@@ -6,6 +6,8 @@
 
 Current owner policy: completed changes go to dev only. Main promotion and VPS deployment need a new explicit request; historical approvals below do not apply to future work.
 
+Current one-time owner request (2026-11-21): upgrade the Admin dashboard Home (`نظرة عامة`) with executive analytics backed by `GET /api/v1/admin/analytics?range=today|7d|30d|90d|all` (KPIs with previous-period growth comparison, status breakdown donut, Cairo daily trend chart, 24-hour peak-hours chart, top/high-rejection restaurant leaderboards, top-selling items, live operational alerts, and platform asset totals), then promote from `dev` to `main` and deploy to the VPS server after green verification. Later work returns to dev-only policy.
+
 Current one-time owner request (2026-11-21): promote the completed `MailProvider` abstraction and multi-provider SMTP failover (`SMTP_FALLBACK_*` / `SMTP_FALLBACK_2_*`..`5_*` with smart cooldown and multi-provider `smtp:check`) from `dev` to `main` and deploy to the VPS server so the owner can switch production OTP delivery to Resend + Brevo on `mail.akeelaonline.tech`. Later work returns to dev-only policy.
 
 Current one-time owner request (2026-11-21): upgrade Gmail SMTP OTP emails (`Email_Verification` and `Password_Reset`) with a branded Arabic RTL HTML template and inline CID brand/hero images, then promote all pending `dev` pre-launch hardening improvements (HTTP headers/HSTS, Docker log rotation, `OrdersAutoDeliverService` cleanup, automated 15-minute Uptime Monitor workflow, and the new OTP email design) to `main` and deploy to the VPS server. Later work returns to dev-only policy.
@@ -123,7 +125,7 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 | 16: Public liveness/readiness                                         | Implemented                                                                                            |
 | PostgreSQL                                                            | Twenty table mappings, one history view, nine reversible migrations (including 13 performance indexes) |
 | Restaurant frontend                                                   | React/Vite/TypeScript, Arabic RTL, tab-scoped sessionStorage sessions, Leaflet location picker         |
-| API collection                                                        | 83 routes in specifications and matching Bruno folders                                                 |
+| API collection                                                        | 84 routes in specifications and matching Bruno folders                                                 |
 | Docker/Caddy                                                          | Persistent images/database/certificates, private API/database; local TLS smoke verified                |
 | CI/CD                                                                 | PR checks, main GHCR publication, optional pinned-SSH deployment; deployment disabled until configured |
 

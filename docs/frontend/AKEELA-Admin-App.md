@@ -11,15 +11,15 @@ API paths omit `/api/v1`. Use a configured full API base URL; the backend domain
 
 ## Screens and Features
 
-| Screen                          | Features                                                                                         |
-| ------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Login / Verify Email / Recovery | Access the CLI-created Admin, optional email verification, forgot/reset password.                |
-| Home                            | Navigation to restaurant review, users and orders; no analytics endpoint.                        |
-| Restaurant Review               | Filter Pending/Active/Suspended profiles; inspect owner/profile and activate/suspend/reactivate. |
-| Users                           | Paginated role/activity filters, account/profile details and allowed account activity changes.   |
-| Create Delivery Company         | Create company login account and company profile together.                                       |
-| Orders                          | Platform order monitoring, status/date filters, order details and eligible failure action.       |
-| My Account                      | Read/edit own full name/phone, change password, logout.                                          |
+| Screen                          | Features                                                                                                                                     |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Login / Verify Email / Recovery | Access the CLI-created Admin, optional email verification, forgot/reset password.                                                            |
+| Home                            | Executive platform analytics (KPIs, trends, peak hours, top/high-rejection restaurants, top items, operational alerts) and quick navigation. |
+| Restaurant Review               | Filter Pending/Active/Suspended profiles; inspect owner/profile and activate/suspend/reactivate.                                             |
+| Users                           | Paginated role/activity filters, account/profile details and allowed account activity changes.                                               |
+| Create Delivery Company         | Create company login account and company profile together.                                                                                   |
+| Orders                          | Platform order monitoring, status/date filters, order details and eligible failure action.                                                   |
+| My Account                      | Read/edit own full name/phone, change password, logout.                                                                                      |
 
 ## 01. Authentication and My Account
 
@@ -78,12 +78,13 @@ API paths omit `/api/v1`. Use a configured full API base URL; the backend domain
 
 ## 04. Order Monitoring
 
-| Method | API                             | Screen action                                                                  |
-| ------ | ------------------------------- | ------------------------------------------------------------------------------ |
-| GET    | `/admin/orders`                 | List all orders with pagination and optional `status`, `date_from`, `date_to`. |
-| GET    | `/admin/orders/counts`          | Fetch order counts grouped by status for the dashboard metrics strip.          |
-| GET    | `/admin/orders/{order_id}`      | Read saved order details for support.                                          |
-| POST   | `/admin/orders/{order_id}/fail` | Mark Accepted/Picked_Up as Failed. No body.                                    |
+| Method | API                             | Screen action                                                                                                                                                            |
+| ------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/admin/orders`                 | List all orders with pagination and optional `status`, `date_from`, `date_to`.                                                                                           |
+| GET    | `/admin/orders/counts`          | Fetch order counts grouped by status for the dashboard metrics strip.                                                                                                    |
+| GET    | `/admin/analytics`              | Fetch executive KPIs, daily trends, peak hours, restaurant/item rankings, operational alerts and platform totals for a Cairo range (`today`, `7d`, `30d`, `90d`, `all`). |
+| GET    | `/admin/orders/{order_id}`      | Read saved order details for support.                                                                                                                                    |
+| POST   | `/admin/orders/{order_id}/fail` | Mark Accepted/Picked_Up as Failed. No body.                                                                                                                              |
 
 | Current status                            | Admin status action                              |
 | ----------------------------------------- | ------------------------------------------------ |
@@ -109,7 +110,7 @@ API paths omit `/api/v1`. Use a configured full API base URL; the backend domain
 - Socket.IO notifications invalidate order REST reads; reconnect also refreshes. See [realtime](../REALTIME.md).
 - Build order: auth → user list/detail → restaurant approval → company creation → order monitoring/failure → account/security → responsive/error checks.
 - Implemented stack: React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
-- Not supported: creating more Admins, manual company assignment, payment/refund tools, revenue reports, commission settings, general delivery-fee editing, notifications, data export and arbitrary database administration. Ask for specifications/backend APIs before adding them.
+- Not supported: creating more Admins, manual company assignment, payment/refund tools, commission settings, general delivery-fee editing, notifications, data export and arbitrary database administration. Ask for specifications/backend APIs before adding them.
 
 Monorepo location: `apps/admin`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
 
