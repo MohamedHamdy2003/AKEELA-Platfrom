@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  BarChart3,
   BellRing,
   SquarePlus,
   ConciergeBell,
@@ -30,6 +31,7 @@ import type { CatalogKind, Dashboard, Profile, User } from './lib/models';
 import { today } from './lib/format';
 import { Auth } from './features/auth';
 import { Home } from './features/home';
+import { RestaurantAnalyticsScreen } from './features/analytics';
 import { Catalog } from './features/catalog';
 import { Orders } from './features/orders';
 import { Account, RestaurantProfile } from './features/settings';
@@ -42,6 +44,7 @@ import { useSessionRestore } from '@akeela/portal/use-session-restore';
 
 const navigation = [
   { key: 'home', label: 'الرئيسية', icon: House },
+  { key: 'analytics', label: 'التحليلات', icon: BarChart3 },
   { key: 'orders', label: 'الطلبات', icon: ConciergeBell },
   { key: 'categories', label: 'التصنيفات', icon: Layers },
   { key: 'products', label: 'المنتجات', icon: Package },
@@ -279,6 +282,8 @@ function Workspace() {
         }}
         onProfileChanged={refreshStatus}
       />
+    ) : route === 'analytics' ? (
+      <RestaurantAnalyticsScreen profile={profile} navigate={navigate} />
     ) : route === 'orders' ? (
       <Orders initialId={initialOrder} onInitialConsumed={consumeInitial} />
     ) : route === 'profile' ? (

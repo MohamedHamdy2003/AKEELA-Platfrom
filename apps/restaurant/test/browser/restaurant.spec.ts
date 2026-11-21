@@ -290,3 +290,74 @@ test('tablet composition, password recovery and absence of framework overlay', a
   ).toBe(true);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
 });
+
+test('restaurant analytics page supports ranges, chart toggles, menu insights, and responsive layout', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 1536, height: 960 });
+  await setup(page);
+  await login(page);
+
+  await page.getByRole('button', { name: 'التحليلات', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'تحليلات المطعم', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('صافي مبيعات الطعام')).toBeVisible();
+  await expect(page.getByText('العملاء العائدون (الولاء)')).toBeVisible();
+  await expect(page.getByText('عائد الإضافات الإضافي')).toBeVisible();
+  await expect(page.getByText('برجر مشوي مخصوص')).toBeVisible();
+  await expect(page.getByText('صوص شيدر سايح')).toBeVisible();
+
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-restaurant-analytics-desktop.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+
+  await page.getByRole('button', { name: '7 أيام', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '7 أيام', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+
+  await page.getByRole('button', { name: 'الكل', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'الكل', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+
+  await page
+    .getByRole('group', { name: 'معيار منحنى مبيعات المطعم' })
+    .getByRole('button', { name: 'الطلبات', exact: true })
+    .click();
+  await expect(
+    page.getByText('إجمالي الطلبات الواردة للمطعم يومياً'),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'تحتاج ترويج', exact: true }).click();
+  await expect(page.getByText('عصير جوافة فريش')).toBeVisible();
+
+  await page
+    .getByRole('group', { name: 'عرض الإضافات والتصنيفات' })
+    .getByRole('button', { name: 'التصنيفات', exact: true })
+    .click();
+  await expect(page.getByText('السندويتشات')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-restaurant-analytics-mobile.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+
+  await page.getByRole('button', { name: /طلب جديد بانتظار القبول/ }).click();
+  await expect(
+    page.getByRole('heading', { name: 'الطلبات', exact: true }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+});

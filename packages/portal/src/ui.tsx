@@ -823,7 +823,9 @@ export function Shell({
               تلقائيًا فور عودة الشبكة.
             </Notice>
           )}
-          {children}
+          <div className="portal-view" key={route} data-route={route}>
+            {children}
+          </div>
         </main>
         <footer className="workspace-footer">
           {brandIdentity

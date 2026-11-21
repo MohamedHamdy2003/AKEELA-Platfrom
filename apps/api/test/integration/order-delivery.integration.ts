@@ -690,6 +690,43 @@ test('Features 13-14: restaurant acceptance and assigned delivery', async (t) =>
       assert.equal(otherCompany.body.data.top_pickup_restaurants.length, 0);
     },
   );
+  await t.test(
+    'restaurant analytics enforces role/ownership isolation, validates range, and returns menu & loyalty metrics',
+    async () => {
+      await api()
+        .get('/api/v1/restaurant/analytics')
+        .set('Authorization', auth(5))
+        .expect(403);
+      await api()
+        .get('/api/v1/restaurant/analytics?range=nope')
+        .set('Authorization', auth(1))
+        .expect(422);
+
+      const analytics30 = await api()
+        .get('/api/v1/restaurant/analytics?range=30d')
+        .set('Authorization', auth(1))
+        .expect(200);
+      const data30 = analytics30.body.data;
+      assert.equal(data30.range, '30d');
+      assert.equal(data30.daily_series.length, 30);
+      assert.equal(data30.peak_hours.length, 24);
+      assert.ok(data30.previous_kpis !== null);
+      assert.ok(data30.kpis.delivered_orders >= 1);
+      assert.match(data30.kpis.food_revenue, /^\d+\.\d{2}$/);
+      assert.match(data30.kpis.addons_revenue, /^\d+\.\d{2}$/);
+      assert.ok(data30.top_items.length >= 1);
+      assert.ok(data30.category_breakdown.length >= 1);
+      assert.ok(data30.menu_totals.active_products >= 1);
+
+      const otherRest = await api()
+        .get('/api/v1/restaurant/analytics?range=all')
+        .set('Authorization', auth(2))
+        .expect(200);
+      assert.equal(otherRest.body.data.previous_kpis, null);
+      assert.equal(otherRest.body.data.kpis.total_orders, 0);
+      assert.equal(otherRest.body.data.kpis.food_revenue, '0.00');
+    },
+  );
 });
 
 test('Realtime orders: authenticated role isolation, committed events, revocation and expiry', async () => {

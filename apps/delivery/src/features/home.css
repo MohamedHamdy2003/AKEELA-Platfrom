@@ -33,17 +33,18 @@
   background:
     radial-gradient(
       circle at 12% 15%,
-      rgb(18 176 189 / 28%) 0%,
+      rgb(34 199 214 / 30%) 0%,
       transparent 44%
     ),
-    linear-gradient(135deg, #07384b 0%, #094f65 56%, #087e91 100%);
+    linear-gradient(135deg, #062f40 0%, #094f68 56%, #087e91 100%);
   color: #f3fafc;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-end;
   gap: 18px;
-  box-shadow: 0 14px 34px rgb(7 56 75 / 16%);
+  box-shadow: 0 14px 34px rgb(6 47 64 / 18%);
+  animation: delCardIn 360ms var(--ease-out) backwards;
 }
 .del-hero::before {
   content: '';
@@ -320,15 +321,41 @@
   box-shadow: var(--shadow-panel);
   text-align: right;
   min-width: 0;
+  animation: delCardIn 380ms var(--ease-out) backwards;
   transition:
     border-color 180ms var(--ease-out),
     transform 180ms var(--ease-out),
     box-shadow 180ms var(--ease-out);
 }
+.del-kpi:nth-child(2) {
+  animation-delay: 35ms;
+}
+.del-kpi:nth-child(3) {
+  animation-delay: 70ms;
+}
+.del-kpi:nth-child(4) {
+  animation-delay: 105ms;
+}
+.del-kpi:nth-child(5) {
+  animation-delay: 140ms;
+}
+.del-kpi:nth-child(6) {
+  animation-delay: 175ms;
+}
+@keyframes delCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 button.del-kpi:hover {
-  border-color: color-mix(in srgb, var(--p-accent), transparent 50%);
+  border-color: color-mix(in srgb, var(--p-accent), transparent 45%);
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgb(7 56 75 / 8%);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--p-accent), transparent 86%);
 }
 .del-kpi-top {
   display: flex;
@@ -451,6 +478,7 @@ button.del-kpi:hover {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  animation: delCardIn 420ms var(--ease-out) 90ms backwards;
 }
 .del-card-head {
   display: flex;
@@ -899,7 +927,9 @@ button.del-kpi:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .del-home,
+  .del-hero,
   .del-kpi,
+  .del-card,
   .del-radar-pill,
   .del-donut-seg,
   .del-refresh-btn.spinning svg,
