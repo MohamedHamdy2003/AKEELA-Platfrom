@@ -28,6 +28,11 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
+- **Mail provider abstraction & multi-provider automatic failover (2026-11-21, dev-only)**:
+  - Decoupled `OtpMailService` behind a `MailProvider` interface (`apps/api/src/modules/auth/mail/`) with `SmtpMailProvider` and `FailoverMailProvider`.
+  - Added optional ordered fallback SMTP configuration (`SMTP_FALLBACK_*` and `SMTP_FALLBACK_2_*`..`5_*`, inheriting `SMTP_FROM` when omitted, supporting shared custom subdomain `AKEELA <noreply@mail.akeelaonline.tech>` across providers like Resend and Brevo) in `auth.environment.ts`, `compose.production.yml`, and `npm run smtp:check`.
+  - Added smart in-memory cooldown (60m for quota/rate limits, 15m for transient errors) with automatic primary recovery, recipient-error distinction, and unit tests in `apps/api/test/mail-failover.test.ts`.
+
 - **Production release: Branded Gmail OTP emails, HSTS/header hardening, Docker log rotation & 15-minute Uptime Monitor (2026-11-21)**: [Release 44897814201](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/44897814201) deployed `main` commit `389311c` via PR #52. Verify passed in 5m48s (repo, 36 API tests including MIME/CID OTP email tests, PostgreSQL + Mailpit integration suite, 77 Playwright E2E scenarios, production container smoke); 4 Docker images published to GHCR in 2m2s; VPS deployment completed in 1m10s. Live HTTPS verification confirmed HSTS (`max-age=31536000; includeSubDomains`), deduplicated security headers, removed `Server` and `X-Powered-By` headers, and `Cache-Control: public, max-age=31536000, immutable` on `/assets/*`. Live manual test of [Uptime Monitor 44898580302](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/44898580302) passed all 5 production endpoints and 4 TLS certificate checks in 10s. Work now returns to dev-only policy.
 
 - **Pre-launch header, logging, scheduler, uptime monitoring & branded Gmail OTP emails (2026-11-21, released)**:

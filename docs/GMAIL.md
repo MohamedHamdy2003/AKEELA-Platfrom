@@ -38,3 +38,12 @@ References: [Google App Passwords](https://support.google.com/accounts/answer/18
 ## Production verification — 2026-11-18
 
 TLS and Gmail authentication passed from inside the production API container. A different SMTP_USER in the initial production configuration caused a 535 response and was corrected to the owner-approved, locally verified account. App Password and SMTP_USER must belong to the same Google account. No email was sent by the connectivity test; verify real OTP inbox delivery through an intended user flow. Credentials remain private.
+
+## Custom Subdomain & Multi-Provider Automatic Failover (`mail.akeelaonline.tech`)
+
+The API isolates email delivery behind `MailProvider` (`SmtpMailProvider` + `FailoverMailProvider`). Any TLS-encrypted transactional SMTP provider (such as Resend, Brevo, AWS SES, Postmark or Gmail) can be configured in ordered priority without code changes:
+
+- Primary provider: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_REQUIRE_TLS`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` (e.g., `AKEELA <noreply@mail.akeelaonline.tech>`).
+- Optional failover providers: `SMTP_FALLBACK_*` and `SMTP_FALLBACK_2_*` through `SMTP_FALLBACK_5_*`. When `SMTP_FALLBACK_FROM` is left blank, the fallback automatically inherits `SMTP_FROM`.
+- Automatic failover & cooldown: If the primary provider reaches its daily/monthly quota or hits a transient SMTP/network error, `FailoverMailProvider` immediately sends via the next configured provider and places the failed provider into an in-memory cooldown (60 minutes for quota errors, 15 minutes for transient errors) before probing it again automatically.
+- `npm run smtp:check` / `npm run smtp:check:prod` verifies every configured provider in order without sending an email.
