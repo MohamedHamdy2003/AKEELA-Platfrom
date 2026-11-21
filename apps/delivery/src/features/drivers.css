@@ -1,0 +1,126 @@
+.driver-sheet-body {
+  display: grid;
+  gap: 16px;
+}
+
+.driver-sheet-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--p-accent-soft), #ffffff 28%),
+    #ffffff
+  );
+  border: 1px solid color-mix(in srgb, var(--p-accent), transparent 74%);
+}
+
+.driver-sheet-crest {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--p-sidebar), var(--p-accent));
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--p-accent), transparent 72%);
+}
+
+.driver-sheet-meta {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.driver-sheet-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.driver-sheet-head-row strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.driver-sheet-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--p-muted);
+}
+
+.driver-sheet-contact span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.driver-sheet-form fieldset {
+  display: grid;
+  gap: 14px;
+}
+
+.driver-sheet-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.driver-toggle-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: var(--p-bg);
+  border: 1px solid var(--p-line);
+}
+
+.driver-toggle-card .checkbox {
+  font-weight: 600;
+  color: var(--p-text);
+  cursor: pointer;
+}
+
+.driver-warning-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.driver-warning-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.driver-sheet-actions {
+  margin-top: 6px;
+}
+
+.driver-edit-btn[data-active='true'] {
+  background: var(--p-accent);
+  border-color: var(--p-accent);
+  color: #ffffff;
+}

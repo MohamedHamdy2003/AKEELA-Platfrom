@@ -13,19 +13,20 @@ All API paths below omit `/api/v1`. Configure the full API base URL; the API dom
 
 ## Screens and Features
 
-| Screen                    | Features                                                                                                       |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Register                  | Create owner account and restaurant profile together.                                                          |
-| Verify Email              | Submit email OTP; resend with cooldown.                                                                        |
-| Login / Password Recovery | Email/password login, forgot password, OTP reset.                                                              |
-| Home / Activation         | Show restaurant identity, activation status, server message and `can_manage`. No revenue dashboard API exists. |
-| Orders                    | Paginated orders with status/date filters; open order details and act on Pending orders.                       |
-| Categories                | Create/edit title, display order and activity.                                                                 |
-| Products                  | Create/edit name, description, category, price, activity and image; filter by category.                        |
-| Addons                    | Create/edit addon name, price and activity; manage each product's addon links.                                 |
-| Offers                    | Create/edit offer details, prices, dates, activity and image.                                                  |
-| Restaurant Profile        | Edit restaurant details, pickup location, daily hours, service activity and mobile image.                      |
-| My Account                | View owner account; edit full name/phone when Active; change password and log out.                             |
+| Screen                    | Features                                                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Register                  | Create owner account and restaurant profile together.                                                                                                        |
+| Verify Email              | Submit email OTP; resend with cooldown.                                                                                                                      |
+| Login / Password Recovery | Email/password login, forgot password, OTP reset.                                                                                                            |
+| Home / Activation         | Show restaurant identity, activation status, server message, service switch and recent orders.                                                               |
+| Analytics                 | Restaurant-scoped sales, AOV, repeat customers, addons revenue, daily trends, peak kitchen hours, menu item/category/addon rankings and slow-mover insights. |
+| Orders                    | Paginated orders with status/date filters; open order details and act on Pending orders.                                                                     |
+| Categories                | Create/edit title, display order and activity.                                                                                                               |
+| Products                  | Create/edit name, description, category, price, activity and image; filter by category.                                                                      |
+| Addons                    | Create/edit addon name, price and activity; manage each product's addon links.                                                                               |
+| Offers                    | Create/edit offer details, prices, dates, activity and image.                                                                                                |
+| Restaurant Profile        | Edit restaurant details, pickup location, daily hours, service activity and mobile image.                                                                    |
+| My Account                | View owner account; edit full name/phone when Active; change password and log out.                                                                           |
 
 ## 01. Registration and Account
 
@@ -108,12 +109,13 @@ All API paths below omit `/api/v1`. Configure the full API base URL; the API dom
 
 ## 04. Orders
 
-| Method | API                                    | Screen action                                                                        |
-| ------ | -------------------------------------- | ------------------------------------------------------------------------------------ |
-| GET    | `/restaurant/orders`                   | List with `page`, `per_page`, optional `status`, `date_from`, `date_to`.             |
-| GET    | `/restaurant/orders/{order_id}`        | Show saved items/addons, quantities, prices, delivery address, notes, fee and total. |
-| POST   | `/restaurant/orders/{order_id}/accept` | Accept Pending; company assignment happens automatically. No body.                   |
-| POST   | `/restaurant/orders/{order_id}/reject` | Reject Pending. No body or rejection-reason field.                                   |
+| Method | API                                    | Screen action                                                                                                                                          |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/restaurant/orders`                   | List with `page`, `per_page`, optional `status`, `date_from`, `date_to`.                                                                               |
+| GET    | `/restaurant/orders/{order_id}`        | Show saved items/addons, quantities, prices, delivery address, notes, fee and total.                                                                   |
+| POST   | `/restaurant/orders/{order_id}/accept` | Accept Pending; company assignment happens automatically. No body.                                                                                     |
+| POST   | `/restaurant/orders/{order_id}/reject` | Reject Pending. No body or rejection-reason field.                                                                                                     |
+| GET    | `/restaurant/analytics`                | Fetch restaurant-scoped revenue, order quality, loyalty, peak-hour, menu, category, addon and live alert analytics (`range=today\|7d\|30d\|90d\|all`). |
 
 - Show Accept/Reject only for Pending; confirm and disable the action while submitting. Do not expose generic status editing, company selection or driver assignment.
 - Acceptance returns Accepted with company ID and initially no driver. On `409 DELIVERY_COMPANY_UNAVAILABLE`, explain acceptance failed and refetch; the order remains Pending.
@@ -130,7 +132,7 @@ All API paths below omit `/api/v1`. Configure the full API base URL; the API dom
 - Orders use REST reads with Socket.IO invalidation notifications; see [realtime](../REALTIME.md).
 - Proposed build order: auth → activation/profile → categories/products → addons → offers/images → orders → error/responsive checks.
 - Before implementation, agree on framework, Arabic/English and RTL, branding, app setup in apps/restaurant, browser token storage and refresh strategy. DNS/Caddy hosting and exact CORS origins need a separate deployment change.
-- Out of scope: payments/refunds, revenue reports, notifications, driver tracking, staff accounts, multiple restaurants per owner and new backend endpoints. This file authorizes documentation, not their implementation.
+- Out of scope: payments/refunds, notifications, driver tracking, staff accounts and multiple restaurants per owner.
 
 Monorepo location: `apps/restaurant`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
 

@@ -191,8 +191,8 @@ export function TrendChart({ series }: { series: AdminAnalyticsDailyPoint[] }) {
           >
             <defs>
               <linearGradient id="admTrendFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#146044" stopOpacity="0.24" />
-                <stop offset="100%" stopColor="#146044" stopOpacity="0.01" />
+                <stop offset="0%" stopColor="#008657" stopOpacity="0.26" />
+                <stop offset="100%" stopColor="#008657" stopOpacity="0.01" />
               </linearGradient>
             </defs>
 
@@ -203,7 +203,7 @@ export function TrendChart({ series }: { series: AdminAnalyticsDailyPoint[] }) {
                   y1={tick.y}
                   x2={width - padRight}
                   y2={tick.y}
-                  stroke="#e2e7eb"
+                  stroke="#dfe9e3"
                   strokeDasharray={tick.ratio === 0 ? undefined : '3 4'}
                 />
                 <text
@@ -224,7 +224,7 @@ export function TrendChart({ series }: { series: AdminAnalyticsDailyPoint[] }) {
                 width={56}
                 height={Math.max(4, padTop + plotH - points[0]!.y)}
                 rx={8}
-                fill="#146044"
+                fill="#008657"
                 onMouseEnter={() => setActiveIndex(0)}
               />
             ) : (
@@ -233,8 +233,8 @@ export function TrendChart({ series }: { series: AdminAnalyticsDailyPoint[] }) {
                 <path
                   d={linePath}
                   fill="none"
-                  stroke="#146044"
-                  strokeWidth="2.5"
+                  stroke="#008657"
+                  strokeWidth="2.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -247,7 +247,7 @@ export function TrendChart({ series }: { series: AdminAnalyticsDailyPoint[] }) {
                 y1={padTop}
                 x2={hovered.x}
                 y2={padTop + plotH}
-                stroke="#b79960"
+                stroke="#e5b84b"
                 strokeWidth="1.25"
                 strokeDasharray="3 3"
               />
@@ -273,8 +273,8 @@ export function TrendChart({ series }: { series: AdminAnalyticsDailyPoint[] }) {
                       cx={pt.x}
                       cy={pt.y}
                       r={isActive ? 5.5 : 3}
-                      fill={isActive ? '#b79960' : '#ffffff'}
-                      stroke={isActive ? '#132a26' : '#146044'}
+                      fill={isActive ? '#e5b84b' : '#ffffff'}
+                      stroke={isActive ? '#0e352a' : '#008657'}
                       strokeWidth={isActive ? 2.5 : 2}
                     />
                   )}
@@ -522,12 +522,12 @@ export function PeakHoursChart({
             const isHovered = hoveredHour === point.hour;
             const fill =
               point.orders === 0
-                ? '#e2e7eb'
+                ? '#dfe9e3'
                 : isPeak
-                  ? '#b79960'
+                  ? '#e5b84b'
                   : isHovered
-                    ? '#132a26'
-                    : '#146044';
+                    ? '#0e352a'
+                    : '#008657';
             return (
               <g
                 key={point.hour}

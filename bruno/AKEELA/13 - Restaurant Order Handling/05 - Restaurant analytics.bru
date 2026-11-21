@@ -1,0 +1,15 @@
+meta {
+  name: Restaurant analytics
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/restaurant/analytics
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

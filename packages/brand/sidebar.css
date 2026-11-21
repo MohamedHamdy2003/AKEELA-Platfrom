@@ -202,38 +202,135 @@
 }
 
 .portal[data-portal='admin'] .sidebar {
-  background: #122d29;
-  border-left: 1px solid rgb(255 255 255 / 8%);
+  background: linear-gradient(180deg, #0d2e24 0%, #113e31 56%, #0d3228 100%);
+  border-left: 1px solid rgb(255 255 255 / 10%);
+  box-shadow: -10px 0 32px rgb(10 38 29 / 14%);
 }
-.portal[data-portal='admin'] .sidebar nav button {
+.portal[data-portal='delivery'] .sidebar {
+  background: linear-gradient(180deg, #062f40 0%, #09455c 56%, #07384b 100%);
+  border-left: 1px solid rgb(255 255 255 / 10%);
+  box-shadow: -10px 0 32px rgb(6 47 64 / 16%);
+}
+.portal-shell .sidebar nav button {
   border: 1px solid transparent;
   border-radius: 11px;
-  color: #b9cec8;
+  color: #cfe5dc;
   transition:
-    background-color 160ms ease,
-    color 160ms ease,
-    border-color 160ms ease;
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out),
+    scale 150ms var(--ease-out);
 }
-.portal[data-portal='admin'] .sidebar nav button:hover {
-  background: rgb(255 255 255 / 6%);
-  color: #fff;
+.portal[data-portal='delivery'] .sidebar nav button {
+  color: #c9e4ee;
+}
+.portal-shell .sidebar nav button svg {
+  transition:
+    translate 240ms var(--ease-out),
+    color 180ms var(--ease-out);
+}
+.portal-shell .sidebar nav button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 9%);
+  color: #ffffff;
+}
+.portal-shell .sidebar nav button:hover:not(:disabled) svg {
+  translate: -3px 0;
+}
+.portal-shell .sidebar nav button:active:not(:disabled) {
+  scale: 0.98;
 }
 .portal[data-portal='admin'] .sidebar nav button.active {
-  background: #24453c;
-  border-color: rgb(185 160 106 / 30%);
-  color: #fff;
-  box-shadow: 0 3px 12px rgb(0 0 0 / 8%);
+  background: linear-gradient(135deg, #008657 0%, #00a06a 100%);
+  border-color: rgb(255 255 255 / 18%);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgb(0 134 87 / 36%);
+}
+.portal[data-portal='admin'] .sidebar nav button.active:hover {
+  background: linear-gradient(135deg, #00774d 0%, #00915f 100%);
 }
 .portal[data-portal='admin'] .sidebar nav button.active svg {
-  color: #e3c88e;
+  color: #ffffff;
 }
 .portal[data-portal='admin'] .sidebar nav button.active:after {
-  height: 18px;
-  right: 6px;
-  width: 2px;
+  height: 24px;
+  right: 0;
+  width: 3.5px;
+  border-radius: 6px;
+  background: #f3c969;
+  animation: portal-nav-mark-in 240ms var(--ease-out);
+}
+.portal[data-portal='delivery'] .sidebar nav button.active {
+  background: linear-gradient(135deg, #087e91 0%, #0d99ad 100%);
+  border-color: rgb(103 232 249 / 30%);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgb(8 126 145 / 38%);
+}
+.portal[data-portal='delivery'] .sidebar nav button.active:hover {
+  background: linear-gradient(135deg, #076e7f 0%, #0a899c 100%);
+}
+.portal[data-portal='delivery'] .sidebar nav button.active svg {
+  color: #ffffff;
+}
+.portal[data-portal='delivery'] .sidebar nav button.active:after {
+  height: 24px;
+  right: 0;
+  width: 3.5px;
+  border-radius: 6px;
+  background: #38d9e8;
+  animation: portal-nav-mark-in 240ms var(--ease-out);
+}
+@keyframes portal-nav-mark-in {
+  from {
+    opacity: 0;
+    scale: 1 0.2;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@media (max-width: 960px) {
+  .portal-shell .sidebar.open nav button {
+    animation: portal-drawer-item-in 320ms var(--ease-out) backwards;
+  }
+  .portal-shell .sidebar.open nav button:nth-child(2) {
+    animation-delay: 25ms;
+  }
+  .portal-shell .sidebar.open nav button:nth-child(3) {
+    animation-delay: 50ms;
+  }
+  .portal-shell .sidebar.open nav button:nth-child(4) {
+    animation-delay: 75ms;
+  }
+  .portal-shell .sidebar.open nav button:nth-child(n + 5) {
+    animation-delay: 100ms;
+  }
+}
+@keyframes portal-drawer-item-in {
+  from {
+    opacity: 0;
+    translate: 12px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .portal[data-portal='admin'] .sidebar nav button {
-    transition: none;
+  .portal-shell .sidebar nav button,
+  .portal-shell .sidebar nav button svg,
+  .portal-shell .sidebar nav button.active:after,
+  .portal-shell .sidebar.open nav button {
+    transition: none !important;
+    animation: none !important;
+  }
+  .portal-shell .sidebar nav button:hover:not(:disabled) svg {
+    translate: none;
+  }
+  .portal-shell .sidebar nav button:active:not(:disabled) {
+    scale: none;
   }
 }

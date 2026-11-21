@@ -157,3 +157,20 @@ export class DeliveryAnalyticsQuery {
   })
   range?: AnalyticsRange;
 }
+
+export class RestaurantAnalyticsQuery {
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Restaurant analytics window in Africa/Cairo time: today, 7d, 30d (default), 90d, or all.',
+    enum: ['today', '7d', '30d', '90d', 'all'],
+    required: false,
+    nullable: true,
+    example: '30d',
+  })
+  @IsOptional()
+  @IsIn(ANALYTICS_RANGES, {
+    message: 'Choose today, 7d, 30d, 90d, or all.',
+  })
+  range?: AnalyticsRange;
+}

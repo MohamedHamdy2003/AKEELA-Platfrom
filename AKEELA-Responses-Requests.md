@@ -245,6 +245,7 @@ Checkout calculates current server prices and creates a Pending order directly. 
 | GET | `/restaurant/orders/{order_id}` | Read order details for preparation. | No body | `200` · Order |
 | POST | `/restaurant/orders/{order_id}/accept` | Change Pending to Accepted and automatically assign the delivery company in one transaction. | No body | `200` · OrderState |
 | POST | `/restaurant/orders/{order_id}/reject` | Change Pending to Rejected. | No body | `200` · OrderState |
+| GET | `/restaurant/analytics` | Return restaurant-scoped revenue, order quality, repeat-customer, peak-hour, menu-performance, category, addon, and live alert analytics. | Query: `range=30d` | `200` · RestaurantAnalytics |
 
 ## 14. Order Assignment and Delivery
 
@@ -991,6 +992,111 @@ Order names, prices, address, fee, and item/addon totals are saved checkout valu
       "delivered_orders": 22,
       "failed_orders": 0,
       "delivery_fees": "660.00"
+    }
+  ]
+}
+```
+
+### RestaurantAnalytics
+
+```json
+{
+  "range": "30d",
+  "generated_at": "2026-11-19T12:00:00.000+02:00",
+  "kpis": {
+    "food_revenue": "11010.00",
+    "gross_gmv": "12450.00",
+    "addons_revenue": "1280.00",
+    "avg_order_value": "229.38",
+    "total_orders": 58,
+    "delivered_orders": 48,
+    "rejected_orders": 3,
+    "cancelled_orders": 4,
+    "acceptance_rate": 94.4,
+    "completion_rate": 82.8,
+    "rejection_rate": 5.2,
+    "cancellation_rate": 6.9,
+    "unique_customers": 31,
+    "repeat_customers": 12,
+    "repeat_customer_rate": 38.7,
+    "avg_fulfillment_minutes": 32.4
+  },
+  "previous_kpis": {
+    "food_revenue": "9100.00",
+    "addons_revenue": "980.00",
+    "avg_order_value": "221.95",
+    "total_orders": 49,
+    "delivered_orders": 41,
+    "avg_fulfillment_minutes": 35.1
+  },
+  "live_alerts": {
+    "pending_orders": 2,
+    "stale_pending_orders": 1,
+    "active_in_progress": 1,
+    "inactive_products": 1,
+    "expiring_offers": 1
+  },
+  "status_breakdown": {
+    "Pending": 2,
+    "Accepted": 1,
+    "Picked_Up": 0,
+    "Delivered": 48,
+    "Rejected": 3,
+    "Cancelled": 4,
+    "Failed": 0
+  },
+  "daily_series": [
+    {
+      "date": "2026-11-19",
+      "orders": 6,
+      "delivered": 5,
+      "food_revenue": "1140.00"
+    }
+  ],
+  "peak_hours": [
+    {
+      "hour": 20,
+      "orders": 14
+    }
+  ],
+  "menu_totals": {
+    "active_categories": 4,
+    "active_products": 14,
+    "inactive_products": 1,
+    "active_addons": 6,
+    "active_offers": 2
+  },
+  "top_items": [
+    {
+      "item_name": "Grilled Chicken Meal",
+      "item_type": "product",
+      "units_sold": 32,
+      "revenue": "3200.00",
+      "share_pct": 32.9
+    }
+  ],
+  "slow_items": [
+    {
+      "prod_id": "204",
+      "prod_name": "Fresh Lemonade",
+      "cat_title": "Drinks",
+      "price": "35.00",
+      "units_sold": 0
+    }
+  ],
+  "top_addons": [
+    {
+      "addon_name": "Extra Cheddar",
+      "units_sold": 26,
+      "revenue": "650.00"
+    }
+  ],
+  "category_breakdown": [
+    {
+      "cat_title": "Grills",
+      "units_sold": 45,
+      "revenue": "5400.00",
+      "share_pct": 55.5
     }
   ]
 }

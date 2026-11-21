@@ -253,6 +253,7 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 | GET | `/restaurant/orders/{order_id}` | Read order details for preparation. |
 | POST | `/restaurant/orders/{order_id}/accept` | Change Pending to Accepted and automatically assign the delivery company in one transaction. |
 | POST | `/restaurant/orders/{order_id}/reject` | Change Pending to Rejected. |
+| GET | `/restaurant/analytics` | Return restaurant-scoped revenue, order quality, repeat-customer, peak-hour, menu-performance, category, addon, and live alert analytics. |
 
 ## 14. Order Assignment and Delivery
 

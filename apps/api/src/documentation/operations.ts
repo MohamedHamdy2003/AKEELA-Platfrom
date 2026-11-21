@@ -723,6 +723,15 @@ export const operations: OperationDoc[] = [
   },
   {
     method: 'get',
+    path: '/api/v1/restaurant/analytics',
+    tag: '13. Restaurant Order Handling',
+    summary:
+      'Return restaurant-scoped revenue, order quality, loyalty, peak-hour, menu, category, addon, and live alert analytics.',
+    status: 200,
+    model: 'RestaurantAnalytics',
+  },
+  {
+    method: 'get',
     path: '/api/v1/admin/orders',
     tag: '14. Order Assignment and Delivery',
     summary: 'Monitor orders across restaurants and delivery companies.',

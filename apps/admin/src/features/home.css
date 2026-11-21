@@ -52,8 +52,9 @@
   background: var(--p-bg);
 }
 .adm-seg button.active {
-  background: var(--p-sidebar);
+  background: var(--p-accent);
   color: #ffffff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--p-accent), transparent 70%);
 }
 .adm-seg-sm {
   box-shadow: none;
@@ -165,15 +166,41 @@
   box-shadow: var(--shadow-panel);
   text-align: right;
   min-width: 0;
+  animation: admCardIn 380ms var(--ease-out) backwards;
   transition:
     border-color 180ms var(--ease-out),
     transform 180ms var(--ease-out),
     box-shadow 180ms var(--ease-out);
 }
+.adm-kpi:nth-child(2) {
+  animation-delay: 35ms;
+}
+.adm-kpi:nth-child(3) {
+  animation-delay: 70ms;
+}
+.adm-kpi:nth-child(4) {
+  animation-delay: 105ms;
+}
+.adm-kpi:nth-child(5) {
+  animation-delay: 140ms;
+}
+.adm-kpi:nth-child(6) {
+  animation-delay: 175ms;
+}
+@keyframes admCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 button.adm-kpi:hover {
-  border-color: color-mix(in srgb, var(--p-accent), transparent 55%);
+  border-color: color-mix(in srgb, var(--p-accent), transparent 45%);
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgb(19 42 38 / 7%);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--p-accent), transparent 88%);
 }
 .adm-kpi-top {
   display: flex;
@@ -199,8 +226,8 @@ button.adm-kpi:hover {
   flex-shrink: 0;
 }
 .adm-kpi-ico.is-emerald {
-  background: #e6f6ee;
-  color: #146044;
+  background: #e6f7ef;
+  color: #008657;
 }
 .adm-kpi-ico.is-teal {
   background: #e2f5f6;
@@ -296,6 +323,7 @@ button.adm-kpi:hover {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  animation: admCardIn 420ms var(--ease-out) 90ms backwards;
 }
 .adm-card-head {
   display: flex;
@@ -706,6 +734,7 @@ button.adm-kpi:hover {
 @media (prefers-reduced-motion: reduce) {
   .adm-home,
   .adm-kpi,
+  .adm-card,
   .adm-alert-pill,
   .adm-donut-seg,
   .adm-refresh-btn.spinning svg,

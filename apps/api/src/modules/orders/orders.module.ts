@@ -5,6 +5,9 @@ import { AdminAnalyticsService } from './admin-analytics.service';
 import { AdminAnalyticsController } from './admin-analytics.controller';
 import { DeliveryAnalyticsService } from './delivery-analytics.service';
 import { DeliveryAnalyticsController } from './delivery-analytics.controller';
+import { RestaurantAnalyticsService } from './restaurant-analytics.service';
+import { RestaurantAnalyticsController } from './restaurant-analytics.controller';
+import { CatalogModule } from '../catalog/catalog.module';
 import { UsersModule } from '../users/users.module';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { DeliveryModule } from '../delivery/delivery.module';
@@ -19,6 +22,7 @@ import { CustomerOrdersController } from './customer-orders.controller';
   imports: [
     AuthModule,
     CartModule,
+    CatalogModule,
     UsersModule,
     RestaurantsModule,
     DeliveryModule,
@@ -29,10 +33,12 @@ import { CustomerOrdersController } from './customer-orders.controller';
     OrdersAutoDeliverService,
     AdminAnalyticsService,
     DeliveryAnalyticsService,
+    RestaurantAnalyticsService,
   ],
   controllers: [
     CustomerOrdersController,
     RestaurantOrdersController,
+    RestaurantAnalyticsController,
     AdminOrdersController,
     AdminAnalyticsController,
     DeliveryOrdersController,

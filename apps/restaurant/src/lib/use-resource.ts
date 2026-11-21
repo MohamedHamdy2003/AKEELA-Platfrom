@@ -10,7 +10,11 @@ export function useResource<T>(path: string | null) {
   const reload = useCallback(() => setRevision((n) => n + 1), []);
   const previousPath = useRef<string | null>(null);
   useEffect(() => {
-    if (!path?.startsWith('/restaurant/orders')) return;
+    if (
+      !path?.startsWith('/restaurant/orders') &&
+      !path?.startsWith('/restaurant/analytics')
+    )
+      return;
     let timer: ReturnType<typeof setTimeout>;
     const update = () => {
       clearTimeout(timer);

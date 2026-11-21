@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
+import { Mail, Phone, ShieldAlert, UserPlus } from 'lucide-react';
 import { ApiError, query } from '@akeela/portal/api';
+import { DetailWorkspace } from '@akeela/portal/detail-workspace';
 import type { Driver } from '@akeela/portal/models';
 import {
   ActivityBadge,
@@ -13,6 +15,16 @@ import {
   useResource,
 } from '@akeela/portal/ui';
 import { api } from '../lib/api';
+import './drivers.css';
+
+function driverInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0]!.slice(0, 1) + parts[1]!.slice(0, 1)).toUpperCase();
+  }
+  return (parts[0] ?? 'DR').slice(0, 2).toUpperCase();
+}
+
 export function Drivers() {
   const [page, setPage] = useState(1),
     [active, setActive] = useState(''),
@@ -53,6 +65,13 @@ export function Drivers() {
     }
   };
   const fields = error instanceof ApiError ? error.fields : {};
+  const selectedKey =
+    edit === undefined ? null : edit === null ? 'new' : edit.driver_id;
+  const sheetTitle = edit ? 'تعديل السائق' : 'سائق جديد';
+  const sheetEyebrow = edit
+    ? `معرّف السائق #${edit.driver_id}`
+    : 'إضافة سائق جديد للأسطول';
+
   return (
     <>
       <PageTitle
@@ -61,85 +80,18 @@ export function Drivers() {
         action={
           <button
             className="button primary"
+            data-detail-record="new"
             onClick={() => {
               setEdit(null);
               setError(null);
             }}
           >
+            <UserPlus size={16} aria-hidden="true" />
             إضافة سائق
           </button>
         }
       />
       {notice && <Notice>{notice}</Notice>}
-      {edit !== undefined && (
-        <section className="panel panel-pad" key={edit?.driver_id ?? 'new'}>
-          <h2>{edit ? 'تعديل السائق' : 'سائق جديد'}</h2>
-          {!!error && <Failure error={error} />}
-          <form onSubmit={(event) => void save(event)}>
-            <fieldset disabled={busy}>
-              <div className="form-grid">
-                <Field label="اسم السائق" name="driver_name" errors={fields}>
-                  <input
-                    name="driver_name"
-                    defaultValue={edit?.driver_name}
-                    required
-                    maxLength={150}
-                  />
-                </Field>
-                <Field label="رقم الهاتف" name="driver_phone" errors={fields}>
-                  <input
-                    name="driver_phone"
-                    type="tel"
-                    dir="ltr"
-                    defaultValue={edit?.driver_phone}
-                    required
-                  />
-                  <small>يبدأ بـ + ورمز الدولة.</small>
-                </Field>
-                <Field
-                  label="البريد (اختياري)"
-                  name="driver_email"
-                  errors={fields}
-                >
-                  <input
-                    name="driver_email"
-                    type="email"
-                    dir="ltr"
-                    defaultValue={edit?.driver_email ?? ''}
-                    maxLength={254}
-                  />
-                </Field>
-              </div>
-              <label className="checkbox">
-                <input
-                  name="is_active"
-                  type="checkbox"
-                  defaultChecked={edit?.is_active ?? true}
-                />
-                سائق نشط
-              </label>
-              {edit && (
-                <small className="field-hint">
-                  تعطيل سائق مُسند لطلب حالي يوقف إكمال تسليمه حتى يُعاد تنشيطه أو
-                  يُسند الطلب لسائق نشط آخر.
-                </small>
-              )}
-              <div className="actions">
-                <button className="button primary">
-                  {busy ? 'جار الحفظ…' : 'حفظ السائق'}
-                </button>
-                <button
-                  type="button"
-                  className="button"
-                  onClick={() => setEdit(undefined)}
-                >
-                  إلغاء
-                </button>
-              </div>
-            </fieldset>
-          </form>
-        </section>
-      )}
       <div className="filters">
         <Field label="نشاط السائق">
           <select
@@ -155,61 +107,193 @@ export function Drivers() {
           </select>
         </Field>
       </div>
-      <ResourceState
-        resource={resource}
-        empty={!!resource.result && !resource.result.data.length}
-        skeleton={<TableSkeleton columns={6} />}
+      <DetailWorkspace
+        selectedKey={selectedKey}
+        title={sheetTitle}
+        eyebrow={sheetEyebrow}
+        onClose={() => {
+          setEdit(undefined);
+          setError(null);
+        }}
+        details={
+          edit !== undefined ? (
+            <div className="driver-sheet-body" key={edit?.driver_id ?? 'new'}>
+              {edit && (
+                <div className="driver-sheet-banner">
+                  <span className="driver-sheet-crest" aria-hidden="true">
+                    {driverInitials(edit.driver_name)}
+                  </span>
+                  <div className="driver-sheet-meta">
+                    <div className="driver-sheet-head-row">
+                      <strong>{edit.driver_name}</strong>
+                      <ActivityBadge active={edit.is_active} />
+                    </div>
+                    <div className="driver-sheet-contact">
+                      <span>
+                        <Phone size={12} aria-hidden="true" />
+                        <bdi>{edit.driver_phone}</bdi>
+                      </span>
+                      {edit.driver_email && (
+                        <span>
+                          <Mail size={12} aria-hidden="true" />
+                          <bdi>{edit.driver_email}</bdi>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {!!error && <Failure error={error} />}
+              <form
+                className="driver-sheet-form"
+                onSubmit={(event) => void save(event)}
+              >
+                <fieldset disabled={busy}>
+                  <div className="driver-sheet-fields">
+                    <Field
+                      label="اسم السائق"
+                      name="driver_name"
+                      errors={fields}
+                    >
+                      <input
+                        name="driver_name"
+                        defaultValue={edit?.driver_name}
+                        required
+                        maxLength={150}
+                      />
+                    </Field>
+                    <Field
+                      label="رقم الهاتف"
+                      name="driver_phone"
+                      errors={fields}
+                    >
+                      <input
+                        name="driver_phone"
+                        type="tel"
+                        dir="ltr"
+                        defaultValue={edit?.driver_phone}
+                        required
+                      />
+                      <small>يبدأ بـ + ورمز الدولة.</small>
+                    </Field>
+                    <Field
+                      label="البريد (اختياري)"
+                      name="driver_email"
+                      errors={fields}
+                    >
+                      <input
+                        name="driver_email"
+                        type="email"
+                        dir="ltr"
+                        defaultValue={edit?.driver_email ?? ''}
+                        maxLength={254}
+                      />
+                    </Field>
+                  </div>
+                  <div className="driver-toggle-card">
+                    <label className="checkbox">
+                      <input
+                        name="is_active"
+                        type="checkbox"
+                        defaultChecked={edit?.is_active ?? true}
+                      />
+                      سائق نشط
+                    </label>
+                    {edit && (
+                      <small className="driver-warning-note">
+                        <ShieldAlert size={14} aria-hidden="true" />
+                        <span>
+                          تعطيل سائق مُسند لطلب حالي يوقف إكمال تسليمه حتى يُعاد
+                          تنشيطه أو يُسند الطلب لسائق نشط آخر.
+                        </span>
+                      </small>
+                    )}
+                  </div>
+                  <div className="actions driver-sheet-actions">
+                    <button className="button primary">
+                      {busy ? 'جار الحفظ…' : 'حفظ السائق'}
+                    </button>
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={() => {
+                        setEdit(undefined);
+                        setError(null);
+                      }}
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </fieldset>
+              </form>
+            </div>
+          ) : null
+        }
       >
-        <section className="panel">
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>رقم السائق</th>
-                  <th>السائق</th>
-                  <th>الهاتف</th>
-                  <th>البريد</th>
-                  <th>النشاط</th>
-                  <th>الإجراء</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resource.result?.data.map((item) => (
-                  <tr key={item.driver_id}>
-                    <td>
-                      <bdi>#{item.driver_id}</bdi>
-                    </td>
-                    <td>
-                      <strong>{item.driver_name}</strong>
-                    </td>
-                    <td>
-                      <bdi>{item.driver_phone}</bdi>
-                    </td>
-                    <td>
-                      <bdi>{item.driver_email ?? '—'}</bdi>
-                    </td>
-                    <td>
-                      <ActivityBadge active={item.is_active} />
-                    </td>
-                    <td>
-                      <button
-                        className="button compact"
-                        onClick={() => {
-                          setEdit(item);
-                          setError(null);
-                        }}
-                      >
-                        تعديل السائق
-                      </button>
-                    </td>
+        <ResourceState
+          resource={resource}
+          empty={!!resource.result && !resource.result.data.length}
+          skeleton={<TableSkeleton columns={6} />}
+        >
+          <section className="panel">
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>رقم السائق</th>
+                    <th>السائق</th>
+                    <th>الهاتف</th>
+                    <th>البريد</th>
+                    <th>النشاط</th>
+                    <th>الإجراء</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Pager meta={resource.result?.meta} change={setPage} />
-        </section>
-      </ResourceState>
+                </thead>
+                <tbody>
+                  {resource.result?.data.map((item) => {
+                    const selected = edit?.driver_id === item.driver_id;
+                    return (
+                      <tr
+                        key={item.driver_id}
+                        data-selected={selected || undefined}
+                      >
+                        <td>
+                          <bdi>#{item.driver_id}</bdi>
+                        </td>
+                        <td>
+                          <strong>{item.driver_name}</strong>
+                        </td>
+                        <td>
+                          <bdi>{item.driver_phone}</bdi>
+                        </td>
+                        <td>
+                          <bdi>{item.driver_email ?? '—'}</bdi>
+                        </td>
+                        <td>
+                          <ActivityBadge active={item.is_active} />
+                        </td>
+                        <td>
+                          <button
+                            className="button compact driver-edit-btn"
+                            data-detail-record={item.driver_id}
+                            data-active={selected || undefined}
+                            onClick={() => {
+                              setEdit(item);
+                              setError(null);
+                            }}
+                          >
+                            تعديل السائق
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <Pager meta={resource.result?.meta} change={setPage} />
+          </section>
+        </ResourceState>
+      </DetailWorkspace>
     </>
   );
 }

@@ -1,12 +1,12 @@
 .portal {
-  --p-bg: #f6f7f9;
-  --p-sidebar: #132a26;
-  --p-accent: #146044;
-  --p-accent-soft: #eaf3ed;
-  --p-gold: #b79960;
-  --p-text: #172d2b;
-  --p-muted: #6b7780;
-  --p-line: #e2e7eb;
+  --p-bg: #f6faf8;
+  --p-sidebar: #0e352a;
+  --p-accent: #008657;
+  --p-accent-soft: #e6f7ef;
+  --p-gold: #e5b84b;
+  --p-text: #122923;
+  --p-muted: #5a6d66;
+  --p-line: #dfe9e3;
   min-height: 100vh;
   background: var(--p-bg);
   color: var(--p-text);
@@ -16,12 +16,14 @@
   direction: rtl;
 }
 .portal[data-portal='delivery'] {
-  --p-bg: #f4f8fb;
-  --p-sidebar: #07384b;
+  --p-bg: #f4f9fc;
+  --p-sidebar: #063345;
   --p-accent: #087e91;
-  --p-accent-soft: #e2f4f7;
-  --p-gold: #12b0bd;
-  --p-text: #183444;
+  --p-accent-soft: #e0f5f8;
+  --p-gold: #22c7d6;
+  --p-text: #143242;
+  --p-muted: #57717e;
+  --p-line: #dce8ef;
 }
 .portal.session-recovery {
   display: grid;
@@ -246,7 +248,8 @@ bdi,
   align-items: center;
   padding: 0 32px;
   border-bottom: 1px solid var(--p-line);
-  background: #ffffffe8;
+  background: rgb(255 255 255 / 90%);
+  backdrop-filter: blur(10px);
 }
 .topbar.has-brand {
   display: grid;
@@ -427,8 +430,10 @@ bdi,
   border-radius: 50%;
   width: 34px;
   height: 34px;
-  background: #e8dfca;
-  color: #5f532f;
+  background: var(--p-accent-soft);
+  color: var(--p-accent);
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--p-accent), transparent 76%);
 }
 .account-name {
   font-size: 12px;
@@ -469,6 +474,19 @@ bdi,
   min-width: 0;
   outline: none;
 }
+.portal-view {
+  animation: portal-content-in 340ms var(--ease-out) both;
+}
+@keyframes portal-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 .workspace-footer {
   padding: 12px 32px;
   color: var(--p-muted);
@@ -488,9 +506,12 @@ bdi,
   margin: 4px 0 0;
 }
 .button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   min-height: 42px;
   border: 1px solid var(--p-line);
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff;
   padding: 8px 16px;
   font-weight: 500;
@@ -501,25 +522,48 @@ bdi,
   gap: 8px;
   white-space: nowrap;
   transition:
-    background 0.15s,
-    transform 0.15s,
-    box-shadow 0.15s;
+    background-color 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    color 180ms var(--ease-out),
+    translate 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out),
+    scale 140ms var(--ease-out);
 }
 .button:hover:not(:disabled) {
   border-color: var(--p-accent);
   background: var(--p-accent-soft);
 }
 .button:active:not(:disabled) {
-  transform: translateY(1px);
+  scale: 0.98;
 }
 .button.primary {
   background: var(--p-accent);
   color: #fff;
   border-color: var(--p-accent);
-  box-shadow: 0 3px 8px #17332b0b;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--p-accent), transparent 76%);
+}
+.button.primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    #ffffff26 50%,
+    transparent 75%
+  );
+  transform: translateX(130%);
+  transition: transform 500ms var(--ease-out);
 }
 .button.primary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--p-accent), #000 12%);
+  border-color: color-mix(in srgb, var(--p-accent), #000 12%);
+  translate: 0 -1px;
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--p-accent), transparent 66%);
+}
+.button.primary:hover:not(:disabled)::after {
+  transform: translateX(-130%);
 }
 .button.danger {
   background: #fff3f2;
@@ -530,8 +574,12 @@ bdi,
   min-height: 32px;
   padding: 3px 12px;
   font-size: 11px;
-  border-color: #cfc1a2;
-  color: #75603b;
+  border-color: color-mix(in srgb, var(--p-accent), transparent 68%);
+  color: var(--p-accent);
+}
+.button.compact:hover:not(:disabled) {
+  background: var(--p-accent-soft);
+  border-color: var(--p-accent);
 }
 .button.full {
   width: 100%;
@@ -630,7 +678,8 @@ bdi,
 .panel {
   background: #fff;
   border: 1px solid var(--p-line);
-  border-radius: 10px;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgb(18 41 35 / 4%);
   overflow: hidden;
   margin-bottom: 20px;
 }
@@ -646,7 +695,8 @@ bdi,
   margin-bottom: 18px;
   background: #fff;
   border: 1px solid var(--p-line);
-  border-radius: 10px;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgb(18 41 35 / 3%);
 }
 .field {
   display: flex;
@@ -733,22 +783,58 @@ table {
 th {
   font-size: 12px;
   font-weight: 600;
-  background: #fbfcfd;
-  color: #293e47;
+  background: #f2faf6;
+  color: #1f3b33;
   padding: 15px 20px;
   border-bottom: 1px solid var(--p-line);
+}
+.portal[data-portal='delivery'] th {
+  background: #eef8fb;
+  color: #183a4a;
 }
 td {
   font-size: 12px;
   padding: 14px 20px;
-  border-bottom: 1px solid #edf0f3;
+  border-bottom: 1px solid #ebf1ee;
   vertical-align: middle;
 }
 tr:last-child td {
   border-bottom: 0;
 }
+tbody tr {
+  animation: portal-row-in 300ms var(--ease-out) backwards;
+  transition: background-color 150ms var(--ease-out);
+}
+tbody tr:nth-child(2) {
+  animation-delay: 28ms;
+}
+tbody tr:nth-child(3) {
+  animation-delay: 56ms;
+}
+tbody tr:nth-child(4) {
+  animation-delay: 84ms;
+}
+tbody tr:nth-child(5) {
+  animation-delay: 112ms;
+}
+tbody tr:nth-child(6) {
+  animation-delay: 140ms;
+}
 tbody tr:hover {
-  background: #f9fcfa;
+  background: #f2fcf7;
+}
+.portal[data-portal='delivery'] tbody tr:hover {
+  background: #eef9fc;
+}
+@keyframes portal-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .cell-stack small {
   display: block;
@@ -1255,7 +1341,11 @@ dialog p {
   direction: rtl;
 }
 .auth-identity {
-  background: var(--p-sidebar);
+  background: linear-gradient(
+    160deg,
+    var(--p-sidebar) 0%,
+    color-mix(in srgb, var(--p-sidebar), var(--p-accent) 30%) 100%
+  );
   color: #fff;
   min-height: 100vh;
   padding: 55px 54px;
@@ -1665,6 +1755,15 @@ dialog p {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+  .button:hover:not(:disabled),
+  .button.primary:hover:not(:disabled),
+  .button:active:not(:disabled) {
+    translate: none;
+    scale: none;
+  }
+  .button.primary::after {
+    display: none;
   }
 }
 

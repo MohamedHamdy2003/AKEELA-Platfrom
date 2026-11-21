@@ -909,4 +909,97 @@ export class CatalogService {
   isOpen(profile: RestaurantProfile): boolean {
     return this.isRestaurantOpen(profile);
   }
+
+  async restaurantMenuSummary(restId: string): Promise<{
+    active_categories: number;
+    inactive_categories: number;
+    active_products: number;
+    inactive_products: number;
+    active_addons: number;
+    active_offers: number;
+    expiring_offers: number;
+    products: Array<{
+      prod_id: string;
+      prod_name: string;
+      cat_id: string;
+      cat_title: string;
+      price: string;
+      is_active: boolean;
+    }>;
+  }> {
+    const now = new Date();
+    const soon = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    const [categories, products, activeAddons, offers] = await Promise.all([
+      this.dataSource.getRepository(Category).find({
+        select: { cat_id: true, cat_title: true, is_active: true },
+        where: { rest_id: restId },
+      }),
+      this.dataSource.getRepository(Product).find({
+        select: {
+          prod_id: true,
+          cat_id: true,
+          prod_name: true,
+          price: true,
+          is_active: true,
+        },
+        where: { rest_id: restId },
+      }),
+      this.dataSource.getRepository(Addon).count({
+        where: { rest_id: restId, is_active: true },
+      }),
+      this.dataSource.getRepository(Offer).find({
+        select: {
+          offer_id: true,
+          is_active: true,
+          starts_at: true,
+          expires_at: true,
+        },
+        where: { rest_id: restId },
+      }),
+    ]);
+
+    const catTitleById = new Map(
+      categories.map((cat) => [cat.cat_id, cat.cat_title]),
+    );
+    let activeCategories = 0;
+    let inactiveCategories = 0;
+    for (const cat of categories) {
+      if (cat.is_active) activeCategories += 1;
+      else inactiveCategories += 1;
+    }
+
+    let activeProducts = 0;
+    let inactiveProducts = 0;
+    for (const prod of products) {
+      if (prod.is_active) activeProducts += 1;
+      else inactiveProducts += 1;
+    }
+
+    let activeOffers = 0;
+    let expiringOffers = 0;
+    for (const offer of offers) {
+      if (offer.is_active && offer.starts_at <= now && offer.expires_at > now) {
+        activeOffers += 1;
+        if (offer.expires_at <= soon) expiringOffers += 1;
+      }
+    }
+
+    return {
+      active_categories: activeCategories,
+      inactive_categories: inactiveCategories,
+      active_products: activeProducts,
+      inactive_products: inactiveProducts,
+      active_addons: activeAddons,
+      active_offers: activeOffers,
+      expiring_offers: expiringOffers,
+      products: products.map((prod) => ({
+        prod_id: prod.prod_id,
+        prod_name: prod.prod_name,
+        cat_id: prod.cat_id,
+        cat_title: catTitleById.get(prod.cat_id) ?? 'أصناف أخرى',
+        price: prod.price,
+        is_active: prod.is_active,
+      })),
+    };
+  }
 }

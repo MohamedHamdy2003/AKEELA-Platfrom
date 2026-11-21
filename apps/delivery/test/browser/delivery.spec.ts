@@ -97,6 +97,74 @@ test('driver create/edit and mobile navigation', async ({ page }) => {
     ),
   ).toBeTruthy();
 });
+test('driver edit opens smooth animated side-sheet beside the table and restores focus', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 1536, height: 960 });
+  await portalFixture(page, 'Delivery_Company');
+  await login(page);
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'السائقون', exact: true })
+    .click();
+
+  const editTrigger = page
+    .getByRole('button', { name: 'تعديل السائق', exact: true })
+    .first();
+  await editTrigger.click();
+  const editPane = page.getByRole('complementary', {
+    name: 'تعديل السائق',
+    exact: true,
+  });
+  await expect(editPane).toBeVisible();
+  await expect(editPane).toHaveCSS('animation-name', 'admin-detail-enter');
+  await expect(
+    editPane.getByRole('button', { name: 'إغلاق تعديل السائق' }),
+  ).toBeFocused();
+  await expect(editPane.getByLabel('اسم السائق', { exact: true })).toHaveValue(
+    'أحمد محمود',
+  );
+
+  const [listBox, paneBox] = await Promise.all([
+    page.locator('.admin-detail-list').boundingBox(),
+    editPane.boundingBox(),
+  ]);
+  expect(listBox && paneBox && paneBox.x < listBox.x).toBe(true);
+
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-delivery-drivers-pane-desktop.png'),
+    fullPage: true,
+  });
+
+  await page.keyboard.press('Escape');
+  await expect(editPane).toHaveCount(0);
+  await expect(editTrigger).toBeFocused();
+
+  await page.getByRole('button', { name: 'إضافة سائق', exact: true }).click();
+  const newPane = page.getByRole('complementary', {
+    name: 'سائق جديد',
+    exact: true,
+  });
+  await expect(newPane).toBeVisible();
+  await expect(newPane).toHaveCSS('animation-name', 'admin-detail-enter');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-delivery-drivers-pane-mobile.png'),
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(newPane).toHaveCSS('animation-name', 'none');
+  expect(errors).toEqual([]);
+});
 test('delivery executive analytics dashboard displays dispatch radar, fleet metrics, driver load tabs and responsive layout', async ({
   page,
 }) => {

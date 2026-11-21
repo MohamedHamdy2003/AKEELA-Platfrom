@@ -105,7 +105,183 @@ export async function setup(page: Page, activation = 'Active') {
             ? 'Your restaurant is active and ready to manage.'
             : 'Your restaurant is waiting for Admin activation.',
       };
-    else if (path === '/restaurant/profile') {
+    else if (path === '/restaurant/analytics') {
+      const range = url.searchParams.get('range') || '30d';
+      const scale =
+        range === 'today'
+          ? 1
+          : range === '7d'
+            ? 3
+            : range === '90d'
+              ? 18
+              : range === 'all'
+                ? 24
+                : 10;
+      const days =
+        range === 'today' ? 1 : range === '7d' ? 7 : range === '90d' ? 30 : 14;
+      const daily_series = Array.from({ length: days }, (_, idx) => {
+        const day = String(5 + idx).padStart(2, '0');
+        const delivered = Math.max(
+          1,
+          Math.round(((idx % 4) + 2) * (scale / 3)),
+        );
+        const ordersCount = delivered + (idx % 3 === 0 ? 1 : 0);
+        return {
+          date: `2026-11-${day}`,
+          orders: ordersCount,
+          delivered,
+          food_revenue: (delivered * 215).toFixed(2),
+        };
+      });
+      const deliveredOrders = daily_series.reduce((s, p) => s + p.delivered, 0);
+      const pending = 2;
+      const accepted = 1;
+      const pickedUp = 1;
+      const rejected = Math.max(1, Math.round(deliveredOrders * 0.04));
+      const cancelled = Math.max(1, Math.round(deliveredOrders * 0.05));
+      const failed = 0;
+      const totalOrders =
+        deliveredOrders +
+        pending +
+        accepted +
+        pickedUp +
+        rejected +
+        cancelled +
+        failed;
+      const foodRevenue = daily_series
+        .reduce((s, p) => s + Number(p.food_revenue), 0)
+        .toFixed(2);
+      const grossGmv = (Number(foodRevenue) + deliveredOrders * 30).toFixed(2);
+      const addonsRevenue = (Number(foodRevenue) * 0.14).toFixed(2);
+      const avgOrder = (Number(foodRevenue) / deliveredOrders).toFixed(2);
+      const decided = deliveredOrders + accepted + pickedUp + rejected;
+      data = {
+        range,
+        generated_at: '2026-11-18T20:00:00+02:00',
+        kpis: {
+          food_revenue: foodRevenue,
+          gross_gmv: grossGmv,
+          addons_revenue: addonsRevenue,
+          avg_order_value: avgOrder,
+          total_orders: totalOrders,
+          delivered_orders: deliveredOrders,
+          rejected_orders: rejected,
+          cancelled_orders: cancelled,
+          acceptance_rate:
+            Math.round(((decided - rejected) / decided) * 1000) / 10,
+          completion_rate:
+            Math.round((deliveredOrders / totalOrders) * 1000) / 10,
+          rejection_rate: Math.round((rejected / totalOrders) * 1000) / 10,
+          cancellation_rate: Math.round((cancelled / totalOrders) * 1000) / 10,
+          unique_customers: Math.max(4, Math.round(deliveredOrders * 0.62)),
+          repeat_customers: Math.max(2, Math.round(deliveredOrders * 0.26)),
+          repeat_customer_rate: 41.9,
+          avg_fulfillment_minutes: 31.6,
+        },
+        previous_kpis:
+          range === 'all'
+            ? null
+            : {
+                food_revenue: (Number(foodRevenue) * 0.85).toFixed(2),
+                addons_revenue: (Number(addonsRevenue) * 0.82).toFixed(2),
+                avg_order_value: (Number(avgOrder) * 0.96).toFixed(2),
+                total_orders: Math.max(1, Math.round(totalOrders * 0.86)),
+                delivered_orders: Math.max(
+                  1,
+                  Math.round(deliveredOrders * 0.85),
+                ),
+                avg_fulfillment_minutes: 34.8,
+              },
+        live_alerts: {
+          pending_orders: pending,
+          stale_pending_orders: 1,
+          active_in_progress: accepted + pickedUp,
+          inactive_products: 1,
+          expiring_offers: 1,
+        },
+        status_breakdown: {
+          Pending: pending,
+          Accepted: accepted,
+          Picked_Up: pickedUp,
+          Delivered: deliveredOrders,
+          Rejected: rejected,
+          Cancelled: cancelled,
+          Failed: failed,
+        },
+        daily_series,
+        peak_hours: Array.from({ length: 24 }, (_, hour) => ({
+          hour,
+          orders:
+            hour === 20
+              ? 17
+              : hour === 21
+                ? 14
+                : hour >= 13 && hour <= 22
+                  ? 3 + (hour % 6)
+                  : hour >= 10
+                    ? 2
+                    : 0,
+        })),
+        menu_totals: {
+          active_categories: 4,
+          active_products: 12,
+          inactive_products: 1,
+          active_addons: 6,
+          active_offers: 2,
+        },
+        top_items: [
+          {
+            item_name: 'برجر مشوي مخصوص',
+            item_type: 'product',
+            units_sold: 46,
+            revenue: '6900.00',
+            share_pct: 42.5,
+          },
+          {
+            item_name: 'وجبة عائلية مشويات',
+            item_type: 'offer',
+            units_sold: 18,
+            revenue: '4860.00',
+            share_pct: 29.9,
+          },
+        ],
+        slow_items: [
+          {
+            prod_id: '205',
+            prod_name: 'عصير جوافة فريش',
+            cat_title: 'المشروبات',
+            price: '35.00',
+            units_sold: 0,
+          },
+        ],
+        top_addons: [
+          {
+            addon_name: 'صوص شيدر سايح',
+            units_sold: 38,
+            revenue: '1140.00',
+          },
+          {
+            addon_name: 'هالابينو حار',
+            units_sold: 22,
+            revenue: '330.00',
+          },
+        ],
+        category_breakdown: [
+          {
+            cat_title: 'السندويتشات',
+            units_sold: 64,
+            revenue: '8960.00',
+            share_pct: 55.2,
+          },
+          {
+            cat_title: 'العروض',
+            units_sold: 18,
+            revenue: '4860.00',
+            share_pct: 29.9,
+          },
+        ],
+      };
+    } else if (path === '/restaurant/profile') {
       if (method === 'PATCH') savedProfile = { ...savedProfile, ...body };
       if (method === 'PATCH' && typeof body.is_active === 'boolean')
         serviceActive = body.is_active;

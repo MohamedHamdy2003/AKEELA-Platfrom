@@ -28,6 +28,7 @@ import {
   DeliveryAnalyticsQuery,
   ListOrdersQuery,
   OperationalOrdersQuery,
+  RestaurantAnalyticsQuery,
 } from '../modules/orders/orders.dto';
 
 const guide = `REST API for AKEELA mobile and browser clients.
@@ -451,6 +452,7 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
       OperationalOrdersQuery,
       AdminAnalyticsQuery,
       DeliveryAnalyticsQuery,
+      RestaurantAnalyticsQuery,
     ],
     operationIdFactory: (controller, method) =>
       `${controller.replace(/Controller$/, '')}_${method}`,
