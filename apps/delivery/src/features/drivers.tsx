@@ -27,7 +27,7 @@ function driverInitials(name: string): string {
 
 export function Drivers() {
   const [page, setPage] = useState(1),
-    [active, setActive] = useState(''),
+    [active, setActive] = useState<'true' | 'false'>('true'),
     [edit, setEdit] = useState<Driver | null | undefined>(undefined),
     [error, setError] = useState<unknown>(null),
     [busy, setBusy] = useState(false),
@@ -101,22 +101,37 @@ export function Drivers() {
         }
       />
       {notice && <Notice>{notice}</Notice>}
-      <div className="filters">
-        <Field label="نشاط السائق">
-          <select
-            value={active}
-            onChange={(event) => {
-              setActive(event.target.value);
+      <div className="driver-toolbar">
+        <div
+          className="driver-seg"
+          role="group"
+          aria-label="تصفية السائقين حسب النشاط"
+        >
+          <button
+            type="button"
+            aria-pressed={active === 'true'}
+            onClick={() => {
+              setActive('true');
               setPage(1);
               setEdit(undefined);
               setError(null);
             }}
           >
-            <option value="">جميع السائقين</option>
-            <option value="true">نشط</option>
-            <option value="false">غير نشط</option>
-          </select>
-        </Field>
+            نشط
+          </button>
+          <button
+            type="button"
+            aria-pressed={active === 'false'}
+            onClick={() => {
+              setActive('false');
+              setPage(1);
+              setEdit(undefined);
+              setError(null);
+            }}
+          >
+            غير نشط
+          </button>
+        </div>
       </div>
       <DetailWorkspace
         selectedKey={selectedKey}

@@ -107,19 +107,23 @@ export function Field({
 }
 export function Select({
   label,
+  hideLabel,
   error,
   hint,
   children,
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
+  hideLabel?: boolean;
   error?: string;
   hint?: string;
 }) {
   const id = useId();
   return (
     <label className="field" htmlFor={id}>
-      <span id={id + '-label'}>{label}</span>
+      <span id={id + '-label'} className={hideLabel ? 'sr-only' : undefined}>
+        {label}
+      </span>
       <select
         id={id}
         {...props}

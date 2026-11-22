@@ -1,29 +1,29 @@
 .arabic-date {
-  flex: 1 1 260px;
-  min-width: 260px;
+  flex: 1 1 220px;
+  min-width: 210px;
 }
 .portal .filters {
   align-items: flex-start;
 }
 .arabic-date legend {
-  font-size: var(--dashboard-type-label, 14px);
+  font-size: 11.5px;
   font-weight: 500;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   padding: 0;
 }
 .arabic-date-parts {
   display: grid;
-  grid-template-columns: minmax(58px, 0.8fr) minmax(95px, 1.4fr) minmax(
-      68px,
-      1fr
+  grid-template-columns: minmax(52px, 0.75fr) minmax(86px, 1.35fr) minmax(
+      60px,
+      0.9fr
     );
-  gap: 6px;
+  gap: 5px;
 }
 .arabic-date-parts select,
 .arabic-date-parts input {
   width: 100%;
   min-width: 0;
-  padding-inline: 8px;
+  padding-inline: 7px;
 }
 .arabic-date-parts input {
   text-align: center;
@@ -32,8 +32,14 @@
   display: flex;
   justify-content: space-between;
   gap: 6px;
-  min-height: 20px;
-  margin-top: 4px;
+  min-height: 0;
+  margin-top: 3px;
+}
+.arabic-date-foot:not(:has(.text-button)) small:empty {
+  display: none;
+}
+.arabic-date-foot:not(:has(.text-button)):has(small:empty) {
+  margin-top: 0;
 }
 .arabic-date-foot small {
   font-size: 12px;

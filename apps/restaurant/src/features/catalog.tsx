@@ -536,6 +536,7 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
         {kind === 'products' && pool !== 'unlinked' && (
           <Select
             label="التصنيف"
+            hideLabel
             value={category}
             onChange={(e) => {
               setCategory(e.target.value);
