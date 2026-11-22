@@ -1,4 +1,10 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import {
   AlertTriangle,
   ArrowLeftRight,
@@ -129,12 +135,17 @@ function AlertBanner({
   );
 }
 
-export async function allPages<T>(path: string): Promise<T[]> {
+export async function allPages<T>(
+  path: string,
+  signal?: AbortSignal,
+): Promise<T[]> {
   const items: T[] = [];
   let page = 1;
   let response: Envelope<T[]>;
   do {
-    response = await api.request<T[]>(path + query({ page, per_page: 100 }));
+    response = await api.request<T[]>(path + query({ page, per_page: 100 }), {
+      signal,
+    });
     items.push(...response.data);
     page++;
   } while (response.meta && page <= response.meta.last_page);
@@ -200,20 +211,42 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
   const cfg = config[kind];
 
   useEffect(() => {
+    const last = resource.result?.meta?.last_page;
+    if (last && page > last) setPage(Math.max(1, last));
+  }, [resource.result?.meta?.last_page, page]);
+
+  const singlePageCategories =
+    kind === 'categories' &&
+    page === 1 &&
+    resource.result?.meta?.last_page === 1
+      ? (resource.result.data as Category[])
+      : null;
+
+  useEffect(() => {
+    if (singlePageCategories) {
+      setCategories(singlePageCategories);
+      setPickerError(null);
+      return;
+    }
     if (kind !== 'products' && kind !== 'categories') return;
-    let current = true;
+    if (kind === 'categories' && !resource.result && resource.loading) return;
+    const controller = new AbortController();
     setPickerError(null);
-    allPages<Category>('/restaurant/categories')
+    allPages<Category>('/restaurant/categories', controller.signal)
       .then((rows) => {
-        if (current) setCategories(rows);
+        if (!controller.signal.aborted) setCategories(rows);
       })
       .catch((cause) => {
-        if (current) setPickerError(cause);
+        if (!controller.signal.aborted) setPickerError(cause);
       });
-    return () => {
-      current = false;
-    };
-  }, [kind, categoriesRev]);
+    return () => controller.abort();
+  }, [
+    kind,
+    categoriesRev,
+    singlePageCategories,
+    resource.loading,
+    resource.result,
+  ]);
 
   const refreshAll = (message?: string) => {
     if (message) setFeedback(message);
@@ -394,6 +427,7 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
                 refreshAll('تم حفظ تعديلات التصنيف بنجاح.');
               }}
               onRequestDeleteCategory={(cat) => {
+                setEditing(null);
                 setConfirmError(null);
                 setConfirmState({ kind: 'delete-category', category: cat });
               }}
@@ -551,9 +585,9 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
       )}
 
       <div className="panel table-panel">
-        {resource.loading ? (
+        {!resource.result && resource.loading ? (
           <TableSkeleton columns={kind === 'offers' ? 6 : 5} />
-        ) : resource.error ? (
+        ) : !resource.result && resource.error ? (
           <Failure error={resource.error} retry={resource.reload} />
         ) : !resource.result?.data.length ? (
           <Empty>
@@ -561,7 +595,13 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
               ? kind === 'products'
                 ? 'لا توجد منتجات غير مربوطة حالياً.'
                 : 'لا توجد إضافات غير مربوطة حالياً.'
-              : `لم تُضف أي ${cfg.title} بعد.`}
+              : pool === 'linked'
+                ? kind === 'products'
+                  ? 'لا توجد منتجات مربوطة بتصنيف حالياً.'
+                  : 'لا توجد إضافات مربوطة بمنتجات حالياً.'
+                : kind === 'products' && category
+                  ? 'لا توجد منتجات في هذا التصنيف حالياً.'
+                  : `لم تُضف أي ${cfg.title} بعد.`}
           </Empty>
         ) : (
           <div className="table-scroll">
@@ -812,6 +852,7 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
               refreshAll();
             }}
             onRequestDeleteCategory={(cat) => {
+              setEditing(null);
               setConfirmError(null);
               setConfirmState({ kind: 'delete-category', category: cat });
             }}
@@ -820,6 +861,7 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
               setSelectedCategoryId(cat.cat_id);
             }}
             onRequestUnlinkProduct={(product) => {
+              setEditing(null);
               setConfirmError(null);
               setConfirmState({
                 kind: 'unlink-product',
@@ -830,10 +872,12 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
               });
             }}
             onRequestDeleteProduct={(product) => {
+              setEditing(null);
               setConfirmError(null);
               setConfirmState({ kind: 'delete-product', product });
             }}
             onRequestDeleteAddon={(addon) => {
+              setEditing(null);
               setConfirmError(null);
               setConfirmState({ kind: 'delete-addon', addon });
             }}
@@ -928,15 +972,29 @@ function CategoryDetailsView({
   onRequestMove: (product: Product) => void;
   onRequestUnlink: (product: Product) => void;
 }) {
+  const [page, setPage] = useState(1);
   const productsRes = useResource<Product[]>(
     '/restaurant/products' +
-      query({ cat_id: category.cat_id, page: 1, per_page: 100 }),
+      query({ cat_id: category.cat_id, page, per_page: 20 }),
   );
   const { reload } = productsRes;
+  const prevRevisionRef = useRef(revision);
 
   useEffect(() => {
-    if (revision > 0) reload();
+    setPage(1);
+  }, [category.cat_id]);
+
+  useEffect(() => {
+    if (revision !== prevRevisionRef.current) {
+      prevRevisionRef.current = revision;
+      reload();
+    }
   }, [revision, reload]);
+
+  useEffect(() => {
+    const last = productsRes.result?.meta?.last_page;
+    if (last && page > last) setPage(Math.max(1, last));
+  }, [productsRes.result?.meta?.last_page, page]);
 
   const products = productsRes.result?.data ?? [];
   const totalCount =
@@ -999,9 +1057,9 @@ function CategoryDetailsView({
       )}
 
       <div className="panel table-panel">
-        {productsRes.loading ? (
+        {!productsRes.result && productsRes.loading ? (
           <TableSkeleton columns={5} rows={4} />
-        ) : productsRes.error ? (
+        ) : !productsRes.result && productsRes.error ? (
           <Failure error={productsRes.error} retry={productsRes.reload} />
         ) : !products.length ? (
           <Empty>لا توجد منتجات في هذا التصنيف حالياً.</Empty>
@@ -1067,6 +1125,7 @@ function CategoryDetailsView({
           </div>
         )}
       </div>
+      <Pager meta={productsRes.result?.meta} onPage={setPage} />
     </>
   );
 }
@@ -1277,12 +1336,20 @@ export function CatalogEditor({
   const [file, setFile] = useState<File | null>(null);
   const initialId = record ? value(record, cfg.id) : '';
   const [savedId, setSavedId] = useState(initialId);
+  const [loadedProduct, setLoadedProduct] = useState<Product | null>(null);
+  const didMutate = useRef(false);
   const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>(allCategories);
   const [loading, setLoading] = useState(kind === 'products');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState('');
+
+  const handleClose = () => {
+    if (busy) return;
+    if (didMutate.current) onSaved();
+    else onClose();
+  };
 
   useEffect(() => {
     if (kind === 'categories') {
@@ -1292,18 +1359,21 @@ export function CatalogEditor({
 
   useEffect(() => {
     if (kind !== 'products') return;
-    let current = true;
+    const controller = new AbortController();
     setLoading(true);
     Promise.all([
-      allPages<Category>('/restaurant/categories'),
+      allPages<Category>('/restaurant/categories', controller.signal),
       initialId
-        ? api.request<Product>('/restaurant/products/' + initialId)
+        ? api.request<Product>('/restaurant/products/' + initialId, {
+            signal: controller.signal,
+          })
         : Promise.resolve(null),
     ])
       .then(([rows, product]) => {
-        if (current) {
+        if (!controller.signal.aborted) {
           setCategories(rows);
           if (product) {
+            setLoadedProduct(product.data);
             setActive(product.data.is_active);
             setValues(
               Object.fromEntries(
@@ -1317,14 +1387,12 @@ export function CatalogEditor({
         }
       })
       .catch((cause) => {
-        if (current) setError(cause);
+        if (!controller.signal.aborted) setError(cause);
       })
       .finally(() => {
-        if (current) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
-    return () => {
-      current = false;
-    };
+    return () => controller.abort();
   }, [kind, initialId]);
 
   const set = (name: string, val: string) =>
@@ -1336,15 +1404,21 @@ export function CatalogEditor({
   const editingCategory =
     kind === 'categories' && record ? (record as Category) : null;
   const editingProduct =
-    kind === 'products' && record ? (record as Product) : null;
+    kind === 'products'
+      ? (loadedProduct ?? (record ? (record as Product) : null))
+      : null;
   const editingAddon = kind === 'addons' && record ? (record as Addon) : null;
   const addonLinkedCount = editingAddon?.linked_product_ids?.length ?? 0;
   const isAddonUnlinked =
     kind === 'addons' && (!editingAddon || addonLinkedCount === 0);
 
-  const sortedCategories = [...categories].sort(
-    (a, b) => a.display_order - b.display_order,
-  );
+  const sortedCategories = [
+    ...(editingCategory &&
+    !categories.some((c) => c.cat_id === editingCategory.cat_id)
+      ? [editingCategory]
+      : []),
+    ...categories,
+  ].sort((a, b) => a.display_order - b.display_order);
   const nextAutoOrder =
     sortedCategories.reduce(
       (max, c) => Math.max(max, Number(c.display_order) || 0),
@@ -1379,6 +1453,7 @@ export function CatalogEditor({
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError(null);
     setNotice('');
@@ -1434,6 +1509,7 @@ export function CatalogEditor({
       );
       const id = value(response.data, cfg.id);
       setSavedId(id);
+      didMutate.current = true;
       if (file) {
         setUploading(true);
         const data = new FormData();
@@ -1462,9 +1538,7 @@ export function CatalogEditor({
   return (
     <Dialog
       title={(record ? 'تعديل ' : 'إضافة ') + cfg.singular}
-      onClose={() => {
-        if (!busy) onClose();
-      }}
+      onClose={handleClose}
     >
       <Notice error={error} />
       <Notice>{notice}</Notice>
@@ -1610,14 +1684,11 @@ export function CatalogEditor({
                 <ImagePicker
                   uploading={uploading}
                   src={
-                    record
-                      ? value(
-                          record,
-                          kind === 'products'
-                            ? 'prod_image_url'
-                            : 'offer_image_url',
-                        )
-                      : null
+                    kind === 'products'
+                      ? (editingProduct?.prod_image_url ?? null)
+                      : record
+                        ? value(record, 'offer_image_url')
+                        : null
                   }
                   file={file}
                   onFile={setFile}
@@ -1636,7 +1707,7 @@ export function CatalogEditor({
               <button
                 type="button"
                 className="button secondary"
-                onClick={onClose}
+                onClick={handleClose}
                 disabled={busy}
               >
                 إلغاء
@@ -1861,44 +1932,69 @@ function AddonLinks({
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
-    let current = true;
-    setLoading(true);
+    const controller = new AbortController();
+    setLoading((prev) => (addons.length === 0 ? true : prev));
+    setError(null);
     Promise.all([
-      allPages<Addon>('/restaurant/addons'),
+      allPages<Addon>('/restaurant/addons', controller.signal),
       api.request<ProductAddon[]>(
         '/restaurant/products/' + product.prod_id + '/addons',
+        { signal: controller.signal },
       ),
     ])
       .then(([rows, response]) => {
-        if (current) {
+        if (!controller.signal.aborted) {
           setAddons(rows);
           setLinks(response.data);
         }
       })
       .catch((cause) => {
-        if (current) setError(cause);
+        if (!controller.signal.aborted) setError(cause);
       })
       .finally(() => {
-        if (current) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
-    return () => {
-      current = false;
-    };
+    return () => controller.abort();
   }, [product.prod_id, revision]);
 
   async function toggle(addon: Addon, active: boolean) {
+    if (busy) return;
+    const prevLinks = links;
+    setLinks((current) => {
+      const exists = current.some((l) => l.addon_id === addon.addon_id);
+      if (exists) {
+        return current.map((l) =>
+          l.addon_id === addon.addon_id ? { ...l, is_active: active } : l,
+        );
+      }
+      return [
+        ...current,
+        {
+          prod_id: product.prod_id,
+          addon_id: addon.addon_id,
+          is_active: active,
+          addon,
+        },
+      ];
+    });
     setBusy(true);
     setError(null);
     try {
-      await api.request(
+      const response = await api.request<ProductAddon>(
         '/restaurant/products/' + product.prod_id + '/addons/' + addon.addon_id,
         { method: 'PUT', body: { is_active: active } },
       );
-      setRevision((n) => n + 1);
+      setAddons((current) =>
+        current.map((a) =>
+          a.addon_id === addon.addon_id
+            ? { ...a, is_active: response.data.addon.is_active }
+            : a,
+        ),
+      );
       onChanged?.();
     } catch (cause) {
+      setLinks(prevLinks);
       setError(cause);
-      setRevision((n) => n + 1);
     } finally {
       setBusy(false);
     }
@@ -1918,7 +2014,7 @@ function AddonLinks({
       </AlertBanner>
       {loading ? (
         <Loading />
-      ) : !addons.length ? (
+      ) : error && !addons.length ? null : !addons.length ? (
         <Empty>أضف إضافات إلى القائمة أولًا.</Empty>
       ) : (
         <div className="link-list">
@@ -1968,15 +2064,16 @@ function AddonProductsDialog({
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    let current = true;
+    const controller = new AbortController();
     setLoading(true);
+    setError(null);
     Promise.all([
-      allPages<Product>('/restaurant/products'),
-      allPages<Category>('/restaurant/categories'),
-      allPages<Addon>('/restaurant/addons'),
+      allPages<Product>('/restaurant/products', controller.signal),
+      allPages<Category>('/restaurant/categories', controller.signal),
+      allPages<Addon>('/restaurant/addons', controller.signal),
     ])
       .then(([prodRows, catRows, addonRows]) => {
-        if (!current) return;
+        if (controller.signal.aborted) return;
         setProducts(prodRows);
         setCategories(catRows);
         const latest = addonRows.find((a) => a.addon_id === addon.addon_id);
@@ -1986,17 +2083,16 @@ function AddonProductsDialog({
         }
       })
       .catch((cause) => {
-        if (current) setError(cause);
+        if (!controller.signal.aborted) setError(cause);
       })
       .finally(() => {
-        if (current) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
-    return () => {
-      current = false;
-    };
+    return () => controller.abort();
   }, [addon.addon_id]);
 
   async function toggleProduct(product: Product, checked: boolean) {
+    if (busy) return;
     const previousLinked = linkedIds;
     const previousActive = isActive;
     const optimisticLinked = checked
@@ -2037,26 +2133,28 @@ function AddonProductsDialog({
       }}
     >
       <Notice error={error} />
-      {linkedIds.length === 0 ? (
-        <AlertBanner tone="warning">
-          هذه الإضافة غير مربوطة بأي منتج حالياً (غير مفعّلة). اختر منتجاً واحداً
-          على الأقل لتفعيلها تلقائياً.
-        </AlertBanner>
-      ) : linkedIds.length === 1 ? (
-        <AlertBanner tone="info">
-          مربوطة بمنتج واحد فقط ({isActive ? 'مفعّلة' : 'متوقفة'}). فك ربط هذا
-          المنتج سيُوقف الإضافة تلقائياً وينقلها لقائمة غير المربوطة.
-        </AlertBanner>
-      ) : (
-        <AlertBanner tone="success">
-          مربوطة حالياً بـ{' '}
-          {countArabic(linkedIds.length, 'منتج', 'منتجين', 'منتجات')} (
-          {isActive ? 'مفعّلة' : 'متوقفة'}).
-        </AlertBanner>
-      )}
+      {!loading &&
+        !error &&
+        (linkedIds.length === 0 ? (
+          <AlertBanner tone="warning">
+            هذه الإضافة غير مربوطة بأي منتج حالياً (غير مفعّلة). اختر منتجاً واحداً
+            على الأقل لتفعيلها تلقائياً.
+          </AlertBanner>
+        ) : linkedIds.length === 1 ? (
+          <AlertBanner tone="info">
+            مربوطة بمنتج واحد فقط ({isActive ? 'مفعّلة' : 'متوقفة'}). فك ربط هذا
+            المنتج سيُوقف الإضافة تلقائياً وينقلها لقائمة غير المربوطة.
+          </AlertBanner>
+        ) : (
+          <AlertBanner tone="success">
+            مربوطة حالياً بـ{' '}
+            {countArabic(linkedIds.length, 'منتج', 'منتجين', 'منتجات')} (
+            {isActive ? 'مفعّلة' : 'متوقفة'}).
+          </AlertBanner>
+        ))}
       {loading ? (
         <Loading />
-      ) : !products.length ? (
+      ) : error && !products.length ? null : !products.length ? (
         <Empty>أضف منتجات إلى القائمة أولاً للتمكن من ربط الإضافات بها.</Empty>
       ) : (
         <div>

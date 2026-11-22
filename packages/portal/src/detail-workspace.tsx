@@ -74,6 +74,9 @@ export function DetailWorkspace({
     );
   };
 
+  const closeRef = useRef<() => void>(() => undefined);
+  closeRef.current = close;
+
   useEffect(() => {
     if (!selectedKey) return;
     const escape = (event: KeyboardEvent) => {
@@ -85,11 +88,11 @@ export function DetailWorkspace({
       )
         return;
       event.preventDefault();
-      close();
+      closeRef.current();
     };
     document.addEventListener('keydown', escape);
     return () => document.removeEventListener('keydown', escape);
-  });
+  }, [selectedKey]);
 
   return (
     <div

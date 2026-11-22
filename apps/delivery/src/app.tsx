@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Company, User } from '@akeela/portal/models';
 import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
 import { AccountScreen, OrdersBoard } from '@akeela/portal/screens';
@@ -47,7 +47,10 @@ export function App() {
 function DeliveryWorkspace() {
   const [user, setUser] = useState<User | null>(null),
     [route, setRoute] = useState(currentRoute),
+    [ordersStatus, setOrdersStatus] = useState(''),
+    [authNotice, setAuthNotice] = useState(''),
     [revision, setRevision] = useState(0),
+    [analyticsRevision, setAnalyticsRevision] = useState(0),
     [status, setStatus] = useState<RealtimeStatus>('connecting');
   const { restoring, restoreError, retryRestore } = useSessionRestore(
     api,
@@ -73,13 +76,22 @@ function DeliveryWorkspace() {
       status: setStatus,
     });
   }, [user?.user_id]);
-  const navigate = (key: string) => {
+  useEffect(() => {
+    if (revision === 0) return;
+    const timer = window.setTimeout(() => setAnalyticsRevision(revision), 2000);
+    return () => window.clearTimeout(timer);
+  }, [revision]);
+  const navigate = useCallback((key: string, filter?: string) => {
     const target = '/' + key;
     if (window.location.pathname !== target) {
       window.history.pushState(null, '', target);
     }
+    if (key === 'orders' && filter !== undefined) {
+      setOrdersStatus(filter);
+    }
     setRoute(key);
-  };
+  }, []);
+  const consumeOrdersStatus = useCallback(() => setOrdersStatus(''), []);
   const company = (user?.profile ?? null) as Partial<Company> | null;
   const companyName =
     typeof company?.company_name === 'string' && company.company_name.trim()
@@ -89,10 +101,11 @@ function DeliveryWorkspace() {
     typeof company?.company_id === 'string' ? company.company_id : undefined;
 
   useEffect(() => {
+    const routeLabel = navigation.find(([key]) => key === route)?.[1];
     document.title = user
-      ? `${companyName.toUpperCase()} — AKEELA`
+      ? `${routeLabel ? routeLabel + ' · ' : ''}${companyName.toUpperCase()} — AKEELA`
       : 'AKEELA - إدارة التوصيل';
-  }, [user, companyName]);
+  }, [user, companyName, route]);
 
   const handleCompanyUpdated = (updated: Company) => {
     setUser((current) =>
@@ -131,7 +144,11 @@ function DeliveryWorkspace() {
         api={api}
         title="إدارة التوصيل"
         theme="delivery"
-        login={setUser}
+        initialNotice={authNotice}
+        login={(loggedIn) => {
+          setAuthNotice('');
+          setUser(loggedIn);
+        }}
       />
     );
   return (
@@ -155,9 +172,18 @@ function DeliveryWorkspace() {
         window.history.replaceState(null, '', '/');
         setRoute('home');
       }}
+      forceLocalLogout={() => {
+        api.clearSession();
+        window.history.replaceState(null, '', '/');
+        setRoute('home');
+      }}
     >
       {route === 'home' && (
-        <Home revision={revision} navigate={navigate} company={company} />
+        <Home
+          revision={analyticsRevision}
+          navigate={navigate}
+          company={company}
+        />
       )}
       {route === 'orders' && (
         <OrdersBoard
@@ -165,12 +191,14 @@ function DeliveryWorkspace() {
           prefix="/delivery-company"
           revision={revision}
           delivery
+          initialStatus={ordersStatus}
+          onInitialStatusConsumed={consumeOrdersStatus}
           dateFields={(value, change) => (
             <ArabicDateFields value={value} change={change} />
           )}
           actions={(order, refresh) => (
             <DeliveryActions
-              key={order.order_id + order.updated_at}
+              key={order.order_id}
               order={order}
               refresh={refresh}
             />
@@ -182,7 +210,16 @@ function DeliveryWorkspace() {
         <CompanyProfile onUpdated={handleCompanyUpdated} />
       )}
       {route === 'account' && (
-        <AccountScreen api={api} user={user} updated={setUser} />
+        <AccountScreen
+          api={api}
+          user={user}
+          updated={setUser}
+          onPasswordChanged={() =>
+            setAuthNotice(
+              'تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.',
+            )
+          }
+        />
       )}
     </Shell>
   );

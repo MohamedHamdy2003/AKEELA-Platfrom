@@ -618,7 +618,7 @@ export async function login(page: Page) {
   await page.getByLabel('كلمة المرور', { exact: true }).fill('Password123');
   await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'صباح الخير، مطبخ أكيلة' }),
+    page.getByRole('heading', { name: /^(صباح|مساء) الخير، مطبخ أكيلة$/ }),
   ).toBeVisible();
 }
 

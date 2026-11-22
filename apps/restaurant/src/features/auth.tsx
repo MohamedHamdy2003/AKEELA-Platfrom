@@ -4,6 +4,7 @@ import logo from '@akeela/brand/logo.png';
 import logoWebp from '@akeela/brand/logo.webp';
 import botanical from '@akeela/brand/botanical.png';
 import botanicalWebp from '@akeela/brand/botanical.webp';
+import { normalizeOtpDigits } from '@akeela/portal/error-messages';
 import { api, ApiError } from '../lib/api';
 import type { User } from '../lib/models';
 import { useDeviceLocation } from '../lib/use-device-location';
@@ -23,15 +24,25 @@ const titles: Record<Mode, string> = {
   forgot: 'نسيت كلمة المرور؟',
   reset: 'كلمة مرور جديدة',
 };
-export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
+export function Auth({
+  onLogin,
+  initialNotice = '',
+}: {
+  onLogin: (user: User) => void;
+  initialNotice?: string;
+}) {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(initialNotice);
   const [visible, setVisible] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [throttle, setThrottle] = useState(0);
+  useEffect(() => {
+    if (initialNotice) setMessage(initialNotice);
+  }, [initialNotice]);
   const {
     coordinates,
     locating,
@@ -53,6 +64,7 @@ export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
   }, [cooldown]);
   const changeMode = (next: Mode) => {
     setMode(next);
+    setOtp('');
     setError(null);
     setMessage('');
     setVisible(false);
@@ -67,6 +79,7 @@ export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
     error instanceof ApiError ? error.fields[name]?.join(' ') : undefined;
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     setError(null);
     setMessage('');
     setBusy(true);
@@ -75,7 +88,7 @@ export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
     ) as Record<string, string>;
     try {
       if (mode === 'login') {
-        onLogin(await api.login(email, data.password));
+        onLogin(await api.login(email.trim(), data.password));
         return;
       }
       if (mode === 'register') {
@@ -88,25 +101,32 @@ export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
           closes_at,
           ...account
         } = data;
-        if (opens_at === closes_at)
+        const normalizedOpen =
+          opens_at.length === 5 ? opens_at + ':00' : opens_at;
+        const normalizedClose =
+          closes_at.length === 5 ? closes_at + ':00' : closes_at;
+        if (normalizedOpen === normalizedClose)
           throw new Error('وقت الفتح والإغلاق يجب أن يختلفا.');
         const response = await api.request('/auth/register/restaurant', {
           method: 'POST',
           public: true,
           body: {
             ...account,
-            email,
+            full_name: account.full_name?.trim(),
+            phone: account.phone?.trim(),
+            email: email.trim(),
             profile: {
-              rest_title,
-              rest_address,
-              longitude,
-              latitude,
-              opens_at: opens_at.length === 5 ? opens_at + ':00' : opens_at,
-              closes_at: closes_at.length === 5 ? closes_at + ':00' : closes_at,
+              rest_title: rest_title.trim(),
+              rest_address: rest_address.trim(),
+              longitude: longitude.trim(),
+              latitude: latitude.trim(),
+              opens_at: normalizedOpen,
+              closes_at: normalizedClose,
             },
           },
         });
         setMode('verify');
+        setOtp('');
         setCooldown(60);
         setMessage(
           response.message.includes('failed')
@@ -117,29 +137,44 @@ export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
         await api.request('/auth/verify-email', {
           method: 'POST',
           public: true,
-          body: { email, otp: data.otp },
+          body: { email: email.trim(), otp: normalizeOtpDigits(otp) },
         });
         setMode('login');
+        setOtp('');
         setMessage('تم تأكيد البريد. يمكنك تسجيل الدخول.');
       } else if (mode === 'forgot') {
         await api.request('/auth/forgot-password', {
           method: 'POST',
           public: true,
-          body: { email },
+          body: { email: email.trim() },
         });
         setMode('reset');
+        setOtp('');
         setCooldown(60);
         setMessage('إذا كان الحساب مؤهلًا، أرسلنا رمز استعادة إلى بريدك.');
       } else {
         await api.request('/auth/reset-password', {
           method: 'POST',
           public: true,
-          body: { email, otp: data.otp, new_password: data.new_password },
+          body: {
+            email: email.trim(),
+            otp: normalizeOtpDigits(otp),
+            new_password: data.new_password,
+          },
         });
         setMode('login');
+        setOtp('');
         setMessage('تم تغيير كلمة المرور وإنهاء الجلسات. سجّل الدخول مجددًا.');
       }
     } catch (cause) {
+      if (
+        mode === 'login' &&
+        cause instanceof ApiError &&
+        cause.code === 'EMAIL_NOT_VERIFIED'
+      ) {
+        setMode('verify');
+        setOtp('');
+      }
       setError(cause);
       if (cause instanceof ApiError && cause.status === 429)
         setThrottle(cause.retryAfter || 60);
@@ -289,6 +324,14 @@ export function Auth({ onLogin }: { onLogin: (user: User) => void }) {
                   <Field
                     label="رمز التحقق"
                     name="otp"
+                    value={otp}
+                    onChange={(event) =>
+                      setOtp(
+                        normalizeOtpDigits(event.target.value)
+                          .replace(/\D/g, '')
+                          .slice(0, 6),
+                      )
+                    }
                     inputMode="numeric"
                     pattern="[0-9]{6}"
                     maxLength={6}

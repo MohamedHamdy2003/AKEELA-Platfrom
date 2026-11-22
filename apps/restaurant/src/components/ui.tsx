@@ -20,6 +20,10 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import {
+  translateFieldLabel,
+  translateFieldReason,
+} from '@akeela/portal/error-messages';
 import { ApiError, errorMessage } from '../lib/api';
 import type { Meta, OrderStatus } from '../lib/models';
 import { statuses, statusDescriptions } from '../lib/models';
@@ -103,16 +107,33 @@ export function Field({
 }
 export function Select({
   label,
+  error,
+  hint,
   children,
   ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & { label: string }) {
+}: SelectHTMLAttributes<HTMLSelectElement> & {
+  label: string;
+  error?: string;
+  hint?: string;
+}) {
   const id = useId();
   return (
     <label className="field" htmlFor={id}>
       <span id={id + '-label'}>{label}</span>
-      <select id={id} {...props} aria-labelledby={id + '-label'}>
+      <select
+        id={id}
+        {...props}
+        aria-labelledby={id + '-label'}
+        aria-invalid={!!error}
+        aria-describedby={error || hint ? id + '-hint' : undefined}
+      >
         {children}
       </select>
+      {(error || hint) && (
+        <small id={id + '-hint'} className={error ? 'field-error' : ''}>
+          {error || hint}
+        </small>
+      )}
     </label>
   );
 }
@@ -133,24 +154,37 @@ export function TextArea({
   value,
   onChange,
   disabled,
+  error,
+  hint,
 }: {
   label: string;
   name: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  error?: string;
+  hint?: string;
 }) {
+  const id = useId();
   return (
-    <label className="field full">
-      <span>{label}</span>
+    <label className="field full" htmlFor={id}>
+      <span id={id + '-label'}>{label}</span>
       <textarea
+        id={id}
         name={name}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         maxLength={10000}
         rows={4}
         disabled={disabled}
+        aria-invalid={!!error}
+        aria-describedby={error || hint ? id + '-hint' : undefined}
       />
+      {(error || hint) && (
+        <small id={id + '-hint'} className={error ? 'field-error' : ''}>
+          {error || hint}
+        </small>
+      )}
     </label>
   );
 }
@@ -161,7 +195,10 @@ export function FieldErrors({ error }: { error: unknown }) {
     <ul className="field-errors">
       {Object.entries(error.fields).map(([field, values]) => (
         <li key={field}>
-          <bdi>{field}</bdi>: {values.join(' ')}
+          <strong>{translateFieldLabel(field)}</strong>:{' '}
+          {values
+            .map((reason) => translateFieldReason(field, reason))
+            .join(' ')}
         </li>
       ))}
     </ul>
@@ -431,9 +468,17 @@ export function Dialog({
   const exiting = useExiting();
   useLayoutEffect(() => {
     const dialog = ref.current!;
-    if (exiting) dialog.close();
-    else if (!dialog.open) dialog.showModal();
-    return () => dialog.close();
+    const previousOverflow = document.body.style.overflow;
+    if (exiting) {
+      dialog.close();
+    } else {
+      if (!dialog.open) dialog.showModal();
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      dialog.close();
+    };
   }, [exiting]);
   return (
     <>

@@ -22,6 +22,8 @@ import {
   Circle,
   ClipboardList,
   Building2,
+  Eye,
+  EyeOff,
   UserRound,
   UserRoundCog,
   Home,
@@ -42,6 +44,7 @@ import logoWebp from '@akeela/brand/logo.webp';
 import brandIcon from '@akeela/brand/icon.png';
 import brandIconWebp from '@akeela/brand/icon.webp';
 import { ApiClient, ApiError, errorMessage } from './api';
+import { normalizeOtpDigits } from './error-messages';
 import {
   statuses,
   statusDescriptions,
@@ -135,6 +138,8 @@ export function Field({
   children: ReactNode;
 }) {
   const id = useId();
+  const errorId = id + '-error';
+  const hasError = Boolean(name && errors?.[name]?.length);
   const messages = useContext(FieldMessagesContext);
   return (
     <label className="field">
@@ -144,13 +149,14 @@ export function Field({
         ['input', 'select', 'textarea'].includes(String(child.type))
           ? cloneElement(child as ReactElement<HTMLAttributes<HTMLElement>>, {
               'aria-labelledby': id,
-              'aria-invalid': name && errors?.[name] ? true : undefined,
+              'aria-invalid': hasError ? true : undefined,
+              'aria-describedby': hasError ? errorId : undefined,
             })
           : child,
       )}
-      {name && errors?.[name] && (
-        <small className="field-error">
-          {messages(name, errors[name]!).join(' ')}
+      {hasError && (
+        <small id={errorId} className="field-error">
+          {messages(name!, errors![name!]!).join(' ')}
         </small>
       )}
     </label>
@@ -327,32 +333,42 @@ export function useResource<T>(
   path: string | null,
   revision = 0,
 ) {
-  const [result, setResult] = useState<Envelope<T> | null>(null),
+  const [state, setState] = useState<{
+      path: string | null;
+      result: Envelope<T> | null;
+    }>({ path: null, result: null }),
     [error, setError] = useState<unknown>(null),
-    [loading, setLoading] = useState(false),
+    [loading, setLoading] = useState(() => Boolean(path)),
     [tick, setTick] = useState(0);
-  const previous = useRef<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
-    if (previous.current !== path) setResult(null);
-    previous.current = path;
     setError(null);
-    setLoading(!!path);
-    if (path)
-      void api
-        .request<T>(path, { signal: controller.signal })
-        .then((value) => {
-          if (!controller.signal.aborted) setResult(value);
-        })
-        .catch((cause) => {
-          if (!controller.signal.aborted) setError(cause);
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setLoading(false);
-        });
+    setLoading(Boolean(path));
+    if (!path) {
+      setState({ path: null, result: null });
+      return () => controller.abort();
+    }
+    void api
+      .request<T>(path, { signal: controller.signal })
+      .then((value) => {
+        if (!controller.signal.aborted) setState({ path, result: value });
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) setError(cause);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
   }, [api, path, revision, tick]);
-  return { result, error, loading, reload: () => setTick((n) => n + 1) };
+  const result = state.path === path ? state.result : null;
+  const isLoading = loading || (Boolean(path) && state.path !== path && !error);
+  return {
+    result,
+    error,
+    loading: isLoading,
+    reload: () => setTick((n) => n + 1),
+  };
 }
 export function ResourceState({
   resource,
@@ -471,7 +487,6 @@ export function Confirm({
                 })
                 .catch((cause) => {
                   setError(cause);
-                  done();
                 })
                 .finally(() => setBusy(false));
             }}
@@ -527,6 +542,7 @@ export function Shell({
   navigate,
   status,
   logout,
+  forceLocalLogout,
   brandIdentity,
   children,
 }: {
@@ -538,6 +554,7 @@ export function Shell({
   navigate: (key: string) => void;
   status: string;
   logout: () => Promise<void>;
+  forceLocalLogout?: () => void;
   brandIdentity?: {
     name: string;
     subtitle?: string;
@@ -747,6 +764,7 @@ export function Shell({
         <LogoutConfirmation
           appName={appName}
           confirm={logout}
+          forceLocal={forceLocalLogout}
           closed={() => {
             setLogoutOpen(false);
             requestAnimationFrame(() => {
@@ -841,23 +859,29 @@ export function AuthPage({
   title,
   theme,
   login,
+  initialNotice = '',
 }: {
   api: ApiClient;
   title: string;
   theme: 'admin' | 'delivery';
   login: (user: User) => void;
+  initialNotice?: string;
 }) {
   const [mode, setMode] = useState<'login' | 'verify' | 'forgot' | 'reset'>(
       'login',
     ),
     [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
+    [showPassword, setShowPassword] = useState(false),
     [otp, setOtp] = useState(''),
     [newPassword, setNewPassword] = useState(''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState<unknown>(null),
-    [notice, setNotice] = useState(''),
+    [notice, setNotice] = useState(initialNotice),
     [cooldown, setCooldown] = useState(0);
+  useEffect(() => {
+    if (initialNotice) setNotice(initialNotice);
+  }, [initialNotice]);
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setTimeout(() => setCooldown((value) => value - 1), 1000);
@@ -982,21 +1006,41 @@ export function AuthPage({
               </Field>
               {mode === 'login' && (
                 <Field label="كلمة المرور" name="password" errors={fields}>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                    autoComplete="current-password"
-                    maxLength={128}
-                  />
+                  <div className="auth-password-wrap">
+                    <input
+                      aria-label="كلمة المرور"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
+                      autoComplete="current-password"
+                      maxLength={128}
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      aria-label={
+                        showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'
+                      }
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword((value) => !value)}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={18} aria-hidden="true" />
+                      ) : (
+                        <Eye size={18} aria-hidden="true" />
+                      )}
+                    </button>
+                  </div>
                 </Field>
               )}
               {(mode === 'verify' || mode === 'reset') && (
                 <Field label="رمز التأكيد" name="otp" errors={fields}>
                   <input
                     value={otp}
-                    onChange={(event) => setOtp(event.target.value)}
+                    onChange={(event) =>
+                      setOtp(normalizeOtpDigits(event.target.value))
+                    }
                     required
                     inputMode="numeric"
                     pattern="[0-9]{6}"
@@ -1012,15 +1056,33 @@ export function AuthPage({
                   name="new_password"
                   errors={fields}
                 >
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    required
-                    minLength={8}
-                    maxLength={128}
-                    autoComplete="new-password"
-                  />
+                  <div className="auth-password-wrap">
+                    <input
+                      aria-label="كلمة المرور الجديدة"
+                      type={showPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(event) => setNewPassword(event.target.value)}
+                      required
+                      minLength={8}
+                      maxLength={128}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      aria-label={
+                        showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'
+                      }
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword((value) => !value)}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={18} aria-hidden="true" />
+                      ) : (
+                        <Eye size={18} aria-hidden="true" />
+                      )}
+                    </button>
+                  </div>
                   <small>8 أحرف على الأقل، تتضمن حرفًا ورقمًا.</small>
                 </Field>
               )}
@@ -1146,9 +1208,11 @@ function googleMapsUrl(latitude: string, longitude: string) {
 export function OrderFacts({
   order,
   actions,
+  driverName,
 }: {
   order: Order;
   actions?: ReactNode;
+  driverName?: string;
 }) {
   return (
     <>
@@ -1248,15 +1312,22 @@ export function OrderFacts({
         <h3>مراجع الطلب</h3>
         {(
           [
-            ['معرّف العميل', order.customer_id],
-            ['معرّف المطعم', order.rest_id],
-            ['معرّف الشركة', order.company_id],
-            ['معرّف السائق', order.driver_id],
+            ['معرّف العميل', order.customer_id ? '#' + order.customer_id : null],
+            ['معرّف المطعم', order.rest_id ? '#' + order.rest_id : null],
+            ['معرّف الشركة', order.company_id ? '#' + order.company_id : null],
+            [
+              'السائق',
+              order.driver_id
+                ? driverName
+                  ? `${driverName} (#${order.driver_id})`
+                  : '#' + order.driver_id
+                : null,
+            ],
           ] as const
-        ).map(([label, id]) => (
+        ).map(([label, value]) => (
           <div className="key-value" key={label}>
             <span>{label}</span>
-            <bdi>{id ? '#' + id : 'لم يُسند'}</bdi>
+            <bdi>{value ?? 'لم يُسند'}</bdi>
           </div>
         ))}
       </section>
@@ -1277,36 +1348,37 @@ export function Metrics({
 }) {
   return (
     <div className="metrics">
-      {items.map((item) => (
-        <div
-          className={`metric${item.active ? ' active' : ''}${item.onClick ? ' clickable' : ''}`}
-          key={item.label}
-          data-status={item.status}
-          onClick={item.onClick}
-          role={item.onClick ? 'button' : undefined}
-          tabIndex={item.onClick ? 0 : undefined}
-          onKeyDown={
-            item.onClick
-              ? (e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    item.onClick!();
-                  }
-                }
-              : undefined
-          }
-        >
-          <span className="metric-icon">
-            {item.icon ?? <Check size={20} />}
-          </span>
-          <div>
-            <span>{item.label}</span>
-            <strong>
-              {item.value === null ? '—' : item.value.toLocaleString('ar-EG')}
-            </strong>
+      {items.map((item) => {
+        const content = (
+          <>
+            <span className="metric-icon">
+              {item.icon ?? <Check size={20} />}
+            </span>
+            <div>
+              <span>{item.label}</span>
+              <strong>
+                {item.value === null ? '—' : item.value.toLocaleString('ar-EG')}
+              </strong>
+            </div>
+          </>
+        );
+        return item.onClick ? (
+          <button
+            type="button"
+            className={`metric clickable${item.active ? ' active' : ''}`}
+            key={item.label}
+            data-status={item.status}
+            aria-pressed={Boolean(item.active)}
+            onClick={item.onClick}
+          >
+            {content}
+          </button>
+        ) : (
+          <div className="metric" key={item.label} data-status={item.status}>
+            {content}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

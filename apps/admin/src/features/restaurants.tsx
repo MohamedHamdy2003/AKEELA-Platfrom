@@ -17,9 +17,15 @@ import { DetailWorkspace } from '../components/detail-workspace';
 import { EmailVerification } from '../components/email-verification';
 import './restaurants.css';
 
-export function Restaurants() {
+export function Restaurants({
+  initialStatus,
+  onInitialStatusConsumed,
+}: {
+  initialStatus?: string;
+  onInitialStatusConsumed?: () => void;
+} = {}) {
   const [page, setPage] = useState(1),
-    [filter, setFilter] = useState(''),
+    [filter, setFilter] = useState(initialStatus ?? ''),
     [selected, setSelected] = useState<string | null>(null),
     [confirmAction, setConfirmAction] = useState<'Active' | 'Suspended' | null>(
       null,
@@ -29,15 +35,35 @@ export function Restaurants() {
 
   const confirmDialogRef = useRef<HTMLDialogElement>(null);
 
+  useEffect(() => {
+    if (initialStatus !== undefined && initialStatus !== '') {
+      setFilter(initialStatus);
+      setPage(1);
+      setSelected(null);
+      onInitialStatusConsumed?.();
+    }
+  }, [initialStatus, onInitialStatusConsumed]);
+
   const resource = useResource<RestaurantReview[]>(
     api,
     '/admin/restaurants' +
       query({ page, per_page: 10, activation_status: filter }),
   );
 
+  useEffect(() => {
+    const last = resource.result?.meta?.last_page;
+    if (last && page > last) setPage(Math.max(1, last));
+  }, [resource.result?.meta?.last_page, page]);
+
   const item = resource.result?.data.find(
     (row) => row.profile.rest_id === selected,
   );
+
+  useEffect(() => {
+    if (selected && resource.result && !item) {
+      setSelected(null);
+    }
+  }, [selected, resource.result, item]);
 
   const labels = {
     Pending: 'بانتظار التفعيل',
@@ -266,7 +292,13 @@ export function Restaurants() {
                 </tbody>
               </table>
             </div>
-            <Pager meta={resource.result?.meta} change={setPage} />
+            <Pager
+              meta={resource.result?.meta}
+              change={(nextPage) => {
+                setSelected(null);
+                setPage(nextPage);
+              }}
+            />
           </section>
         </ResourceState>
       </DetailWorkspace>
@@ -275,7 +307,12 @@ export function Restaurants() {
       <dialog
         ref={confirmDialogRef}
         className="restaurant-confirm-dialog"
-        onClose={() => setConfirmAction(null)}
+        onCancel={(event) => {
+          if (actionBusy) event.preventDefault();
+        }}
+        onClose={() => {
+          if (!actionBusy) setConfirmAction(null);
+        }}
         aria-labelledby="confirm-dialog-title"
       >
         {confirmAction && item && (

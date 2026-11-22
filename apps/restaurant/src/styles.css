@@ -591,10 +591,66 @@ fieldset {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px 16px;
   border-bottom: 1px solid var(--brand-border);
   font-weight: 600;
   font-size: 14px;
+}
+.topbar-meta {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+.rt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.rt-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.rt-pill.is-connected {
+  background: #e7faf0;
+  color: #007b4e;
+  border-color: #bcebd3;
+}
+.rt-pill.is-connecting {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+.rt-pill.is-offline {
+  background: #fff1f2;
+  color: #9f1239;
+  border-color: #fecdd3;
+}
+.filter-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.filter-bar .arabic-date {
+  flex: 1 1 260px;
+}
+.filter-bar .arabic-date legend {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.filter-bar .arabic-date-parts select,
+.filter-bar .arabic-date-parts input {
+  min-height: 44px;
 }
 .workspace-body {
   padding-top: 30px;
@@ -1984,8 +2040,7 @@ body {
 h1,
 .auth-form h1,
 .auth-form.registration h1,
-.auth-form .registration h1,
-.auth-brand h2 {
+.auth-form .registration h1 {
   font-size: var(--dashboard-type-page);
 }
 h2,
@@ -2033,8 +2088,7 @@ small,
   h1,
   .auth-form h1,
   .auth-form.registration h1,
-  .auth-form .registration h1,
-  .auth-brand h2 {
+  .auth-form .registration h1 {
     font-size: var(--dashboard-type-page-mobile);
   }
 }

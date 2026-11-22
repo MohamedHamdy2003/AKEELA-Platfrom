@@ -97,7 +97,7 @@ test('mobile RTL navigation and non-overflowing first screen', async ({
   await setup(page);
   await login(page);
   await expect(
-    page.getByRole('heading', { name: 'صباح الخير، مطبخ أكيلة' }),
+    page.getByRole('heading', { name: /^(صباح|مساء) الخير، مطبخ أكيلة$/ }),
   ).toBeVisible();
   await page.screenshot({
     animations: 'disabled',

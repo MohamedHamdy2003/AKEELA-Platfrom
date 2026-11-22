@@ -96,7 +96,7 @@ export function Home({
   navigate,
 }: {
   revision: number;
-  navigate: (key: string) => void;
+  navigate: (key: string, filter?: string) => void;
 }) {
   const [range, setRange] = useState<AnalyticsRange>('30d');
   const [restTab, setRestTab] = useState<'top' | 'attention'>('top');
@@ -113,7 +113,9 @@ export function Home({
     }
   }, [analytics.result]);
 
-  const data = analytics.result?.data ?? cached;
+  const sameRangeCached = cached?.range === range ? cached : null;
+  const data =
+    analytics.result?.data ?? (analytics.error ? sameRangeCached : cached);
   const kpis = data?.kpis;
   const prev = data?.previous_kpis ?? null;
   const alerts = data?.alerts;
@@ -197,7 +199,7 @@ export function Home({
                   <button
                     type="button"
                     className="adm-alert-pill is-danger"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Pending')}
                   >
                     <AlertTriangle size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -209,7 +211,7 @@ export function Home({
                   <button
                     type="button"
                     className="adm-alert-pill is-warning"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Accepted')}
                   >
                     <Clock size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -221,7 +223,7 @@ export function Home({
                   <button
                     type="button"
                     className="adm-alert-pill is-warning"
-                    onClick={() => navigate('restaurants')}
+                    onClick={() => navigate('restaurants', 'Pending')}
                   >
                     <Store size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -417,7 +419,7 @@ export function Home({
             <TrendChart series={data.daily_series} />
             <StatusDonutChart
               counts={data.status_breakdown}
-              onSelectOrders={() => navigate('orders')}
+              onSelectOrders={(status) => navigate('orders', status)}
             />
           </div>
 

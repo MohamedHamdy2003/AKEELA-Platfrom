@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ApiError, query } from '@akeela/portal/api';
 import type { User } from '@akeela/portal/models';
 import {
@@ -58,6 +58,10 @@ export function Users({
     );
   const selected =
     detail.result?.data.user_id === id ? detail.result.data : undefined;
+  useEffect(() => {
+    const last = resource.result?.meta?.last_page;
+    if (last && page > last) setPage(Math.max(1, last));
+  }, [resource.result?.meta?.last_page, page]);
   return (
     <>
       <DetailWorkspace
@@ -124,7 +128,8 @@ export function Users({
                                     ),
                                   2000,
                                 );
-                              });
+                              })
+                              .catch(() => undefined);
                           }}
                         >
                           {copiedId === String(selected.profile.company_id)
@@ -301,24 +306,31 @@ export function Companies() {
     [notice, setNotice] = useState('');
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (busy) return;
     const form = event.currentTarget;
-    const values = Object.fromEntries(new FormData(form));
+    const raw = Object.fromEntries(new FormData(form)) as Record<
+      string,
+      string
+    >;
+    const trimVal = (key: string) => (raw[key] ?? '').trim();
+    const companyEmail = trimVal('company_email').toLowerCase();
     setBusy(true);
     setError(null);
+    setNotice('');
     try {
       await api.request('/admin/users', {
         method: 'POST',
         body: {
-          full_name: values.full_name,
-          email: values.email,
-          password: values.password,
-          phone: values.phone,
+          full_name: trimVal('full_name'),
+          email: trimVal('email').toLowerCase(),
+          password: raw.password ?? '',
+          phone: trimVal('phone'),
           role: 'Delivery_Company',
           profile: {
-            company_name: values.company_name,
-            company_phone: values.company_phone,
-            company_email: values.company_email || null,
-            company_address: values.company_address,
+            company_name: trimVal('company_name'),
+            company_phone: trimVal('company_phone'),
+            company_email: companyEmail || null,
+            company_address: trimVal('company_address'),
             is_active: true,
           },
         },
@@ -340,7 +352,13 @@ export function Companies() {
         title="شركات التوصيل"
         description="إنشاء حساب الشركة ومراجعة بياناته."
         action={
-          <button className="button primary" onClick={() => setOpen(!open)}>
+          <button
+            className="button primary"
+            onClick={() => {
+              setError(null);
+              setOpen(!open);
+            }}
+          >
             {open ? 'إغلاق النموذج' : 'إنشاء حساب شركة'}
           </button>
         }
@@ -375,6 +393,9 @@ export function Companies() {
                       name={name}
                       type={type}
                       required={name !== 'company_email'}
+                      pattern={
+                        type === 'tel' ? '\\+[1-9][0-9]{7,14}' : undefined
+                      }
                       minLength={type === 'password' ? 8 : undefined}
                       maxLength={
                         type === 'password'

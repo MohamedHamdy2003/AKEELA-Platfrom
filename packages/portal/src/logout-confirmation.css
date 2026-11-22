@@ -78,10 +78,30 @@
 }
 .logout-confirmation .logout-confirmation-error {
   padding: 10px 12px;
+  margin-bottom: 18px;
   border: 1px solid #efd1d6;
   border-radius: 10px;
   background: #fff4f5;
   color: #a12838;
+  display: grid;
+  gap: 8px;
+}
+.logout-confirmation .logout-confirmation-error p {
+  margin: 0;
+  color: #a12838;
+}
+.logout-confirmation-local {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #8f1d2c;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 .logout-confirmation-actions {
   display: grid;

@@ -106,7 +106,7 @@ export function Home({
   company,
 }: {
   revision: number;
-  navigate: (key: string) => void;
+  navigate: (key: string, filter?: string) => void;
   company?: Partial<Company> | null;
 }) {
   const [range, setRange] = useState<AnalyticsRange>('30d');
@@ -116,15 +116,21 @@ export function Home({
     `/delivery-company/analytics?range=${range}`,
     revision,
   );
-  const [cached, setCached] = useState<DeliveryAnalytics | null>(null);
+  const [cached, setCached] = useState<{
+    range: AnalyticsRange;
+    data: DeliveryAnalytics;
+  } | null>(null);
 
   useEffect(() => {
     if (analytics.result?.data) {
-      setCached(analytics.result.data);
+      setCached({ range, data: analytics.result.data });
     }
-  }, [analytics.result]);
+  }, [analytics.result, range]);
 
-  const data = analytics.result?.data ?? cached;
+  const sameRangeCached = cached?.range === range ? cached.data : null;
+  const data =
+    analytics.result?.data ??
+    (analytics.error ? sameRangeCached : (cached?.data ?? null));
   const kpis = data?.kpis;
   const prev = data?.previous_kpis ?? null;
   const queue = data?.live_queue;
@@ -156,16 +162,13 @@ export function Home({
     1,
     ...(data?.top_pickup_restaurants ?? []).map((r) => r.assigned_orders),
   );
+  const activeBusy = fleet
+    ? Math.max(0, fleet.active_drivers - fleet.idle_active_drivers)
+    : 0;
+  const inactiveBusy = fleet ? Math.max(0, fleet.busy_drivers - activeBusy) : 0;
   const busyPct =
     fleet && fleet.active_drivers > 0
-      ? Math.min(
-          100,
-          Math.round(
-            ((fleet.active_drivers - fleet.idle_active_drivers) /
-              fleet.active_drivers) *
-              100,
-          ),
-        )
+      ? Math.min(100, Math.round((activeBusy / fleet.active_drivers) * 100))
       : 0;
 
   const companyName =
@@ -289,7 +292,7 @@ export function Home({
                   <button
                     type="button"
                     className="del-radar-pill is-danger"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Accepted')}
                   >
                     <AlertTriangle size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -302,7 +305,7 @@ export function Home({
                   <button
                     type="button"
                     className="del-radar-pill is-warning"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Picked_Up')}
                   >
                     <Clock size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -314,7 +317,7 @@ export function Home({
                   <button
                     type="button"
                     className="del-radar-pill is-danger"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Picked_Up')}
                   >
                     <ShieldAlert size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -326,7 +329,7 @@ export function Home({
                   <button
                     type="button"
                     className="del-radar-pill is-teal"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Accepted')}
                   >
                     <Truck size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -338,7 +341,7 @@ export function Home({
                   <button
                     type="button"
                     className="del-radar-pill is-blue"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Picked_Up')}
                   >
                     <PackageCheck size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -388,7 +391,7 @@ export function Home({
             <button
               type="button"
               className="del-kpi"
-              onClick={() => navigate('orders')}
+              onClick={() => navigate('orders', 'Delivered')}
             >
               <div className="del-kpi-top">
                 <span className="del-kpi-label">
@@ -526,8 +529,12 @@ export function Home({
               </div>
               <div className="del-kpi-foot numeric">
                 <span>
-                  {fleet.busy_drivers} في رحلة · {fleet.idle_active_drivers}{' '}
-                  بدون طلب مفتوح ←
+                  {activeBusy} في رحلة · {fleet.idle_active_drivers} بدون طلب
+                  مفتوح
+                  {inactiveBusy > 0
+                    ? ` (+${inactiveBusy} متوقف لديه طلب)`
+                    : ''}{' '}
+                  ←
                 </span>
               </div>
             </button>
@@ -537,7 +544,7 @@ export function Home({
             <DeliveryTrendChart series={data.daily_series} />
             <DeliveryStatusDonut
               counts={data.status_breakdown}
-              onSelectOrders={() => navigate('orders')}
+              onSelectOrders={(status) => navigate('orders', status)}
             />
           </div>
 

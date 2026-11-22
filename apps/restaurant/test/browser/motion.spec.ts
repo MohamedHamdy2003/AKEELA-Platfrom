@@ -68,7 +68,7 @@ test('busy buttons keep size; genuine table loading has a skeleton; dialog exit 
   expect(pending!.height).toBeCloseTo(before!.height, 1);
   finishLogin();
   await expect(
-    page.getByRole('heading', { name: 'صباح الخير، مطبخ أكيلة' }),
+    page.getByRole('heading', { name: /^(صباح|مساء) الخير، مطبخ أكيلة$/ }),
   ).toBeVisible();
   await expect(
     page.getByRole('status', { name: 'جارٍ تحميل البيانات' }),
@@ -236,7 +236,7 @@ test('inline feedback enters and exits without retaining an accessible stale ale
   await expect(page.locator('.notice')).toHaveCount(0);
   finish();
   await expect(
-    page.getByRole('heading', { name: 'صباح الخير، مطبخ أكيلة' }),
+    page.getByRole('heading', { name: /^(صباح|مساء) الخير، مطبخ أكيلة$/ }),
   ).toBeVisible();
 });
 

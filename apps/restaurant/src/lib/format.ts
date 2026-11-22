@@ -17,6 +17,16 @@ export function today() {
     year: 'numeric',
   }).format(new Date());
 }
+export function cairoGreeting(now = new Date()): string {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: cairo,
+      hour: '2-digit',
+      hourCycle: 'h23',
+    }).format(now),
+  );
+  return hour >= 4 && hour < 12 ? 'صباح الخير' : 'مساء الخير';
+}
 export function money(value: string) {
   const [whole, fraction = ''] = value.split('.');
   return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction.padEnd(2, '0')} ج.م`;
