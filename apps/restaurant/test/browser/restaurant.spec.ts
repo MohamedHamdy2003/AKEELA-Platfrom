@@ -377,12 +377,10 @@ test('catalog swap ordering, category details with move/unlink/delete, and unlin
   // 1. Categories: auto-order + atomic swap selector
   await page.getByRole('button', { name: 'التصنيفات', exact: true }).click();
   await page.getByRole('button', { name: 'إضافة تصنيف', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText('#2');
   await page.getByLabel('اسم التصنيف', { exact: true }).fill('المشويات');
   await page.getByRole('button', { name: 'حفظ التصنيف', exact: true }).click();
 
   await page.getByRole('button', { name: 'إضافة تصنيف', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText('#3');
   await page.getByLabel('اسم التصنيف', { exact: true }).fill('المشروبات');
   await page.getByRole('button', { name: 'حفظ التصنيف', exact: true }).click();
 
@@ -434,6 +432,12 @@ test('catalog swap ordering, category details with move/unlink/delete, and unlin
   // 3. Category Details: disabled Delete until products moved/unlinked, then unlocked!
   await page.getByRole('button', { name: 'التصنيفات', exact: true }).click();
   await expect(
+    page.getByRole('columnheader', { name: 'عدد المنتجات', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('row', { name: /المشروبات/ })).toContainText(
+    'فارغ (0)',
+  );
+  await expect(
     page.getByRole('button', { name: 'السندويتشات', exact: true }),
   ).toBeVisible();
   await page.screenshot({
@@ -444,6 +448,26 @@ test('catalog swap ordering, category details with move/unlink/delete, and unlin
   await expect(
     page.getByRole('heading', { name: 'السندويتشات', exact: true }),
   ).toBeVisible();
+
+  // Test "إضافة منتجات" dialog inside Category Details: green "إضافة" -> red "حذف" -> green "إضافة"
+  await page.getByRole('button', { name: 'إضافة منتجات', exact: true }).click();
+  const pickDialog = page.getByRole('dialog');
+  const friesRow = pickDialog
+    .locator('.cat-product-pick-row')
+    .filter({ hasText: 'بطاطس مقرمشة' });
+  await expect(
+    friesRow.getByRole('button', { name: 'إضافة', exact: true }),
+  ).toBeVisible();
+  await friesRow.getByRole('button', { name: 'إضافة', exact: true }).click();
+  await expect(
+    friesRow.getByRole('button', { name: 'حذف', exact: true }),
+  ).toBeVisible();
+  await friesRow.getByRole('button', { name: 'حذف', exact: true }).click();
+  await expect(
+    friesRow.getByRole('button', { name: 'إضافة', exact: true }),
+  ).toBeVisible();
+  await pickDialog.getByRole('button', { name: 'تم', exact: true }).click();
+
   const deleteCatBtn = page.getByRole('button', {
     name: 'مسح التصنيف',
     exact: true,

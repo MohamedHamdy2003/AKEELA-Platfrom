@@ -15,7 +15,9 @@ import {
   House,
   Layers,
   LogOut,
+  Maximize2,
   Menu,
+  Minimize2,
   Package,
   RefreshCw,
   Store,
@@ -112,6 +114,54 @@ function Workspace() {
   const [route, setRoute] = useState(currentRoute);
   const [mobile, setMobile] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [topHover, setTopHover] = useState(false);
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () =>
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+  useEffect(() => {
+    if (!fullscreen) {
+      setTopHover(false);
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.querySelector('dialog[open]')) {
+        setFullscreen(false);
+        if (document.fullscreenElement) {
+          void document.exitFullscreen?.().catch(() => undefined);
+        }
+      }
+    };
+    const onMouseMove = (event: MouseEvent) => {
+      setTopHover(event.clientY <= 58);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('mousemove', onMouseMove);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousemove', onMouseMove);
+    };
+  }, [fullscreen]);
+  const toggleFullscreen = () => {
+    if (!fullscreen) {
+      setFullscreen(true);
+      setTopHover(false);
+      void document.documentElement
+        .requestFullscreen?.()
+        .catch(() => undefined);
+    } else {
+      setFullscreen(false);
+      setTopHover(false);
+      if (document.fullscreenElement) {
+        void document.exitFullscreen?.().catch(() => undefined);
+      }
+    }
+  };
   useEffect(() => {
     const media = window.matchMedia('(max-width: 960px)');
     const update = () => {
@@ -342,7 +392,12 @@ function Workspace() {
       <Catalog key={route} kind={route as CatalogKind} />
     );
   return (
-    <div className="app-shell" data-sidebar-collapsed={collapsed}>
+    <div
+      className="app-shell"
+      data-sidebar-collapsed={collapsed}
+      data-fullscreen={fullscreen || undefined}
+      data-top-hover={topHover || undefined}
+    >
       <a className="skip-link" href="#main-content" inert={mobile}>
         انتقل إلى المحتوى
       </a>
@@ -481,8 +536,43 @@ function Workspace() {
         className="workspace"
         inert={mobile}
       >
-        <header className="topbar">
-          <span>لوحة المطعم</span>
+        {fullscreen && (
+          <div
+            className="fullscreen-top-sensor"
+            onMouseEnter={() => setTopHover(true)}
+            aria-hidden="true"
+          />
+        )}
+        <header
+          className="topbar"
+          onMouseEnter={() => {
+            if (fullscreen) setTopHover(true);
+          }}
+          onMouseLeave={(event) => {
+            if (fullscreen && event.clientY > 58) setTopHover(false);
+          }}
+        >
+          <div className="topbar-start">
+            <button
+              type="button"
+              className="fullscreen-toggle"
+              aria-label={fullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة'}
+              aria-pressed={fullscreen}
+              title={
+                fullscreen
+                  ? 'إنهاء ملء الشاشة (Esc)'
+                  : 'عرض الصفحة بارتفاع كامل'
+              }
+              onClick={toggleFullscreen}
+            >
+              {fullscreen ? (
+                <Minimize2 size={15} aria-hidden="true" />
+              ) : (
+                <Maximize2 size={15} aria-hidden="true" />
+              )}
+            </button>
+            <span>لوحة المطعم</span>
+          </div>
           <div className="topbar-meta">
             {manageable && (
               <span className={'rt-pill is-' + realtimeStatus}>

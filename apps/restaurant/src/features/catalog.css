@@ -318,6 +318,42 @@
   border-bottom: 0;
 }
 
+.cat-product-pick-list {
+  display: grid;
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--brand-border);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0 14px;
+}
+
+.cat-product-pick-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--brand-border);
+}
+
+.cat-product-pick-row:last-child {
+  border-bottom: 0;
+}
+
+.cat-product-pick-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cat-product-pick-meta {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
 .cat-dialog-sm {
   max-width: 540px;
 }

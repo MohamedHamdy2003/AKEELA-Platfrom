@@ -130,14 +130,6 @@ export function Orders({
     setPage(1);
     setFilters(draft);
   }
-  const hasFilters = Boolean(
-    filters.status ||
-    filters.date_from ||
-    filters.date_to ||
-    draft.status ||
-    draft.date_from ||
-    draft.date_to,
-  );
   return (
     <>
       <PageHeading
@@ -166,21 +158,19 @@ export function Orders({
         />
         <div className="filter-bar-actions">
           <button className="button primary">تطبيق الفلاتر</button>
-          {hasFilters && (
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => {
-                const empty = { status: '', date_from: '', date_to: '' };
-                setDraft(empty);
-                setFilters(empty);
-                setFilterError('');
-                setPage(1);
-              }}
-            >
-              إعادة ضبط الفلاتر
-            </button>
-          )}
+          <button
+            type="button"
+            className="button secondary"
+            onClick={() => {
+              const empty = { status: '', date_from: '', date_to: '' };
+              setDraft(empty);
+              setFilters(empty);
+              setFilterError('');
+              setPage(1);
+            }}
+          >
+            إعادة ضبط الفلاتر
+          </button>
         </div>
       </form>
       {filterError && <Notice error={new Error(filterError)} />}

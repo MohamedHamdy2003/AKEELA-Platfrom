@@ -174,12 +174,15 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
   const [confirmError, setConfirmError] = useState<unknown>(null);
   const [feedback, setFeedback] = useState('');
   const [detailsRev, setDetailsRev] = useState(0);
+  const [managingCategoryProducts, setManagingCategoryProducts] =
+    useState(false);
 
   useEffect(() => {
     setPage(1);
     setCategory('');
     setPool('all');
     setSelectedCategoryId(null);
+    setManagingCategoryProducts(false);
     setEditing(null);
     setLinking(null);
     setLinkingAddon(null);
@@ -188,6 +191,12 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
     setConfirmError(null);
     setFeedback('');
   }, [kind]);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = window.setTimeout(() => setFeedback(''), 5000);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
 
   const unlinkedQuery =
     (kind === 'products' || kind === 'addons') && pool !== 'all'
@@ -391,9 +400,10 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
           revision={detailsRev}
           onBack={() => {
             setSelectedCategoryId(null);
+            setManagingCategoryProducts(false);
             setFeedback('');
           }}
-          onEdit={() => setEditing(selectedCategory)}
+          onAddProducts={() => setManagingCategoryProducts(true)}
           onRequestDelete={() => {
             setConfirmError(null);
             setConfirmState({
@@ -416,25 +426,12 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
         />
 
         <Presence>
-          {editing && (
-            <CatalogEditor
-              kind="categories"
-              record={editing === 'new' ? null : editing}
-              allCategories={categories}
-              onClose={() => setEditing(null)}
-              onSaved={() => {
-                setEditing(null);
-                refreshAll('تم حفظ تعديلات التصنيف بنجاح.');
-              }}
-              onRequestDeleteCategory={(cat) => {
-                setEditing(null);
-                setConfirmError(null);
-                setConfirmState({ kind: 'delete-category', category: cat });
-              }}
-              onOpenCategoryDetails={(cat) => {
-                setEditing(null);
-                setSelectedCategoryId(cat.cat_id);
-              }}
+          {managingCategoryProducts && (
+            <CategoryProductsDialog
+              category={selectedCategory}
+              categories={categories}
+              onClose={() => setManagingCategoryProducts(false)}
+              onChanged={(message) => refreshAll(message)}
             />
           )}
         </Presence>
@@ -614,9 +611,7 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
                       : 'الترتيب'}
                   </th>
                   <th>الاسم</th>
-                  <th>
-                    {kind === 'categories' ? 'المنتجات المرتبطة' : 'السعر'}
-                  </th>
+                  <th>{kind === 'categories' ? 'عدد المنتجات' : 'السعر'}</th>
                   {kind === 'offers' && <th>فترة العرض</th>}
                   <th>الحالة</th>
                   <th>الإجراءات</th>
@@ -711,12 +706,9 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
                           <span
                             className={`cat-count-pill ${(catRecord.product_count ?? 0) === 0 ? 'is-empty' : 'is-linked'}`}
                           >
-                            {countArabic(
-                              catRecord.product_count ?? 0,
-                              'منتج',
-                              'منتجين',
-                              'منتجات',
-                            )}
+                            {(catRecord.product_count ?? 0) === 0
+                              ? 'فارغ (0)'
+                              : String(catRecord.product_count ?? 0)}
                           </span>
                         ) : (
                           <bdi>
@@ -958,7 +950,7 @@ function CategoryDetailsView({
   revision,
   feedback,
   onBack,
-  onEdit,
+  onAddProducts,
   onRequestDelete,
   onRequestMove,
   onRequestUnlink,
@@ -967,7 +959,7 @@ function CategoryDetailsView({
   revision: number;
   feedback: string;
   onBack: () => void;
-  onEdit: () => void;
+  onAddProducts: () => void;
   onRequestDelete: () => void;
   onRequestMove: (product: Product) => void;
   onRequestUnlink: (product: Product) => void;
@@ -1026,8 +1018,13 @@ function CategoryDetailsView({
         </div>
 
         <div className="cat-details-actions">
-          <button type="button" className="button secondary" onClick={onEdit}>
-            تعديل التصنيف
+          <button
+            type="button"
+            className="button primary"
+            onClick={onAddProducts}
+          >
+            <Plus size={17} />
+            إضافة منتجات
           </button>
           <button
             type="button"
@@ -1127,6 +1124,161 @@ function CategoryDetailsView({
       </div>
       <Pager meta={productsRes.result?.meta} onPage={setPage} />
     </>
+  );
+}
+
+function CategoryProductsDialog({
+  category,
+  categories,
+  onClose,
+  onChanged,
+}: {
+  category: Category;
+  categories: Category[];
+  onClose: () => void;
+  onChanged: (message?: string) => void;
+}) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+    allPages<Product>('/restaurant/products', controller.signal)
+      .then((rows) => {
+        if (!controller.signal.aborted) setProducts(rows);
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) setError(cause);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [category.cat_id]);
+
+  async function toggleProductInCategory(
+    product: Product,
+    addToCategory: boolean,
+  ) {
+    if (busyId) return;
+    const prevProducts = products;
+    const nextCatId = addToCategory ? category.cat_id : null;
+    setProducts((current) =>
+      current.map((item) =>
+        item.prod_id === product.prod_id
+          ? {
+              ...item,
+              cat_id: nextCatId,
+              is_active: addToCategory
+                ? product.cat_id
+                  ? item.is_active
+                  : true
+                : false,
+            }
+          : item,
+      ),
+    );
+    setBusyId(product.prod_id);
+    setError(null);
+    try {
+      const response = await api.request<Product>(
+        '/restaurant/products/' + product.prod_id,
+        {
+          method: 'PATCH',
+          body: { cat_id: nextCatId },
+        },
+      );
+      setProducts((current) =>
+        current.map((item) =>
+          item.prod_id === product.prod_id ? response.data : item,
+        ),
+      );
+      onChanged(
+        addToCategory
+          ? `تمت إضافة «${product.prod_name}» إلى تصنيف «${category.cat_title}».`
+          : `تم حذف «${product.prod_name}» من تصنيف «${category.cat_title}» ونقله إلى المنتجات غير المربوطة.`,
+      );
+    } catch (cause) {
+      setProducts(prevProducts);
+      setError(cause);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <Dialog
+      title={`إدارة منتجات التصنيف: ${category.cat_title}`}
+      onClose={() => {
+        if (!busyId) onClose();
+      }}
+    >
+      <Notice error={error} />
+      <p className="cat-modal-copy">
+        اختر المنتجات التي تريد إضافتها إلى تصنيف{' '}
+        <strong>«{category.cat_title}»</strong> أو حذفها منه مباشرةً.
+      </p>
+      {loading ? (
+        <Loading />
+      ) : error && !products.length ? null : !products.length ? (
+        <Empty>لا توجد منتجات لدى المطعم حالياً. أضف منتجات أولاً.</Empty>
+      ) : (
+        <div className="cat-product-pick-list">
+          {products.map((product) => {
+            const inCategory = product.cat_id === category.cat_id;
+            const otherCategoryTitle =
+              product.cat_id && !inCategory
+                ? categories.find((c) => c.cat_id === product.cat_id)?.cat_title
+                : null;
+            const isBusy = busyId === product.prod_id;
+            return (
+              <div key={product.prod_id} className="cat-product-pick-row">
+                <div className="cat-product-pick-info">
+                  <Picture
+                    src={product.prod_image_url}
+                    alt={product.prod_name}
+                  />
+                  <div className="cat-product-pick-meta">
+                    <strong>{product.prod_name}</strong>
+                    <span className="cat-link-meta">
+                      <bdi>{money(product.price)}</bdi>
+                      {' · '}
+                      {inCategory
+                        ? `موجود في «${category.cat_title}»`
+                        : otherCategoryTitle
+                          ? `في تصنيف «${otherCategoryTitle}»`
+                          : 'غير مربوط بتصنيف'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className={`button compact-sm ${inCategory ? 'danger' : 'primary'}`}
+                  disabled={Boolean(busyId)}
+                  onClick={() => toggleProductInCategory(product, !inCategory)}
+                >
+                  {isBusy ? '...' : inCategory ? 'حذف' : 'إضافة'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div className="actions">
+        <button
+          type="button"
+          className="button secondary"
+          disabled={Boolean(busyId)}
+          onClick={onClose}
+        >
+          تم
+        </button>
+      </div>
+    </Dialog>
   );
 }
 
@@ -1419,11 +1571,6 @@ export function CatalogEditor({
       : []),
     ...categories,
   ].sort((a, b) => a.display_order - b.display_order);
-  const nextAutoOrder =
-    sortedCategories.reduce(
-      (max, c) => Math.max(max, Number(c.display_order) || 0),
-      0,
-    ) + 1;
 
   const input = (
     name: string,
@@ -1549,13 +1696,6 @@ export function CatalogEditor({
           <fieldset disabled={busy}>
             <div className="form-grid">
               {input(cfg.name, 'اسم ال' + cfg.singular)}
-
-              {kind === 'categories' && !editingCategory && (
-                <div className="cat-order-info">
-                  <span>الترتيب التلقائي في القائمة</span>
-                  <strong>#{nextAutoOrder}</strong>
-                </div>
-              )}
 
               {kind === 'categories' && editingCategory && (
                 <div className="cat-swap-field">
@@ -1929,7 +2069,6 @@ function AddonLinks({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1955,7 +2094,7 @@ function AddonLinks({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [product.prod_id, revision]);
+  }, [product.prod_id]);
 
   async function toggle(addon: Addon, active: boolean) {
     if (busy) return;
@@ -2033,13 +2172,16 @@ function AddonLinks({
           ))}
         </div>
       )}
-      <button
-        className="text-button"
-        disabled={busy || loading}
-        onClick={() => setRevision((n) => n + 1)}
-      >
-        تحديث الإضافات
-      </button>
+      <div className="actions">
+        <button
+          type="button"
+          className="button secondary"
+          disabled={busy}
+          onClick={onClose}
+        >
+          تم
+        </button>
+      </div>
     </Dialog>
   );
 }
