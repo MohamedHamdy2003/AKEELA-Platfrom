@@ -242,13 +242,13 @@ test('Features 05 & 06 - Categories and Products Integration Tests', async (t) =
         [restaurantAId, restaurantBId],
       );
 
-      // 1. Create Category 1 for Restaurant A
+      // 1. Create Category 1 for Restaurant A (auto-assigned display_order = 1)
       const cat1Res = await api()
         .post('/api/v1/restaurant/categories')
         .set('Authorization', bearer(restaurantAToken))
         .send({
           cat_title: 'Sandwiches',
-          display_order: 1,
+          display_order: 99,
           is_active: true,
         });
       assert.equal(cat1Res.status, 201);
@@ -256,6 +256,7 @@ test('Features 05 & 06 - Categories and Products Integration Tests', async (t) =
       assert.equal(cat1Res.body.message, 'Category created.');
       assert.equal(cat1Res.body.data.cat_title, 'Sandwiches');
       assert.equal(cat1Res.body.data.display_order, 1);
+      assert.equal(cat1Res.body.data.product_count, 0);
       assert.equal(cat1Res.body.data.is_active, true);
       assert.equal(cat1Res.body.data.rest_id, restaurantAId);
       catA1Id = cat1Res.body.data.cat_id;
@@ -268,25 +269,26 @@ test('Features 05 & 06 - Categories and Products Integration Tests', async (t) =
       assert.equal(dupRes.status, 409);
       assert.equal(dupRes.body.error.code, 'CONFLICT');
 
-      // 3. Same category title in different restaurant succeeds
+      // 3. Same category title in different restaurant succeeds (auto display_order = 1)
       const catB1Res = await api()
         .post('/api/v1/restaurant/categories')
         .set('Authorization', bearer(restaurantBToken))
-        .send({ cat_title: 'Sandwiches', display_order: 0 });
+        .send({ cat_title: 'Sandwiches' });
       assert.equal(catB1Res.status, 201);
+      assert.equal(catB1Res.body.data.display_order, 1);
       catB1Id = catB1Res.body.data.cat_id;
       assert.notEqual(catB1Id, catA1Id);
 
-      // 4. Create Category 2 for Restaurant A
+      // 4. Create Category 2 for Restaurant A (auto display_order = 2)
       const cat2Res = await api()
         .post('/api/v1/restaurant/categories')
         .set('Authorization', bearer(restaurantAToken))
         .send({
           cat_title: 'Drinks',
-          display_order: 2,
           is_active: true,
         });
       assert.equal(cat2Res.status, 201);
+      assert.equal(cat2Res.body.data.display_order, 2);
       catA2Id = cat2Res.body.data.cat_id;
 
       // 5. List categories for Restaurant A (ordered by display_order ASC)
@@ -296,21 +298,56 @@ test('Features 05 & 06 - Categories and Products Integration Tests', async (t) =
       assert.equal(listRes.status, 200);
       assert.equal(listRes.body.data.length, 2);
       assert.equal(listRes.body.data[0].cat_id, catA1Id);
+      assert.equal(listRes.body.data[0].display_order, 1);
       assert.equal(listRes.body.data[1].cat_id, catA2Id);
+      assert.equal(listRes.body.data[1].display_order, 2);
 
-      // 6. Update Category 1 (title, display_order, is_active)
+      // 6. Update Category 1 with atomic swap to position 2 (Drinks moves to 1)
       const updateRes = await api()
         .patch(`/api/v1/restaurant/categories/${catA1Id}`)
         .set('Authorization', bearer(restaurantAToken))
         .send({
           cat_title: 'Burgers & Sandwiches',
-          display_order: 0,
+          display_order: 2,
           is_active: false,
         });
       assert.equal(updateRes.status, 200);
       assert.equal(updateRes.body.data.cat_title, 'Burgers & Sandwiches');
-      assert.equal(updateRes.body.data.display_order, 0);
+      assert.equal(updateRes.body.data.display_order, 2);
       assert.equal(updateRes.body.data.is_active, false);
+
+      const afterSwap = await api()
+        .get('/api/v1/restaurant/categories')
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(afterSwap.status, 200);
+      assert.deepEqual(
+        afterSwap.body.data.map(
+          (c: { cat_id: string; display_order: number }) => [
+            c.cat_id,
+            c.display_order,
+          ],
+        ),
+        [
+          [catA2Id, 1],
+          [catA1Id, 2],
+        ],
+      );
+
+      // 6b. Swapping to a non-existent display_order returns 422
+      const badSwap = await api()
+        .patch(`/api/v1/restaurant/categories/${catA1Id}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ display_order: 99 });
+      assert.equal(badSwap.status, 422);
+      assert.equal(badSwap.body.error.code, 'VALIDATION_ERROR');
+
+      // Swap back to 1 and reactivate Cat 1
+      const restoreCat1 = await api()
+        .patch(`/api/v1/restaurant/categories/${catA1Id}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ display_order: 1, is_active: true });
+      assert.equal(restoreCat1.status, 200);
+      assert.equal(restoreCat1.body.data.display_order, 1);
 
       // 7. Update to existing title in same restaurant returns 409
       const conflictUpdate = await api()
@@ -325,12 +362,6 @@ test('Features 05 & 06 - Categories and Products Integration Tests', async (t) =
         .set('Authorization', bearer(restaurantAToken))
         .send({ cat_title: 'Hacked' });
       assert.equal(otherCatUpdate.status, 404);
-
-      // Reactivate Cat 1
-      await api()
-        .patch(`/api/v1/restaurant/categories/${catA1Id}`)
-        .set('Authorization', bearer(restaurantAToken))
-        .send({ is_active: true });
     },
   );
 
@@ -455,6 +486,172 @@ test('Features 05 & 06 - Categories and Products Integration Tests', async (t) =
       .send({ prod_name: 'Hijack' });
     assert.equal(updateUnowned.status, 404);
   });
+
+  await t.test(
+    'Unlinked inactive products, auto-activation on link, hard delete, and empty category deletion',
+    async () => {
+      // 1. Category list exposes accurate product_count
+      const catsBefore = await api()
+        .get('/api/v1/restaurant/categories')
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(catsBefore.status, 200);
+      const cat1Before = catsBefore.body.data.find(
+        (c: { cat_id: string }) => c.cat_id === catA1Id,
+      );
+      assert.equal(cat1Before.product_count, 1);
+
+      // 2. Deleting a non-empty category returns 409 CONFLICT
+      const blockedCatDel = await api()
+        .delete(`/api/v1/restaurant/categories/${catA1Id}`)
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(blockedCatDel.status, 409);
+      assert.equal(blockedCatDel.body.error.code, 'CONFLICT');
+
+      // 3. Deleting a linked product returns 409 CONFLICT
+      const blockedProdDel = await api()
+        .delete(`/api/v1/restaurant/products/${prodA1Id}`)
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(blockedProdDel.status, 409);
+      assert.equal(blockedProdDel.body.error.code, 'CONFLICT');
+
+      // 4. Creating an unlinked product with is_active=true returns 422
+      const badUnlinkedCreate = await api()
+        .post('/api/v1/restaurant/products')
+        .set('Authorization', bearer(restaurantAToken))
+        .send({
+          cat_id: null,
+          prod_name: 'Invalid Active Draft',
+          price: '40.00',
+          is_active: true,
+        });
+      assert.equal(badUnlinkedCreate.status, 422);
+      assert.equal(badUnlinkedCreate.body.error.code, 'VALIDATION_ERROR');
+
+      // 5. Creating an unlinked product defaults to is_active=false
+      const draftRes = await api()
+        .post('/api/v1/restaurant/products')
+        .set('Authorization', bearer(restaurantAToken))
+        .send({
+          prod_name: 'Draft Dish',
+          price: '45.00',
+        });
+      assert.equal(draftRes.status, 201);
+      assert.equal(draftRes.body.data.cat_id, null);
+      assert.equal(draftRes.body.data.is_active, false);
+      const draftId = draftRes.body.data.prod_id as string;
+
+      // 6. Activating an unlinked product returns 422
+      const badActivate = await api()
+        .patch(`/api/v1/restaurant/products/${draftId}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ is_active: true });
+      assert.equal(badActivate.status, 422);
+
+      // 7. Filtering by unlinked=true returns only uncategorized products
+      const unlinkedList = await api()
+        .get('/api/v1/restaurant/products?unlinked=true')
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(unlinkedList.status, 200);
+      assert.deepEqual(
+        unlinkedList.body.data.map((p: { prod_id: string }) => p.prod_id),
+        [draftId],
+      );
+
+      // 8. Linking an unlinked product to a category auto-activates it
+      const linkDraft = await api()
+        .patch(`/api/v1/restaurant/products/${draftId}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ cat_id: catA1Id });
+      assert.equal(linkDraft.status, 200);
+      assert.equal(linkDraft.body.data.cat_id, catA1Id);
+      assert.equal(linkDraft.body.data.is_active, true);
+
+      // 9. Unlinking prodA1 and draftId forces is_active=false and empties catA1
+      for (const pid of [prodA1Id, draftId]) {
+        const unlinkRes = await api()
+          .patch(`/api/v1/restaurant/products/${pid}`)
+          .set('Authorization', bearer(restaurantAToken))
+          .send({ cat_id: null });
+        assert.equal(unlinkRes.status, 200);
+        assert.equal(unlinkRes.body.data.cat_id, null);
+        assert.equal(unlinkRes.body.data.is_active, false);
+      }
+
+      // 10. Historical order snapshot survives hard delete of unlinked product (prod_id -> NULL)
+      const [custRow] = await db.query(
+        `SELECT user_id FROM users WHERE email = $1`,
+        [customerEmail],
+      );
+      const [orderRow] = await db.query(
+        `INSERT INTO orders (customer_id, rest_id, status, customer_address, delivery_longitude, delivery_latitude, delivery_fee, total_price)
+         VALUES ($1, $2, 'Delivered', '10 Main St', 32.27, 30.59, 30.00, 125.00)
+         RETURNING order_id`,
+        [custRow.user_id, restaurantAId],
+      );
+      const [orderItemRow] = await db.query(
+        `INSERT INTO order_items (order_id, rest_id, prod_id, offer_id, item_name, unit_price, quantity)
+         VALUES ($1, $2, $3, NULL, 'Cheeseburger', 95.00, 1)
+         RETURNING order_item_id`,
+        [orderRow.order_id, restaurantAId, prodA1Id],
+      );
+
+      // Create an addon linked only to prodA1 to confirm cascade deactivates it on product delete
+      const soleAddonRes = await api()
+        .post('/api/v1/restaurant/addons')
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ addon_name: 'House Sauce', addon_price: '12.00' });
+      assert.equal(soleAddonRes.status, 201);
+      const soleAddonId = soleAddonRes.body.data.addon_id as string;
+      const linkAddonRes = await api()
+        .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${soleAddonId}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ is_active: true });
+      assert.equal(linkAddonRes.status, 200);
+      assert.equal(linkAddonRes.body.data.addon.is_active, true);
+
+      const delProd1 = await api()
+        .delete(`/api/v1/restaurant/products/${prodA1Id}`)
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(delProd1.status, 200);
+      assert.equal(delProd1.body.message, 'Product deleted.');
+
+      const delDraft = await api()
+        .delete(`/api/v1/restaurant/products/${draftId}`)
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(delDraft.status, 200);
+
+      // Order item snapshot still exists with prod_id = NULL
+      const [preservedItem] = await db.query(
+        `SELECT prod_id, item_name, unit_price FROM order_items WHERE order_item_id = $1`,
+        [orderItemRow.order_item_id],
+      );
+      assert.equal(preservedItem.prod_id, null);
+      assert.equal(preservedItem.item_name, 'Cheeseburger');
+      assert.equal(preservedItem.unit_price, '95.00');
+
+      // Sole addon automatically became inactive once its only product was deleted
+      const [addonAfter] = await db.query(
+        `SELECT is_active FROM addons WHERE addon_id = $1`,
+        [soleAddonId],
+      );
+      assert.equal(addonAfter.is_active, false);
+
+      // 11. Now that catA1 is empty, DELETE succeeds and compacts catA2 display_order to 1
+      const delCat1 = await api()
+        .delete(`/api/v1/restaurant/categories/${catA1Id}`)
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(delCat1.status, 200);
+      assert.equal(delCat1.body.message, 'Category deleted.');
+
+      const catsAfterDel = await api()
+        .get('/api/v1/restaurant/categories')
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(catsAfterDel.status, 200);
+      assert.equal(catsAfterDel.body.data.length, 1);
+      assert.equal(catsAfterDel.body.data[0].cat_id, catA2Id);
+      assert.equal(catsAfterDel.body.data[0].display_order, 1);
+    },
+  );
 });
 
 test('concurrent normalized category titles remain unique', async () => {

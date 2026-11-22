@@ -19,6 +19,7 @@ import { ListAddressesQuery } from '../modules/customers/customers.dto';
 import {
   ListCategoriesQuery,
   ListProductsQuery,
+  ListRestaurantProductsQuery,
   ListAddonsQuery,
   ListOffersQuery,
 } from '../modules/catalog/catalog.dto';
@@ -62,9 +63,9 @@ const rules: Record<string, string> = {
   '02': 'Admin only. The single Admin is provisioned by CLI; POST /admin/users with role Admin returns 409. Delivery_Company creation requires one profile object. Disabling the Admin or a Delivery_Company account is blocked in this single-company version. Restaurant activation accepts Active or Suspended; Pending is assigned at registration.',
   '03': 'Customer only; address ownership is enforced. Maximum 2 saved addresses; a third returns 409 CONFLICT. Only one address is default. One-time checkout addresses do not count as saved addresses.',
   '04': 'Restaurant only. Reading profile/dashboard is allowed while Pending/Suspended; edits require activation Active. is_active=false pauses new orders and public sale, while existing orders can still be processed. Closing earlier than opening supports overnight hours. Hours use Africa/Cairo.',
-  '05': 'Restaurant only; active, verified owner with activation Active. Category names are unique within the restaurant, not globally. Own lists include inactive records. Use is_active to stop sale; there is no delete route.',
-  '06': 'Restaurant only; activation Active. Category must belong to the owner. Own list includes inactive products. price is a decimal EGP string. Changing catalog data does not rewrite order snapshots.',
-  '07': 'Restaurant only; activation Active. Restaurant owners create addons and link them to their own products. Customers select only linked, active addons in the cart. Offers cannot have addons. PUT link returns 200 for both creation and update. Link list is a plain array without pagination meta.',
+  '05': 'Restaurant only; active, verified owner with activation Active. Category names are unique within the restaurant, not globally. New categories automatically receive the next sequential display_order (1..N). PATCH display_order swaps positions atomically with the existing category at that position. Categories include product_count; DELETE is allowed only when product_count is 0 (compacting remaining orders to 1..N). Own lists include inactive records.',
+  '06': 'Restaurant only; activation Active. Category must belong to the owner, or may be null for unlinked inactive products. Unlinked products are always inactive (is_active=false) and cannot be activated until linked to a category; linking an unlinked product auto-activates it unless is_active=false is passed. Filter with cat_id or unlinked=true|false. DELETE permanently deletes only unlinked products (cat_id=null), preserves order item snapshots, and auto-deactivates addons left with zero product links. Price and name edits do not rewrite order snapshots.',
+  '07': 'Restaurant only; activation Active. New addons start unlinked and inactive (is_active=false) and cannot be activated until linked to at least one product. Linking an unlinked addon to its first product via PUT auto-activates it; unlinking from its last product auto-deactivates it. Filter with unlinked=true|false; responses include linked_product_ids. DELETE permanently deletes only unlinked addons (zero active product links) while preserving order item addon snapshots. Customers select only linked, active addons in the cart. Offers cannot have addons. PUT link returns 200 for both creation and update. Link list is a plain array without pagination meta.',
   '08': 'Restaurant only; activation Active. initial_price and real_price are decimal EGP strings; real_price must not exceed initial_price. starts_at must be before expires_at, both with explicit Z or UTC offset. Owner list includes inactive/expired offers; public sale requires an eligible restaurant and current active offer.',
   '09': 'Public, no JWT required. Shows approved, active restaurants with active verified owners and eligible catalog entries only. Products require an active category. Offers must be active and within their sale dates. A closed restaurant can appear with is_open=false, but checkout requires it to be open. Product details include only allowed active addons.',
   '10': 'Delivery_Company only. Drivers are dispatcher-managed records, not login accounts. Ownership is checked. Company service/account cannot be disabled in this single-company version (409 CONFLICT); individual driver activity is editable.',
@@ -445,6 +446,7 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
       ListAddressesQuery,
       ListCategoriesQuery,
       ListProductsQuery,
+      ListRestaurantProductsQuery,
       ListAddonsQuery,
       ListOffersQuery,
       ListDriversQuery,

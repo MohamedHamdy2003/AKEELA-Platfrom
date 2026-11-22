@@ -1,0 +1,23 @@
+meta {
+  name: Delete addon
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{base_url}}/restaurant/addons/{{addon_id}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test('Successful delete unlinked addon', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().message).to.equal('Addon deleted.');
+  });
+}
+
+docs {
+  Permanently delete an unlinked owned addon (zero active product links). Preserves historical order item addon snapshots.
+}

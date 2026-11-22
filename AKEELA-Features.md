@@ -110,29 +110,33 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 **Rules**
 
 - Restaurant only; manage only its own categories.
-- Category titles must be unique within the restaurant. Validate display order.
-- Use PATCH to disable a category instead of deleting linked history.
+- Category titles must be unique within the restaurant. Creating a category automatically assigns the next sequential `display_order` (`1..N`).
+- Editing `display_order` atomically swaps positions with the existing owned category at that target position (rejecting non-existent target orders).
+- Categories may be deleted only when they contain zero products (`409 CONFLICT` otherwise); deleting compacts remaining orders to `1..N`.
 
 | Method | Route | Purpose |
 |---|---|---|
-| GET | `/restaurant/categories` | List owned categories, including inactive ones. |
-| POST | `/restaurant/categories` | Create a menu category. |
-| PATCH | `/restaurant/categories/{cat_id}` | Update title, display order, or activity. |
+| GET | `/restaurant/categories` | List owned categories, including inactive ones and product counts. |
+| POST | `/restaurant/categories` | Create a menu category with automatic sequential display order. |
+| PATCH | `/restaurant/categories/{cat_id}` | Update title, activity, or swap display order with an existing category. |
+| DELETE | `/restaurant/categories/{cat_id}` | Delete an empty owned category and compact display orders. |
 
 ## 06. Products
 
 **Rules**
 
-- Restaurant only; the product and category must belong to its restaurant.
-- Validate price. Use `is_active` for product availability in this version.
-- Price and name edits must not change saved order snapshots.
+- Restaurant only; the product and optional category must belong to its restaurant.
+- Products may be unlinked (`cat_id: null`), placing them in the unlinked/inactive pool (`is_active = false`). Unlinked products cannot be activated until linked to a category; linking an unlinked product auto-activates it unless `is_active: false` is explicitly supplied.
+- Only unlinked products (`cat_id: null`) may be permanently deleted (`409 CONFLICT` while linked). Deleting cascades cart items and product-addon links, auto-deactivates any addon left with zero active links, and preserves historical order snapshots (`order_items.prod_id` set to `NULL`).
+- Validate price. Price and name edits must not change saved order snapshots.
 
 | Method | Route | Purpose |
 |---|---|---|
-| GET | `/restaurant/products` | List owned products; optionally filter by category. |
+| GET | `/restaurant/products` | List owned products; optionally filter by category or unlinked status. |
 | GET | `/restaurant/products/{prod_id}` | Read product details for editing. |
-| POST | `/restaurant/products` | Create a product in an owned category. |
-| PATCH | `/restaurant/products/{prod_id}` | Update product details, price, category, or activity. |
+| POST | `/restaurant/products` | Create a product in an owned category or as an unlinked inactive product. |
+| PATCH | `/restaurant/products/{prod_id}` | Update product details, price, category link (or unlink with null), or activity. |
+| DELETE | `/restaurant/products/{prod_id}` | Permanently delete an unlinked owned product. |
 
 ## 07. Addons and Product Links
 
@@ -140,15 +144,17 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 
 - Only the owning Restaurant user manages addons and product links.
 - Product and addon must belong to the same restaurant. Prevent duplicate links.
-- Disable used addons/links instead of deleting them. Customers only select them in the cart.
+- New addons start unlinked and inactive (`is_active = false`) and cannot be activated until linked to at least one product. Linking an unlinked addon to its first product auto-activates it; unlinking from its last product auto-deactivates it.
+- Only unlinked addons (zero active product links) may be permanently deleted (`409 CONFLICT` while linked), preserving historical order item addon snapshots (`order_item_addons.addon_id` set to `NULL`). Customers only select linked, active addons in the cart.
 
 | Method | Route | Purpose |
 |---|---|---|
-| GET | `/restaurant/addons` | List owned addons. |
-| POST | `/restaurant/addons` | Create an addon and its price. |
-| PATCH | `/restaurant/addons/{addon_id}` | Update addon name, price, or activity. |
+| GET | `/restaurant/addons` | List owned addons; optionally filter by unlinked status. |
+| POST | `/restaurant/addons` | Create an unlinked inactive addon and its price. |
+| PATCH | `/restaurant/addons/{addon_id}` | Update addon name, price, or activity (when linked). |
 | GET | `/restaurant/products/{prod_id}/addons` | List the product's addon links, including inactive links. |
 | PUT | `/restaurant/products/{prod_id}/addons/{addon_id}` | Create a link or enable/disable an existing link. |
+| DELETE | `/restaurant/addons/{addon_id}` | Permanently delete an unlinked owned addon. |
 
 ## 08. Offers
 

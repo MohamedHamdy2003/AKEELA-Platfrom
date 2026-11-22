@@ -230,6 +230,7 @@ erDiagram
 
 - `UNIQUE (rest_id, cat_title)`: the same title is allowed in different restaurants.
 - `UNIQUE (rest_id, cat_id)`.
+- `UNIQUE (rest_id, display_order) DEFERRABLE INITIALLY DEFERRED`: prevents duplicate display orders within a restaurant while supporting atomic swaps and post-delete compaction (`1..N`).
 - `CHECK (display_order >= 0)`.
 - Category titles are editable values, not an ENUM.
 
@@ -241,7 +242,7 @@ erDiagram
 ├──────────────────────────────────────────────────┤
 │ prod_id             BIGINT          PK           │
 │ rest_id             BIGINT          NN           │
-│ cat_id              BIGINT          NN           │
+│ cat_id              BIGINT          NULL         │
 │ prod_name           VARCHAR(150)    NN           │
 │ prod_description    TEXT            NULL         │
 │ prod_image_url      TEXT            NULL         │
@@ -252,11 +253,12 @@ erDiagram
 └──────────────────────────────────────────────────┘
 ```
 
-- `FK (rest_id, cat_id) → Categories (rest_id, cat_id)`.
+- `FK (rest_id, cat_id) → Categories (rest_id, cat_id) ON DELETE RESTRICT`: a category cannot be deleted while products are linked to it; unlinked products have `cat_id IS NULL`.
 - `UNIQUE (rest_id, prod_id)`.
 - `CHECK (price >= 0)`.
-- The product and its category must belong to the same restaurant.
-- Hint: `cat_id` already identifies the restaurant through the category. `rest_id` is kept to let composite FKs prevent order items from using products from another restaurant directly in the database.
+- `CHECK (cat_id IS NOT NULL OR is_active = FALSE)`: unlinked products cannot be active until linked to an owned category.
+- The product and its category (when linked) must belong to the same restaurant.
+- Hint: `rest_id` is stored directly on `Products` to support unlinked products (`cat_id IS NULL`) and let composite FKs enforce same-restaurant scoping across cart/order tables.
 
 ### 3.9 Offers
 
@@ -362,17 +364,13 @@ erDiagram
 ```
 
 - `FK (rest_id, order_id) → Orders (rest_id, order_id)`.
-- `FK (rest_id, prod_id) → Products (rest_id, prod_id)`.
+- `FK (rest_id, prod_id) → Products (rest_id, prod_id) ON DELETE SET NULL (prod_id)`: preserves order snapshots when an unlinked product is permanently deleted.
 - `FK (rest_id, offer_id) → Offers (rest_id, offer_id)`.
-- `UNIQUE (rest_id, order_item_id, prod_id)` supports the addon FK.
-- Each item must reference exactly one product or offer:
+- `UNIQUE (rest_id, order_item_id)` supports the `Order_Item_Addons` FK even after `prod_id` is cleared on product deletion.
+- An order item cannot reference both a product and an offer simultaneously (at checkout exactly one is set; after unlinked product deletion `prod_id` becomes `NULL` while snapshot fields stay intact):
 
 ```sql
-CHECK (
-    (prod_id IS NOT NULL AND offer_id IS NULL)
-    OR
-    (prod_id IS NULL AND offer_id IS NOT NULL)
-)
+CHECK (NOT (prod_id IS NOT NULL AND offer_id IS NOT NULL))
 ```
 
 - `CHECK (quantity > 0 AND unit_price >= 0)`.
@@ -418,10 +416,10 @@ CHECK (
 ```
 
 - `PRIMARY KEY (rest_id, prod_id, addon_id)`.
-- `FK (rest_id, prod_id) → Products (rest_id, prod_id)`.
-- `FK (rest_id, addon_id) → Addons (rest_id, addon_id)`.
+- `FK (rest_id, prod_id) → Products (rest_id, prod_id) ON DELETE CASCADE`.
+- `FK (rest_id, addon_id) → Addons (rest_id, addon_id) ON DELETE CASCADE`.
 - A product may have zero or more allowed addons. The same addon cannot be linked twice to the same product.
-- Disable a link instead of deleting it once used in an order.
+- Addons without any active links remain inactive (`is_active = FALSE`) and may be permanently deleted.
 
 ### 3.15 Order_Item_Addons
 
@@ -432,8 +430,8 @@ CHECK (
 │ order_item_addon_id BIGINT          PK           │
 │ order_item_id       BIGINT          NN           │
 │ rest_id             BIGINT          NN           │
-│ prod_id             BIGINT          NN           │
-│ addon_id            BIGINT          NN           │
+│ prod_id             BIGINT          NULL         │
+│ addon_id            BIGINT          NULL         │
 │ addon_name          VARCHAR(150)    NN, SNAPSHOT │
 │ unit_price          DECIMAL(12,2)   NN, SNAPSHOT │
 │ quantity            INTEGER         NN           │
@@ -441,18 +439,18 @@ CHECK (
 └──────────────────────────────────────────────────┘
 ```
 
-- `UNIQUE (order_item_id, addon_id)`.
-- `FK (rest_id, order_item_id, prod_id) → Order_Items (rest_id, order_item_id, prod_id)`.
-- `FK (rest_id, prod_id, addon_id) → Product_Addons (rest_id, prod_id, addon_id)`.
-- All FK columns here are required. The addon must match the ordered product and restaurant. Offer items cannot have addons in this version.
+- `UNIQUE (order_item_id, addon_id)` (PostgreSQL treats NULLs as distinct, preserving multiple snapshots if historical addons are deleted).
+- `FK (rest_id, order_item_id) → Order_Items (rest_id, order_item_id) ON DELETE RESTRICT`.
+- `FK (rest_id, prod_id) → Products (rest_id, prod_id) ON DELETE SET NULL (prod_id)`.
+- `FK (rest_id, addon_id) → Addons (rest_id, addon_id) ON DELETE SET NULL (addon_id)`.
+- At checkout, `prod_id` and `addon_id` are validated against active `Product_Addons` for the ordered product and restaurant. Offer items cannot have addons in this version.
 - `CHECK (quantity > 0 AND unit_price >= 0)`.
 - Generate `subtotal = unit_price * quantity`. Check INTEGER quantity range and money totals for overflow; no additional business quantity cap.
 - `quantity` is the total number of addon units for this order item, not the amount per product. Two burgers with one cheese each use addon quantity `2`.
 - Use separate order items when copies of a product have different addon choices.
 - The server checks that the customer owns the order and that the addon and product link are active. Copy the current addon name and price into this row during checkout.
 - Create addon rows and calculate the order total in the same transaction as the order and its items.
-- Keep saved names and prices unchanged after checkout. Later catalog edits must not change old orders.
-- Use `RESTRICT / NO ACTION` for linked records. Keep order items and their addons as history; do not delete them when catalog items are disabled.
+- Keep saved names and prices unchanged after checkout. Later catalog edits or deletions of unlinked catalog items must not delete or rewrite old orders.
 
 ### 3.16 Orders_History — View
 
@@ -583,7 +581,7 @@ CHECK (
 - Calculate item totals and addon totals separately, then add the delivery fee. Do not double-count items when joining addon rows.
 - Delete the cart and its rows only after the order is created successfully, within the same transaction. Roll back all changes on failure.
 - The order must not depend on cart rows after checkout. Deleting a cart must never delete an order or its history.
-- Use `ON DELETE CASCADE` only from `Carts` to `Cart_Items`, and from `Cart_Items` to `Cart_Item_Addons`. Keep catalog references restricted; disable catalog records instead of deleting linked choices.
+- `ON DELETE CASCADE` applies from `Carts` to `Cart_Items`, from `Cart_Items` to `Cart_Item_Addons`, from `Products` to `Cart_Items`/`Product_Addons`, and from `Product_Addons`/`Addons` to `Cart_Item_Addons` when an unlinked catalog item is permanently deleted. Historical `Order_Items` and `Order_Item_Addons` use `ON DELETE SET NULL (prod_id)` / `ON DELETE SET NULL (addon_id)` so past order snapshots remain intact.
 
 ### 3.21 Auth_Challenges
 

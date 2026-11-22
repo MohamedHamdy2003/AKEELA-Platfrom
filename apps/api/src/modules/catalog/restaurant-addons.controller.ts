@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -40,14 +41,20 @@ export class RestaurantAddonsController {
     this.assertRestaurant(actor);
     const profile = await this.catalog.assertActiveRestaurant(actor.userId);
     const pagination = resolvePagination(query);
-    const { items, total } = await this.catalog.listAddons(profile.rest_id, {
-      skip: pagination.skip,
-      take: pagination.take,
-    });
+    const { items, total, linkedProductIds } = await this.catalog.listAddons(
+      profile.rest_id,
+      {
+        unlinked: query.unlinked,
+        skip: pagination.skip,
+        take: pagination.take,
+      },
+    );
     return {
       success: true,
       message: 'Records returned.',
-      data: items.map(serializeAddon),
+      data: items.map((a) =>
+        serializeAddon(a, linkedProductIds.get(a.addon_id.toString()) ?? []),
+      ),
       meta: paginationMeta(total, pagination.page, pagination.per_page),
     };
   }
@@ -57,7 +64,7 @@ export class RestaurantAddonsController {
     this.assertRestaurant(actor);
     const profile = await this.catalog.assertActiveRestaurant(actor.userId);
     const addon = await this.catalog.createAddon(profile.rest_id, body);
-    return reply(serializeAddon(addon), 'Addon created.');
+    return reply(serializeAddon(addon, []), 'Addon created.');
   }
 
   @Patch(':addon_id')
@@ -69,11 +76,23 @@ export class RestaurantAddonsController {
   ) {
     this.assertRestaurant(actor);
     const profile = await this.catalog.assertActiveRestaurant(actor.userId);
-    const addon = await this.catalog.updateAddon(
+    const { addon, linkedProductIds } = await this.catalog.updateAddon(
       profile.rest_id,
       addonId,
       body,
     );
-    return reply(serializeAddon(addon), 'Addon updated.');
+    return reply(serializeAddon(addon, linkedProductIds), 'Addon updated.');
+  }
+
+  @Delete(':addon_id')
+  @HttpCode(200)
+  async remove(
+    @CurrentActor() actor: AuthActor,
+    @Param('addon_id') addonId: string,
+  ) {
+    this.assertRestaurant(actor);
+    const profile = await this.catalog.assertActiveRestaurant(actor.userId);
+    await this.catalog.deleteAddon(profile.rest_id, addonId);
+    return reply(null, 'Addon deleted.');
   }
 }

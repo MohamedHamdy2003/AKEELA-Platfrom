@@ -48,7 +48,7 @@ function serializePublicCategory(c: Category): PublicCategoryResponse {
 function serializePublicProduct(p: Product): PublicProductResponse {
   return {
     prod_id: p.prod_id.toString(),
-    cat_id: p.cat_id.toString(),
+    cat_id: p.cat_id!.toString(),
     prod_name: p.prod_name,
     prod_description: p.prod_description ?? null,
     prod_image_url: p.prod_image_url ?? null,

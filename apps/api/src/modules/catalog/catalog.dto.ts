@@ -3,6 +3,7 @@ import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -41,10 +42,11 @@ export class CreateCategoryDto {
 
   @ApiProperty({
     type: 'integer',
-    description: 'display order.',
+    description:
+      'Optional legacy field ignored on create; display_order is automatically assigned the next sequential position (1..N).',
     nullable: true,
     minimum: 0,
-    example: 0,
+    example: 1,
     required: false,
   })
   @IsOptional()
@@ -82,14 +84,15 @@ export class UpdateCategoryDto {
 
   @ApiProperty({
     type: 'integer',
-    description: 'display order.',
-    minimum: 0,
-    example: 0,
+    description:
+      'Target 1-based display_order of an existing owned category to swap positions with.',
+    minimum: 1,
+    example: 1,
     required: false,
   })
   @ValidateIf((_o, value: unknown) => value !== undefined)
   @IsInt({ message: 'display_order must be an integer.' })
-  @Min(0, { message: 'display_order must be 0 or greater.' })
+  @Min(1, { message: 'display_order must be 1 or greater.' })
   display_order?: number;
 
   @ApiProperty({ type: 'boolean', description: 'is active.', required: false })
@@ -106,17 +109,22 @@ export interface CategoryResponse {
   cat_title: string;
   display_order: number;
   is_active: boolean;
+  product_count: number;
   created_at: string;
   updated_at: string;
 }
 
-export function serializeCategory(c: Category): CategoryResponse {
+export function serializeCategory(
+  c: Category,
+  productCount = 0,
+): CategoryResponse {
   return {
     cat_id: c.cat_id.toString(),
     rest_id: c.rest_id.toString(),
     cat_title: c.cat_title,
     display_order: Number(c.display_order),
     is_active: Boolean(c.is_active),
+    product_count: productCount,
     created_at:
       c.created_at instanceof Date
         ? c.created_at.toISOString()
@@ -132,17 +140,20 @@ export class CreateProductDto {
   @ApiProperty({
     type: 'string',
     description:
-      'Positive PostgreSQL BIGINT ID as a decimal string (maximum 9223372036854775807).',
+      'Optional owning category ID (positive PostgreSQL BIGINT as a decimal string). Omit or pass null to create an unlinked inactive product.',
+    nullable: true,
     pattern: '^[1-9]\\d{0,18}$',
     example: '1',
-    required: true,
+    required: false,
   })
+  @IsOptional()
+  @ValidateIf((_o, value: unknown) => value !== undefined && value !== null)
   @Transform(trim)
   @IsString({ message: 'Enter the category ID as text.' })
   @Matches(/^[1-9]\d{0,18}$/, {
     message: 'Category ID must be a positive integer.',
   })
-  cat_id!: string;
+  cat_id?: string | null;
 
   @ApiProperty({
     type: 'string',
@@ -219,18 +230,19 @@ export class UpdateProductDto {
   @ApiProperty({
     type: 'string',
     description:
-      'Positive PostgreSQL BIGINT ID as a decimal string (maximum 9223372036854775807).',
+      'Owning category ID (positive PostgreSQL BIGINT as a decimal string), or null to unlink and deactivate the product.',
+    nullable: true,
     pattern: '^[1-9]\\d{0,18}$',
     example: '1',
     required: false,
   })
-  @ValidateIf((_o, value: unknown) => value !== undefined)
+  @ValidateIf((_o, value: unknown) => value !== undefined && value !== null)
   @Transform(trim)
   @IsString({ message: 'Enter the category ID as text.' })
   @Matches(/^[1-9]\d{0,18}$/, {
     message: 'Category ID must be a positive integer.',
   })
-  cat_id?: string;
+  cat_id?: string | null;
 
   @ApiProperty({
     type: 'string',
@@ -319,10 +331,26 @@ export class ListProductsQuery extends PaginationQuery {
   cat_id?: string;
 }
 
+export class ListRestaurantProductsQuery extends ListProductsQuery {
+  @ApiProperty({
+    type: 'string',
+    enum: ['true', 'false'],
+    nullable: true,
+    required: false,
+    description:
+      'Filter by category link state: true returns unlinked inactive products only, false returns categorized products only.',
+  })
+  @IsOptional()
+  @IsIn(['true', 'false'], {
+    message: 'unlinked must be either "true" or "false".',
+  })
+  unlinked?: 'true' | 'false';
+}
+
 export interface ProductResponse {
   prod_id: string;
   rest_id: string;
-  cat_id: string;
+  cat_id: string | null;
   prod_name: string;
   prod_description: string | null;
   prod_image_url: string | null;
@@ -336,7 +364,7 @@ export function serializeProduct(p: Product): ProductResponse {
   return {
     prod_id: p.prod_id.toString(),
     rest_id: p.rest_id.toString(),
-    cat_id: p.cat_id.toString(),
+    cat_id: p.cat_id ? p.cat_id.toString() : null,
     prod_name: p.prod_name,
     prod_description: p.prod_description ?? null,
     prod_image_url: p.prod_image_url ?? null,
@@ -434,7 +462,21 @@ export class UpdateAddonDto {
   is_active?: boolean;
 }
 
-export class ListAddonsQuery extends PaginationQuery {}
+export class ListAddonsQuery extends PaginationQuery {
+  @ApiProperty({
+    type: 'string',
+    enum: ['true', 'false'],
+    nullable: true,
+    required: false,
+    description:
+      'Filter by product link state: true returns unlinked inactive addons only, false returns addons linked to at least one product.',
+  })
+  @IsOptional()
+  @IsIn(['true', 'false'], {
+    message: 'unlinked must be either "true" or "false".',
+  })
+  unlinked?: 'true' | 'false';
+}
 
 export class SetProductAddonDto {
   @ApiProperty({
@@ -454,17 +496,22 @@ export interface AddonResponse {
   addon_name: string;
   addon_price: string;
   is_active: boolean;
+  linked_product_ids: string[];
   created_at: string;
   updated_at: string;
 }
 
-export function serializeAddon(a: Addon): AddonResponse {
+export function serializeAddon(
+  a: Addon,
+  linkedProductIds: string[] = [],
+): AddonResponse {
   return {
     addon_id: a.addon_id.toString(),
     rest_id: a.rest_id.toString(),
     addon_name: a.addon_name,
     addon_price: a.addon_price,
     is_active: Boolean(a.is_active),
+    linked_product_ids: linkedProductIds,
     created_at:
       a.created_at instanceof Date
         ? a.created_at.toISOString()
@@ -489,13 +536,14 @@ export interface ProductAddonResponse {
 export function serializeProductAddon(
   pa: ProductAddon,
   addon: Addon,
+  linkedProductIds: string[] = [],
 ): ProductAddonResponse {
   return {
     rest_id: pa.rest_id.toString(),
     prod_id: pa.prod_id.toString(),
     addon_id: pa.addon_id.toString(),
     is_active: Boolean(pa.is_active),
-    addon: serializeAddon(addon),
+    addon: serializeAddon(addon, linkedProductIds),
     created_at:
       pa.created_at instanceof Date
         ? pa.created_at.toISOString()

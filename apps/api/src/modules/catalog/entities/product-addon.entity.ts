@@ -12,12 +12,12 @@ import {
 @Index('ix_product_addons_rest_addon', ['rest_id', 'addon_id'])
 @ForeignKey('products', ['rest_id', 'prod_id'], ['rest_id', 'prod_id'], {
   name: 'fk_product_addons_product',
-  onDelete: 'RESTRICT',
+  onDelete: 'CASCADE',
   onUpdate: 'RESTRICT',
 })
 @ForeignKey('addons', ['rest_id', 'addon_id'], ['rest_id', 'addon_id'], {
   name: 'fk_product_addons_addon',
-  onDelete: 'RESTRICT',
+  onDelete: 'CASCADE',
   onUpdate: 'RESTRICT',
 })
 export class ProductAddon {

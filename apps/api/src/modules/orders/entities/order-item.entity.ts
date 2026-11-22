@@ -7,6 +7,9 @@ import {
   Check,
 } from 'typeorm';
 @Entity('order_items')
+@Index('uq_order_items_rest_item', ['rest_id', 'order_item_id'], {
+  unique: true,
+})
 @Index(
   'uq_order_items_rest_item_product',
   ['rest_id', 'order_item_id', 'prod_id'],
@@ -21,7 +24,7 @@ import {
 })
 @ForeignKey('products', ['rest_id', 'prod_id'], ['rest_id', 'prod_id'], {
   name: 'fk_order_items_product',
-  onDelete: 'RESTRICT',
+  onDelete: 'SET NULL',
   onUpdate: 'RESTRICT',
 })
 @ForeignKey('offers', ['rest_id', 'offer_id'], ['rest_id', 'offer_id'], {
@@ -31,7 +34,7 @@ import {
 })
 @Check(
   'ck_order_items_choice',
-  '(prod_id IS NOT NULL AND offer_id IS NULL) OR (prod_id IS NULL AND offer_id IS NOT NULL)',
+  'NOT (prod_id IS NOT NULL AND offer_id IS NOT NULL)',
 )
 @Check('ck_order_items_values', 'quantity > 0 AND unit_price >= 0')
 export class OrderItem {

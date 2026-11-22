@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -17,7 +18,7 @@ import {
 import { paginationMeta, resolvePagination } from '../users/admin.dto';
 import {
   CreateProductDto,
-  ListProductsQuery,
+  ListRestaurantProductsQuery,
   SetProductAddonDto,
   UpdateProductDto,
   serializeProduct,
@@ -38,13 +39,14 @@ export class RestaurantProductsController {
   @Get()
   async list(
     @CurrentActor() actor: AuthActor,
-    @Query() query: ListProductsQuery,
+    @Query() query: ListRestaurantProductsQuery,
   ) {
     this.assertRestaurant(actor);
     const profile = await this.catalog.assertActiveRestaurant(actor.userId);
     const pagination = resolvePagination(query);
     const { items, total } = await this.catalog.listProducts(profile.rest_id, {
       cat_id: query.cat_id,
+      unlinked: query.unlinked,
       skip: pagination.skip,
       take: pagination.take,
     });
@@ -95,6 +97,18 @@ export class RestaurantProductsController {
     return reply(serializeProduct(product), 'Product updated.');
   }
 
+  @Delete(':prod_id')
+  @HttpCode(200)
+  async remove(
+    @CurrentActor() actor: AuthActor,
+    @Param('prod_id') prodId: string,
+  ) {
+    this.assertRestaurant(actor);
+    const profile = await this.catalog.assertActiveRestaurant(actor.userId);
+    await this.catalog.deleteProduct(profile.rest_id, prodId);
+    return reply(null, 'Product deleted.');
+  }
+
   @Get(':prod_id/addons')
   async listProductAddons(
     @CurrentActor() actor: AuthActor,
@@ -104,7 +118,9 @@ export class RestaurantProductsController {
     const profile = await this.catalog.assertActiveRestaurant(actor.userId);
     const items = await this.catalog.listProductAddons(profile.rest_id, prodId);
     return reply(
-      items.map(({ link, addon }) => serializeProductAddon(link, addon)),
+      items.map(({ link, addon, linkedProductIds }) =>
+        serializeProductAddon(link, addon, linkedProductIds),
+      ),
       'Records returned.',
     );
   }
@@ -119,12 +135,16 @@ export class RestaurantProductsController {
   ) {
     this.assertRestaurant(actor);
     const profile = await this.catalog.assertActiveRestaurant(actor.userId);
-    const { link, addon } = await this.catalog.setProductAddon(
-      profile.rest_id,
-      prodId,
-      addonId,
-      body,
+    const { link, addon, linkedProductIds } =
+      await this.catalog.setProductAddon(
+        profile.rest_id,
+        prodId,
+        addonId,
+        body,
+      );
+    return reply(
+      serializeProductAddon(link, addon, linkedProductIds),
+      'Product addon updated.',
     );
-    return reply(serializeProductAddon(link, addon), 'Product addon updated.');
   }
 }
