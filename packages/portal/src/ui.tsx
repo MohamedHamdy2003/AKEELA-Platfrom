@@ -582,56 +582,22 @@ export function Shell({
   const drawerRef = useRef<HTMLElement>(null);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [topHover, setTopHover] = useState(false);
   const logoutTrigger = useRef<HTMLButtonElement>(null);
   const menuTrigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const syncFullscreen = () => {
-      if (!document.fullscreenElement) {
-        setFullscreen(false);
-        setTopHover(false);
-      }
+      setFullscreen(Boolean(document.fullscreenElement));
     };
     document.addEventListener('fullscreenchange', syncFullscreen);
     return () =>
       document.removeEventListener('fullscreenchange', syncFullscreen);
   }, []);
-  useEffect(() => {
-    if (!fullscreen) {
-      setTopHover(false);
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setFullscreen(false);
-        setTopHover(false);
-        if (document.fullscreenElement && document.exitFullscreen) {
-          document.exitFullscreen().catch(() => {});
-        }
-      }
-    };
-    const onMouseMove = (event: MouseEvent) => {
-      const nearTop = event.clientY <= 58;
-      setTopHover((prev) => (prev === nearTop ? prev : nearTop));
-    };
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('mousemove', onMouseMove);
-    };
-  }, [fullscreen]);
   function toggleFullscreen() {
-    setFullscreen((prev) => {
-      const next = !prev;
-      setTopHover(false);
-      if (next) {
-        document.documentElement.requestFullscreen?.().catch(() => {});
-      } else if (document.fullscreenElement && document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-      }
-      return next;
-    });
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
   }
   useEffect(() => {
     if (!drawer) return;
@@ -674,7 +640,6 @@ export function Shell({
       data-portal={theme}
       data-sidebar-collapsed={collapsed}
       data-fullscreen={fullscreen || undefined}
-      data-top-hover={topHover || undefined}
     >
       <button
         className="skip-link"
@@ -828,22 +793,7 @@ export function Shell({
         />
       )}
       <div className="workspace" inert={compact && drawer}>
-        {fullscreen && (
-          <div
-            className="fullscreen-top-sensor"
-            onMouseEnter={() => setTopHover(true)}
-            aria-hidden="true"
-          />
-        )}
-        <header
-          className={'topbar' + (brandIdentity ? ' has-brand' : '')}
-          onMouseEnter={() => {
-            if (fullscreen) setTopHover(true);
-          }}
-          onMouseLeave={(event) => {
-            if (fullscreen && event.clientY > 58) setTopHover(false);
-          }}
-        >
+        <header className={'topbar' + (brandIdentity ? ' has-brand' : '')}>
           <div className="breadcrumb">
             <button
               type="button"

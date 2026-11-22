@@ -623,40 +623,7 @@ fieldset {
   background: var(--brand-secondary);
   color: var(--brand-primary);
 }
-.fullscreen-top-sensor {
-  position: fixed;
-  top: 0;
-  inset-inline: 0;
-  height: 16px;
-  z-index: 45;
-}
-.app-shell[data-fullscreen='true'] .topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 248px;
-  z-index: 44;
-  padding-inline: 32px;
-  background: rgb(255 255 255 / 95%);
-  backdrop-filter: blur(8px);
-  transform: translateY(-105%);
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 8px 24px rgb(15 23 42 / 8%);
-  transition:
-    transform 180ms var(--ease-out),
-    opacity 180ms var(--ease-out);
-}
-.app-shell[data-fullscreen='true'][data-sidebar-collapsed='true'] .topbar {
-  right: 84px;
-}
-.app-shell[data-fullscreen='true'][data-top-hover='true'] .topbar,
-.app-shell[data-fullscreen='true'] .topbar:focus-within {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: auto;
-}
-.app-shell[data-fullscreen='true'] .workspace-body {
+.app-shell[data-fullscreen='true'] {
   min-height: 100dvh;
 }
 .topbar-meta {
@@ -910,7 +877,7 @@ td .numeric {
   align-items: end;
   gap: 14px;
   background: #f1fcf6;
-  padding: 16px 18px;
+  padding: 16px 18px 0;
   border-radius: 12px;
   margin-bottom: 24px;
 }
@@ -929,6 +896,36 @@ td .numeric {
   min-height: 38px;
   padding: 6px 16px;
   font-size: 13.5px;
+}
+.filters-reset-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--brand-primary), transparent 72%);
+  background: color-mix(in srgb, var(--brand-primary), transparent 88%);
+  color: var(--brand-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background-color 160ms var(--ease-out),
+    border-color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+.filters-reset-icon svg {
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.filters-reset-icon:hover {
+  background: color-mix(in srgb, var(--brand-primary), transparent 78%);
+  border-color: color-mix(in srgb, var(--brand-primary), transparent 52%);
+  box-shadow: 0 3px 10px
+    color-mix(in srgb, var(--brand-primary), transparent 82%);
+  transform: translateY(-1px);
+}
+.filters-reset-icon:active {
+  transform: translateY(0) scale(0.96);
 }
 .pager {
   display: flex;
@@ -1424,7 +1421,7 @@ td .numeric {
     justify-content: space-between;
   }
   .filter-bar {
-    padding: 18px;
+    padding: 16px 18px 0;
     gap: 16px;
   }
   .filter-bar .field {

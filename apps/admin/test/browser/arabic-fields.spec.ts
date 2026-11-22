@@ -31,13 +31,6 @@ for (const width of [1536, 390])
       .getByLabel('من تاريخ — الشهر', { exact: true })
       .selectOption('2');
     await page.getByLabel('من تاريخ — السنة', { exact: true }).fill('٢٠٢٤');
-    await expect
-      .poll(() =>
-        requests.some(
-          (url) => new URL(url).searchParams.get('date_from') === '2024-02-29',
-        ),
-      )
-      .toBe(true);
     await expect(
       page.getByLabel('من تاريخ — السنة', { exact: true }),
     ).toHaveValue('٢٠٢٤');
@@ -46,6 +39,10 @@ for (const width of [1536, 390])
         .getByLabel('من تاريخ — الشهر', { exact: true })
         .locator('option:checked'),
     ).toHaveText('فبراير');
+    // Date filter request must NOT be sent until both date_from and date_to are provided
+    expect(
+      requests.some((url) => new URL(url).searchParams.has('date_from')),
+    ).toBe(false);
     await page
       .getByLabel('إلى تاريخ — اليوم', { exact: true })
       .selectOption('1');
@@ -55,9 +52,13 @@ for (const width of [1536, 390])
     await page.getByLabel('إلى تاريخ — السنة', { exact: true }).fill('2024');
     await expect
       .poll(() =>
-        requests.some(
-          (url) => new URL(url).searchParams.get('date_to') === '2024-03-01',
-        ),
+        requests.some((url) => {
+          const params = new URL(url).searchParams;
+          return (
+            params.get('date_from') === '2024-02-29' &&
+            params.get('date_to') === '2024-03-01'
+          );
+        }),
       )
       .toBe(true);
     await page.getByLabel('من تاريخ — السنة', { exact: true }).fill('٢٠٢٥');

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, MapPin, X } from 'lucide-react';
+import { Check, MapPin, RefreshCw, X } from 'lucide-react';
 import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import { api, query } from '../lib/api';
 import { dateTime, money, sumMoney } from '../lib/format';
@@ -93,6 +93,7 @@ export function Orders({
     date_to: '',
   });
   const [selected, setSelected] = useState<string | null>(initialId ?? null);
+  const [resetSpin, setResetSpin] = useState(0);
   useEffect(() => {
     if (initialId) {
       setSelected(initialId);
@@ -106,8 +107,14 @@ export function Orders({
       onInitialStatusConsumed?.();
     }
   }, [initialStatus, onInitialStatusConsumed]);
+  const hasCompleteDateRange = Boolean(filters.date_from && filters.date_to);
+  const requestFilters = {
+    status: filters.status,
+    date_from: hasCompleteDateRange ? filters.date_from : '',
+    date_to: hasCompleteDateRange ? filters.date_to : '',
+  };
   const resource = useResource<OrderSummary[]>(
-    '/restaurant/orders' + query({ page, per_page: 20, ...filters }),
+    '/restaurant/orders' + query({ page, per_page: 20, ...requestFilters }),
   );
   useEffect(() => {
     const last = resource.result?.meta?.last_page;
@@ -140,6 +147,7 @@ export function Orders({
           ))}
         </Select>
         <ArabicDateFields
+          key={resetSpin}
           value={{ date_from: filters.date_from, date_to: filters.date_to }}
           change={(dates) => {
             setFilters((current) => ({ ...current, ...dates }));
@@ -149,14 +157,21 @@ export function Orders({
         <div className="filter-bar-actions">
           <button
             type="button"
-            className="button secondary"
+            className="filters-reset-icon"
+            aria-label="إعادة ضبط الفلاتر"
+            title="إعادة ضبط الفلاتر"
             onClick={() => {
+              setResetSpin((n) => n + 1);
               const empty = { status: '', date_from: '', date_to: '' };
               setFilters(empty);
               setPage(1);
             }}
           >
-            إعادة ضبط الفلاتر
+            <RefreshCw
+              size={16}
+              aria-hidden="true"
+              style={{ transform: `rotate(${resetSpin * 180}deg)` }}
+            />
           </button>
         </div>
       </div>
