@@ -539,7 +539,16 @@ test('Features 11 and 12: cart and checkout with actual PostgreSQL', async (t) =
           '23514',
       );
       await assert.rejects(
-        db.query('DELETE FROM products WHERE prod_id=$1', [prodId]),
+        db.query(
+          'DELETE FROM categories WHERE cat_id=(SELECT cat_id FROM products WHERE prod_id=$1)',
+          [prodId],
+        ),
+        (error: unknown) =>
+          (error as { driverError?: { code?: string } }).driverError?.code ===
+          '23503',
+      );
+      await assert.rejects(
+        db.query('DELETE FROM offers WHERE offer_id=$1', [offerId]),
         (error: unknown) =>
           (error as { driverError?: { code?: string } }).driverError?.code ===
           '23503',

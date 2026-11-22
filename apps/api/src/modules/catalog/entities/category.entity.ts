@@ -7,6 +7,7 @@ import {
   ForeignKey,
   Check,
   Index,
+  Unique,
 } from 'typeorm';
 
 @Entity('categories')
@@ -14,6 +15,9 @@ import {
 @Index('ix_categories_rest_display', ['rest_id', 'display_order'])
 @Index('uq_categories_rest_title', ['rest_id', 'cat_title'], { unique: true })
 @Index('uq_categories_rest_cat', ['rest_id', 'cat_id'], { unique: true })
+@Unique('uq_categories_rest_display_order', ['rest_id', 'display_order'], {
+  deferrable: 'INITIALLY DEFERRED',
+})
 @ForeignKey('restaurant_profiles', ['rest_id'], ['rest_id'], {
   name: 'fk_categories_restaurant',
   onDelete: 'RESTRICT',
