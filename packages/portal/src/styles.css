@@ -16,14 +16,14 @@
   direction: rtl;
 }
 .portal[data-portal='delivery'] {
-  --p-bg: #f4f9fc;
-  --p-sidebar: #063345;
-  --p-accent: #087e91;
-  --p-accent-soft: #e0f5f8;
-  --p-gold: #22c7d6;
-  --p-text: #143242;
-  --p-muted: #57717e;
-  --p-line: #dce8ef;
+  --p-bg: #fafbfd;
+  --p-sidebar: #163a63;
+  --p-accent: #1b5ca8;
+  --p-accent-soft: #ecf3fc;
+  --p-gold: #d96b27;
+  --p-text: #13263a;
+  --p-muted: #586b7d;
+  --p-line: #e3e8ee;
 }
 .portal.session-recovery {
   display: grid;
@@ -274,41 +274,34 @@ bdi,
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 14px 6px 16px;
-  border-radius: 999px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--p-accent-soft), #ffffff 40%),
-    #ffffff
-  );
-  border: 1px solid color-mix(in srgb, var(--p-accent), transparent 76%);
-  box-shadow: 0 2px 10px rgb(7 56 75 / 6%);
+  padding: 5px 12px 5px 14px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
   max-width: 340px;
   min-width: 0;
   transition:
-    border-color 160ms var(--ease-out),
-    box-shadow 160ms var(--ease-out),
-    transform 160ms var(--ease-out);
+    background-color 160ms var(--ease-out),
+    border-color 160ms var(--ease-out);
 }
 .topbar-brand:hover {
-  border-color: color-mix(in srgb, var(--p-accent), transparent 40%);
-  box-shadow: 0 6px 18px rgb(7 56 75 / 11%);
-  transform: translateY(-1px);
+  background: var(--p-accent-soft);
+  border-color: color-mix(in srgb, var(--p-accent), transparent 78%);
 }
 .topbar-brand-crest {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--p-sidebar), var(--p-accent));
-  color: #ffffff;
-  font-size: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--p-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--p-accent), transparent 76%);
+  color: var(--p-accent);
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 22%);
 }
 .topbar-brand-text {
   display: flex;
@@ -320,7 +313,7 @@ bdi,
 .topbar-brand-name {
   font-size: 14px;
   font-weight: 700;
-  color: var(--p-sidebar);
+  color: var(--p-text);
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
@@ -332,9 +325,9 @@ bdi,
   font-size: 13.5px;
 }
 .topbar-brand-sub {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 500;
-  color: var(--p-accent);
+  color: var(--p-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -345,11 +338,11 @@ bdi,
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 10px 11px;
+  padding: 9px 10px;
   margin-bottom: 14px;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 7%);
-  border: 1px solid color-mix(in srgb, var(--p-gold), transparent 68%);
+  border-radius: 11px;
+  background: #f6f9fc;
+  border: 1px solid var(--p-line);
   text-align: right;
   min-width: 0;
   transition:
@@ -357,22 +350,22 @@ bdi,
     border-color 160ms var(--ease-out);
 }
 .sidebar-partner:hover {
-  background: rgb(255 255 255 / 12%);
-  border-color: color-mix(in srgb, var(--p-gold), transparent 36%);
+  background: var(--p-accent-soft);
+  border-color: color-mix(in srgb, var(--p-accent), transparent 72%);
 }
 .sidebar-partner-crest {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--p-accent), var(--p-gold));
-  color: #ffffff;
-  font-size: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--p-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--p-accent), transparent 74%);
+  color: var(--p-accent);
+  font-size: 11.5px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 22%);
 }
 .sidebar-partner-meta {
   display: grid;
@@ -383,7 +376,7 @@ bdi,
 .sidebar-partner-name {
   font-size: 12.5px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--p-text);
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
@@ -396,15 +389,15 @@ bdi,
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10.5px;
-  color: color-mix(in srgb, var(--p-gold), #ffffff 42%);
+  font-size: 11px;
+  color: var(--p-muted);
   white-space: nowrap;
 }
 .sidebar-partner-code i {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: #34d399;
+  background: #16a34a;
   flex-shrink: 0;
 }
 .breadcrumb,
@@ -789,8 +782,8 @@ th {
   border-bottom: 1px solid var(--p-line);
 }
 .portal[data-portal='delivery'] th {
-  background: #eef8fb;
-  color: #183a4a;
+  background: #f2f6fb;
+  color: #1c3552;
 }
 td {
   font-size: 12px;
@@ -824,7 +817,7 @@ tbody tr:hover {
   background: #f2fcf7;
 }
 .portal[data-portal='delivery'] tbody tr:hover {
-  background: #eef9fc;
+  background: #f5f9fe;
 }
 @keyframes portal-row-in {
   from {
@@ -1344,7 +1337,7 @@ dialog p {
   background: linear-gradient(
     160deg,
     var(--p-sidebar) 0%,
-    color-mix(in srgb, var(--p-sidebar), var(--p-accent) 30%) 100%
+    color-mix(in srgb, var(--p-sidebar), var(--p-accent) 26%) 100%
   );
   color: #fff;
   min-height: 100vh;
@@ -1354,6 +1347,15 @@ dialog p {
   justify-content: space-between;
   position: relative;
   overflow: hidden;
+}
+.portal[data-portal='delivery'] .auth-identity {
+  background: linear-gradient(160deg, #1b5ca8 0%, #133e75 58%, #0d2b52 100%);
+}
+.portal[data-portal='delivery'] .auth-identity p {
+  color: #d6e6fa;
+}
+.portal[data-portal='delivery'] .auth-identity small {
+  color: #bdd5f4;
 }
 .auth-identity:after {
   content: '';

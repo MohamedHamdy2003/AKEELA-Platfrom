@@ -207,13 +207,37 @@
   box-shadow: -10px 0 32px rgb(10 38 29 / 14%);
 }
 .portal[data-portal='delivery'] .sidebar {
-  background: linear-gradient(180deg, #062f40 0%, #09455c 56%, #07384b 100%);
-  border-left: 1px solid rgb(255 255 255 / 10%);
-  box-shadow: -10px 0 32px rgb(6 47 64 / 16%);
+  background: #ffffff;
+  color: #13263a;
+  border-left: 1px solid #e3e8ee;
+  box-shadow: -8px 0 24px rgb(15 23 42 / 3%);
+}
+.portal[data-portal='delivery'] .wordmark {
+  border-bottom-color: #eef2f6;
+}
+.portal[data-portal='delivery'] .wordmark img,
+.portal[data-portal='delivery'] .sidebar-mark {
+  filter: none;
+}
+.portal[data-portal='delivery'] .wordmark small {
+  color: #586b7d;
+  font-weight: 600;
+}
+.portal[data-portal='delivery'] .drawer-close {
+  color: #334155;
+}
+.portal[data-portal='delivery'] .sidebar-toggle {
+  border-color: #e3e8ee;
+  background: #f5f8fc;
+  color: #13263a;
+}
+.portal[data-portal='delivery'] .sidebar-toggle:hover {
+  background: #ecf3fc;
+  border-color: #c9dbf2;
 }
 .portal-shell .sidebar nav button {
   border: 1px solid transparent;
-  border-radius: 11px;
+  border-radius: 10px;
   color: #cfe5dc;
   transition:
     background-color 180ms var(--ease-out),
@@ -223,7 +247,8 @@
     scale 150ms var(--ease-out);
 }
 .portal[data-portal='delivery'] .sidebar nav button {
-  color: #c9e4ee;
+  color: #1e3348;
+  font-weight: 600;
 }
 .portal-shell .sidebar nav button svg {
   transition:
@@ -233,6 +258,10 @@
 .portal-shell .sidebar nav button:hover:not(:disabled) {
   background: rgb(255 255 255 / 9%);
   color: #ffffff;
+}
+.portal[data-portal='delivery'] .sidebar nav button:hover:not(:disabled) {
+  background: #ecf3fc;
+  color: #1b5ca8;
 }
 .portal-shell .sidebar nav button:hover:not(:disabled) svg {
   translate: -3px 0;
@@ -262,25 +291,43 @@
   animation: portal-nav-mark-in 240ms var(--ease-out);
 }
 .portal[data-portal='delivery'] .sidebar nav button.active {
-  background: linear-gradient(135deg, #087e91 0%, #0d99ad 100%);
-  border-color: rgb(103 232 249 / 30%);
+  background: #1b5ca8;
+  border-color: transparent;
   color: #ffffff;
-  font-weight: 600;
-  box-shadow: 0 6px 18px rgb(8 126 145 / 38%);
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgb(27 92 168 / 20%);
 }
 .portal[data-portal='delivery'] .sidebar nav button.active:hover {
-  background: linear-gradient(135deg, #076e7f 0%, #0a899c 100%);
+  background: #164b8c;
+  color: #ffffff;
 }
 .portal[data-portal='delivery'] .sidebar nav button.active svg {
   color: #ffffff;
 }
 .portal[data-portal='delivery'] .sidebar nav button.active:after {
-  height: 24px;
+  height: 22px;
   right: 0;
-  width: 3.5px;
+  width: 3px;
   border-radius: 6px;
-  background: #38d9e8;
+  background: #e88446;
   animation: portal-nav-mark-in 240ms var(--ease-out);
+}
+.portal[data-portal='delivery'] .sidebar-foot {
+  border-top-color: #e3e8ee;
+}
+.portal[data-portal='delivery'] .sidebar-logout {
+  border-color: color-mix(in srgb, #c3343f, transparent 78%);
+  background: color-mix(in srgb, #c3343f, transparent 92%);
+  color: #c3343f;
+  font-weight: 600;
+}
+@media (hover: hover) {
+  .portal[data-portal='delivery'] .sidebar-logout:hover:not(:disabled) {
+    background: color-mix(in srgb, #c3343f, transparent 82%);
+    border-color: color-mix(in srgb, #c3343f, transparent 55%);
+    color: #9f1f29;
+    box-shadow: 0 4px 14px color-mix(in srgb, #c3343f, transparent 78%);
+  }
 }
 @keyframes portal-nav-mark-in {
   from {

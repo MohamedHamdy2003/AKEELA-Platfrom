@@ -184,9 +184,11 @@ export function CompanyForm({
                 </Field>
               ))}
             </div>
-            <button className="button primary">
-              {busy ? 'جار الحفظ…' : 'حفظ البيانات'}
-            </button>
+            <div className="actions">
+              <button className="button primary">
+                {busy ? 'جار الحفظ…' : 'حفظ البيانات'}
+              </button>
+            </div>
           </fieldset>
         </form>
       </section>

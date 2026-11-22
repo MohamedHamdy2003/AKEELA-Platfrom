@@ -180,18 +180,11 @@ export function Home({
       className="del-home"
       data-refreshing={analytics.loading && Boolean(data)}
     >
-      <section
-        className="del-hero"
+      <header
+        className="del-home-head"
         aria-label="هوية شركة التوصيل والفترة الزمنية"
       >
-        <div className="del-hero-brand">
-          <div className="del-hero-eyebrow">
-            <span className="del-hero-live-dot" aria-hidden="true" />
-            <span>مركز عمليات الشريك</span>
-            {company?.company_id && (
-              <span className="del-hero-id numeric">#{company.company_id}</span>
-            )}
-          </div>
+        <div className="del-home-title-wrap">
           <div className="del-hero-titles">
             <h1 className="del-hero-title">نظرة عامة</h1>
             <span
@@ -205,35 +198,11 @@ export function Home({
           <p className="del-hero-desc">
             مركز عمليات التوزيع والأسطول ومؤشرات كفاءة التسليم بتوقيت القاهرة.
           </p>
-          {(company?.company_address || company?.company_phone) && (
-            <div className="del-hero-meta">
-              {company?.company_address && (
-                <span>
-                  <MapPin size={13} aria-hidden="true" />
-                  {company.company_address}
-                </span>
-              )}
-              {company?.company_phone && (
-                <span className="numeric">
-                  <Phone size={13} aria-hidden="true" />
-                  <bdi>{company.company_phone}</bdi>
-                </span>
-              )}
-              <button
-                type="button"
-                className="del-hero-link"
-                onClick={() => navigate('profile')}
-              >
-                <Building2 size={13} aria-hidden="true" />
-                تحديث بيانات الشركة
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="del-home-controls">
           <div
-            className="del-seg del-seg-hero"
+            className="del-seg"
             role="group"
             aria-label="الفترة الزمنية لتحليلات التوصيل"
           >
@@ -252,8 +221,7 @@ export function Home({
           <button
             type="button"
             className={
-              'del-refresh-btn del-refresh-hero' +
-              (analytics.loading ? ' spinning' : '')
+              'del-refresh-btn' + (analytics.loading ? ' spinning' : '')
             }
             aria-label="تحديث التحليلات"
             title={
@@ -267,7 +235,44 @@ export function Home({
             <RefreshCw size={16} aria-hidden="true" />
           </button>
         </div>
-      </section>
+      </header>
+
+      {(company?.company_id ||
+        company?.company_address ||
+        company?.company_phone) && (
+        <section
+          className="del-partner-strip"
+          aria-label="بيانات شركة التوصيل الحالية"
+        >
+          <div className="del-partner-strip-meta">
+            {company?.company_id && (
+              <span className="del-partner-id numeric">
+                <Building2 size={14} aria-hidden="true" />
+                معرّف الشركة #{company.company_id}
+              </span>
+            )}
+            {company?.company_address && (
+              <span>
+                <MapPin size={14} aria-hidden="true" />
+                {company.company_address}
+              </span>
+            )}
+            {company?.company_phone && (
+              <span className="numeric">
+                <Phone size={14} aria-hidden="true" />
+                <bdi>{company.company_phone}</bdi>
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            className="del-partner-strip-link"
+            onClick={() => navigate('profile')}
+          >
+            إدارة بيانات الشركة
+          </button>
+        </section>
+      )}
 
       {Boolean(analytics.error) && (
         <Failure error={analytics.error} retry={analytics.reload} />
@@ -509,13 +514,13 @@ export function Home({
                 <span
                   style={{
                     width: `${busyPct}%`,
-                    background: '#087e91',
+                    background: '#1b5ca8',
                   }}
                 />
                 <span
                   style={{
                     width: `${100 - busyPct}%`,
-                    background: '#bae6fd',
+                    background: '#dbe8f9',
                   }}
                 />
               </div>
