@@ -25,6 +25,14 @@ export class CustomersService {
       throw new ApiError(403, 'FORBIDDEN', 'Customer access required.');
   }
 
+  async assertExists(userId: string, manager: EntityManager): Promise<void> {
+    const exists = await manager
+      .getRepository(CustomerProfile)
+      .existsBy({ user_id: userId });
+    if (!exists)
+      throw new ApiError(403, 'FORBIDDEN', 'Customer access required.');
+  }
+
   async deliveryAddress(
     userId: string,
     addressId: string,

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDefined,
@@ -17,6 +17,11 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+
+const trim = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim() : value;
+const trimLower = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim().toLowerCase() : value;
 
 // ---- Shared pagination query ----
 export class PaginationQuery {
@@ -149,7 +154,7 @@ export class ListRestaurantsQuery extends PaginationQuery {
     type: 'string',
     description: 'activation status.',
     nullable: true,
-    enum: ['Active', 'Suspended'],
+    enum: ['Pending', 'Active', 'Suspended'],
     required: false,
   })
   @IsOptional()
@@ -169,6 +174,7 @@ export class AdminCreateDeliveryProfileDto {
     example: 'Local Delivery',
     required: true,
   })
+  @Transform(trim)
   @IsString({ message: 'Enter the company name as text.' })
   @Length(1, 150, {
     message: 'Company name must be between 1 and 150 characters.',
@@ -183,6 +189,7 @@ export class AdminCreateDeliveryProfileDto {
     example: '+201000000001',
     required: true,
   })
+  @Transform(trim)
   @Matches(/^\+[1-9]\d{7,14}$/, {
     message:
       'Enter a phone number starting with + and the country code, followed by digits only (8–15 digits in total).',
@@ -198,6 +205,7 @@ export class AdminCreateDeliveryProfileDto {
     required: false,
   })
   @IsOptional()
+  @Transform(trimLower)
   @IsEmail({}, { message: 'Enter a valid company email address.' })
   @MaxLength(254, {
     message: 'Company email must be 254 characters or fewer.',
@@ -212,6 +220,7 @@ export class AdminCreateDeliveryProfileDto {
     example: '5 Main Street, Ismailia',
     required: true,
   })
+  @Transform(trim)
   @IsString({ message: 'Enter the company address as text.' })
   @Length(1, 2000, {
     message: 'Company address must be between 1 and 2,000 characters.',
@@ -239,6 +248,7 @@ export class AdminCreateUserDto {
     example: 'Ahmed Ali',
     required: true,
   })
+  @Transform(trim)
   @IsString({ message: 'Enter the full name as text.' })
   @Length(1, 150, {
     message: 'Full name must be between 1 and 150 characters.',
@@ -253,6 +263,7 @@ export class AdminCreateUserDto {
     example: 'ahmed@example.com',
     required: true,
   })
+  @Transform(trimLower)
   @IsEmail({}, { message: 'Enter a valid email address.' })
   @MaxLength(254, { message: 'Email must be 254 characters or fewer.' })
   email!: string;
@@ -281,6 +292,7 @@ export class AdminCreateUserDto {
     example: '+201000000001',
     required: true,
   })
+  @Transform(trim)
   @Matches(/^\+[1-9]\d{7,14}$/, {
     message:
       'Enter a phone number starting with + and the country code, followed by digits only (8–15 digits in total).',

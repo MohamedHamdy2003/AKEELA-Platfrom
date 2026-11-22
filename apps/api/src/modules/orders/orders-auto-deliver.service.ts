@@ -15,6 +15,7 @@ import { OrderEventsGateway } from './order-events.gateway';
 export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OrdersAutoDeliverService.name);
   private timer?: NodeJS.Timeout;
+  private inProgress = false;
 
   constructor(
     private readonly db: DataSource,
@@ -46,6 +47,8 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
   }
 
   async autoDeliver(): Promise<void> {
+    if (this.inProgress) return;
+    this.inProgress = true;
     try {
       const cutoff = new Date(Date.now() - 90 * 60 * 1000);
       const repo = this.db.getRepository(Order);
@@ -54,10 +57,10 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
         .select(['o.order_id'])
         .where("o.status = 'Picked_Up'")
         .andWhere('o.updated_at <= :cutoff', { cutoff })
+        .orderBy('o.updated_at', 'ASC')
         .skip(0)
         .take(100)
-        .getMany()
-        .catch(() => [] as Order[]);
+        .getMany();
 
       if (!stale.length) return;
 
@@ -67,22 +70,27 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
 
       for (const order of stale) {
         try {
-          await this.db.transaction('SERIALIZABLE', async (m) => {
-            const locked = await m
-              .getRepository(Order)
-              .createQueryBuilder('o')
-              .where('o.order_id = :id', { id: order.order_id })
-              .andWhere("o.status = 'Picked_Up'")
-              .andWhere('o.updated_at <= :cutoff', { cutoff })
-              .setLock('pessimistic_write')
-              .getOne();
-            if (!locked) return; // already transitioned by another operation
-            locked.status = 'Delivered';
-            await m.getRepository(Order).save(locked);
-          });
+          const updated = await this.db.transaction(
+            'SERIALIZABLE',
+            async (m) => {
+              const locked = await m
+                .getRepository(Order)
+                .createQueryBuilder('o')
+                .where('o.order_id = :id', { id: order.order_id })
+                .andWhere("o.status = 'Picked_Up'")
+                .andWhere('o.updated_at <= :cutoff', { cutoff })
+                .setLock('pessimistic_write')
+                .getOne();
+              if (!locked) return false; // already transitioned by another operation
+              locked.status = 'Delivered';
+              await m.getRepository(Order).save(locked);
+              return true;
+            },
+          );
+          if (!updated) continue;
           // Reload fresh order to broadcast correct state
           const fresh = await repo.findOneBy({ order_id: order.order_id });
-          if (fresh) await this.events.notify('order.updated', fresh);
+          if (fresh) void this.events.notify('order.updated', fresh);
         } catch (err) {
           this.logger.warn(
             `Failed to auto-deliver order ${order.order_id}: ${String(err)}`,
@@ -91,6 +99,8 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
       }
     } catch (err) {
       this.logger.error(`Auto-deliver scan failed: ${String(err)}`);
+    } finally {
+      this.inProgress = false;
     }
   }
 }

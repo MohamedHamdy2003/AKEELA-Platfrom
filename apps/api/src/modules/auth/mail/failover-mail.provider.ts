@@ -24,22 +24,22 @@ export function classifyMailError(error: unknown): FailureKind {
     `${err?.code ?? ''} ${err?.message ?? ''} ${err?.response ?? ''}`.toLowerCase();
 
   if (
-    code === 429 ||
-    code === 452 ||
-    /quota|daily|limit|rate|credit|exceeded|too many|monthly/.test(text)
-  ) {
-    return 'quota';
-  }
-
-  if (
     code !== undefined &&
     code >= 500 &&
     code < 600 &&
-    /user unknown|no such user|mailbox unavailable|recipient|invalid address|5\.1\.1/.test(
+    /5\.1\.1|5\.1\.2|5\.2\.2|user unknown|no such user|mailbox unavailable|mailbox full|mailbox quota|exceeded storage|recipient|invalid address/.test(
       text,
     )
   ) {
     return 'recipient';
+  }
+
+  if (
+    code === 429 ||
+    code === 452 ||
+    /\b(quota|daily|limit|rate|credit|exceeded|too many|monthly)\b/.test(text)
+  ) {
+    return 'quota';
   }
 
   return 'transient';
@@ -67,26 +67,47 @@ export class FailoverMailProvider implements MailProvider {
     this.now = options.now ?? (() => Date.now());
   }
 
-  private orderedCandidates(): MailProvider[] {
-    const now = this.now();
-    const active: MailProvider[] = [];
-    const cooling: Array<{ provider: MailProvider; until: number }> = [];
+  private slotKey(index: number, provider: MailProvider): string {
+    return `${index}:${provider.name}`;
+  }
 
-    for (const provider of this.providers) {
-      const until = this.cooldownUntil.get(provider.name) ?? 0;
+  private orderedCandidates(): Array<{
+    key: string;
+    index: number;
+    provider: MailProvider;
+  }> {
+    const now = this.now();
+    const active: Array<{
+      key: string;
+      index: number;
+      provider: MailProvider;
+    }> = [];
+    const cooling: Array<{
+      key: string;
+      index: number;
+      provider: MailProvider;
+      until: number;
+    }> = [];
+
+    for (let index = 0; index < this.providers.length; index += 1) {
+      const provider = this.providers[index]!;
+      const key = this.slotKey(index, provider);
+      const until = this.cooldownUntil.get(key) ?? 0;
       if (until <= now) {
-        this.cooldownUntil.delete(provider.name);
-        active.push(provider);
+        this.cooldownUntil.delete(key);
+        active.push({ key, index, provider });
       } else {
-        cooling.push({ provider, until });
+        cooling.push({ key, index, provider, until });
       }
     }
 
-    if (active.length > 0) return active;
-    // Safety net: if every provider is cooling down, still attempt delivery
-    // starting with the one whose cooldown expires earliest.
     cooling.sort((a, b) => a.until - b.until);
-    return cooling.map((item) => item.provider);
+    // Try active providers first; keep cooling providers at the end as a last-resort safety net
+    // if every active provider fails on the current request.
+    return [
+      ...active,
+      ...cooling.map(({ key, index, provider }) => ({ key, index, provider })),
+    ];
   }
 
   async send(message: OutgoingMail): Promise<void> {
@@ -94,11 +115,11 @@ export class FailoverMailProvider implements MailProvider {
     let lastError: unknown;
 
     for (let i = 0; i < candidates.length; i += 1) {
-      const provider = candidates[i]!;
+      const { key, index, provider } = candidates[i]!;
       try {
         await provider.send(message);
-        this.cooldownUntil.delete(provider.name);
-        if (provider !== this.providers[0]) {
+        this.cooldownUntil.delete(key);
+        if (index !== 0) {
           this.logger.log(
             `OTP email delivered via fallback provider "${provider.name}".`,
           );
@@ -112,7 +133,7 @@ export class FailoverMailProvider implements MailProvider {
         }
         const cooldownMs =
           kind === 'quota' ? this.quotaCooldownMs : this.transientCooldownMs;
-        this.cooldownUntil.set(provider.name, this.now() + cooldownMs);
+        this.cooldownUntil.set(key, this.now() + cooldownMs);
 
         const hasNext = i < candidates.length - 1;
         this.logger.warn(

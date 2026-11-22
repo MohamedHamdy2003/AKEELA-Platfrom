@@ -171,6 +171,80 @@ test('FailoverMailProvider does not burn fallback quota on invalid recipient err
   assert.equal(p1.calls, 2);
 });
 
+test('FailoverMailProvider handles recipient mailbox-quota 550, same-vendor slot isolation, and cooling last-resort fallback', async () => {
+  let clock = 20_000_000;
+
+  // 1) 550 5.2.2 recipient mailbox quota must be treated as recipient error, NOT provider quota exhaustion
+  assert.equal(
+    classifyMailError({
+      responseCode: 550,
+      message: '5.2.2 Mailbox quota exceeded for recipient',
+    }),
+    'recipient',
+  );
+  // Word-boundary quota classification should not falsely trigger on substrings like "moderate" or "separate"
+  assert.equal(
+    classifyMailError({
+      responseCode: 450,
+      message: 'Temporary separate relay error',
+    }),
+    'transient',
+  );
+
+  // 2) Two same-vendor providers ('gmail' and 'gmail') track cooldowns independently by slot
+  const gmailA = stubProvider('gmail', async () => {
+    throw Object.assign(new Error('Daily quota exceeded'), {
+      responseCode: 429,
+    });
+  });
+  const gmailB = stubProvider('gmail', async () => {});
+  const sameVendor = new FailoverMailProvider(
+    [gmailA.provider, gmailB.provider],
+    { quotaCooldownMs: 60_000, now: () => clock },
+  );
+  await sameVendor.send(sampleMail);
+  assert.equal(gmailA.calls, 1);
+  assert.equal(gmailB.calls, 1);
+
+  clock += 1_000;
+  await sameVendor.send(sampleMail);
+  // gmailA is cooling, gmailB is active and served immediately
+  assert.equal(gmailA.calls, 1);
+  assert.equal(gmailB.calls, 2);
+
+  // 3) When active fallback fails during primary's cooldown, primary is still retried as a last resort
+  let primaryRecovered = false;
+  let secondaryDown = false;
+  const pPrimary = stubProvider('resend', async () => {
+    if (!primaryRecovered) {
+      throw Object.assign(new Error('Connection timeout'), {
+        code: 'ETIMEDOUT',
+      });
+    }
+  });
+  const pSecondary = stubProvider('brevo', async () => {
+    if (secondaryDown) {
+      throw Object.assign(new Error('Daily limit exceeded'), {
+        responseCode: 429,
+      });
+    }
+  });
+  const lastResort = new FailoverMailProvider(
+    [pPrimary.provider, pSecondary.provider],
+    { transientCooldownMs: 60_000, quotaCooldownMs: 60_000, now: () => clock },
+  );
+  await lastResort.send(sampleMail); // primary fails -> cools down, secondary delivers
+  assert.equal(pPrimary.calls, 1);
+  assert.equal(pSecondary.calls, 1);
+
+  primaryRecovered = true;
+  secondaryDown = true;
+  clock += 1_000;
+  await lastResort.send(sampleMail); // secondary fails -> cooling primary tried as last resort & succeeds
+  assert.equal(pPrimary.calls, 2);
+  assert.equal(pSecondary.calls, 2);
+});
+
 test('environment validates multi-provider SMTP configuration for Resend, Brevo, and optional 3rd fallback', () => {
   const config = validateEnvironment({
     ...envBase,

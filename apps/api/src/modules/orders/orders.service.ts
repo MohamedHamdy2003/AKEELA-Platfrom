@@ -127,9 +127,10 @@ export class OrdersService {
           notes: input.notes ?? null,
         }),
       );
-      for (const row of ready.cart.items) {
-        const item = await m.getRepository(OrderItem).save(
-          m.getRepository(OrderItem).create({
+      const itemRepo = m.getRepository(OrderItem);
+      const savedItems = await itemRepo.save(
+        ready.cart.items.map((row) =>
+          itemRepo.create({
             order_id: order.order_id,
             rest_id: order.rest_id,
             prod_id: row.prod_id,
@@ -138,24 +139,26 @@ export class OrdersService {
             unit_price: row.unit_price,
             quantity: row.quantity,
           }),
-        );
-        if (row.addons.length)
-          await m.getRepository(OrderItemAddon).save(
-            row.addons.map((a) => ({
-              order_item_id: item.order_item_id,
-              rest_id: order.rest_id,
-              prod_id: row.prod_id!,
-              addon_id: a.addon_id,
-              addon_name: a.addon_name,
-              unit_price: a.unit_price,
-              quantity: a.quantity,
-            })),
-          );
+        ),
+      );
+      const allAddonRows = ready.cart.items.flatMap((row, idx) =>
+        row.addons.map((a) => ({
+          order_item_id: savedItems[idx]!.order_item_id,
+          rest_id: order.rest_id,
+          prod_id: row.prod_id!,
+          addon_id: a.addon_id,
+          addon_name: a.addon_name,
+          unit_price: a.unit_price,
+          quantity: a.quantity,
+        })),
+      );
+      if (allAddonRows.length) {
+        await m.getRepository(OrderItemAddon).save(allAddonRows);
       }
       await this.cart.clearInTransaction(userId, m);
       return this.details(userId, order.order_id, m);
     });
-    await this.announce(result.order_id, 'order.created');
+    void this.announce(result.order_id, 'order.created');
     return result;
   }
   async list(userId: string, query: ListOrdersQuery) {
@@ -350,7 +353,7 @@ export class OrdersService {
               [order.status, order.company_id, order.driver_id].join(':'),
           };
         });
-        if (result.changed) await this.announce(id, 'order.updated');
+        if (result.changed) void this.announce(id, 'order.updated');
         return result.state;
       } catch (error) {
         const code = (error as { driverError?: { code?: string } }).driverError
@@ -429,31 +432,54 @@ export class OrdersService {
     });
   }
   async cancel(userId: string, id: string) {
-    const result = await this.cart.transaction(userId, async (m) => {
-      const repo = m.getRepository(Order);
-      const order = await repo
-        .createQueryBuilder('o')
-        .where('o.customer_id = :userId AND o.order_id = :id', { userId, id })
-        .setLock('pessimistic_write')
-        .getOne();
-      if (!order) throw new ApiError(404, 'NOT_FOUND', 'Order not found.');
-      if (order.status !== 'Pending')
-        throw new ApiError(
-          409,
-          'CONFLICT',
-          'Only Pending orders can be cancelled.',
-        );
-      order.status = 'Cancelled';
-      const saved = await repo.save(order);
-      return {
-        order_id: saved.order_id,
-        status: saved.status,
-        company_id: saved.company_id,
-        driver_id: saved.driver_id,
-        updated_at: saved.updated_at,
-      };
-    });
-    await this.announce(result.order_id, 'order.updated');
-    return result;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const result = await this.db.transaction('SERIALIZABLE', async (m) => {
+          const account = await this.users.byId(userId, m, true);
+          if (
+            !account ||
+            account.role !== 'Customer' ||
+            !account.is_active ||
+            !account.email_verified_at
+          )
+            throw new ApiError(
+              403,
+              'FORBIDDEN',
+              'An active verified customer account is required.',
+            );
+          const repo = m.getRepository(Order);
+          const order = await repo
+            .createQueryBuilder('o')
+            .where('o.customer_id = :userId AND o.order_id = :id', {
+              userId,
+              id,
+            })
+            .setLock('pessimistic_write')
+            .getOne();
+          if (!order) throw new ApiError(404, 'NOT_FOUND', 'Order not found.');
+          if (order.status !== 'Pending')
+            throw new ApiError(
+              409,
+              'CONFLICT',
+              'Only Pending orders can be cancelled.',
+            );
+          order.status = 'Cancelled';
+          const saved = await repo.save(order);
+          return this.state(saved);
+        });
+        void this.announce(result.order_id, 'order.updated');
+        return result;
+      } catch (error) {
+        const code = (error as { driverError?: { code?: string } }).driverError
+          ?.code;
+        if (!['40001', '40P01'].includes(code ?? '')) throw error;
+        if (attempt >= 2)
+          throw new ApiError(
+            409,
+            'ORDER_CONFLICT',
+            'The order changed. Refresh it and try again.',
+          );
+      }
+    }
   }
 }

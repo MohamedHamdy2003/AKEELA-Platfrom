@@ -48,23 +48,32 @@ export class AuthCleanupService implements OnModuleInit, OnModuleDestroy {
     try {
       const sessionCutoff = new Date(Date.now() - SESSION_RETENTION_MS);
       const challengeCutoff = new Date(Date.now() - CHALLENGE_RETENTION_MS);
-      const [sessionsResult, challengesResult] = await Promise.all([
-        this.db
-          .createQueryBuilder()
-          .delete()
-          .from(AuthSession)
-          .where('expires_at < :cutoff OR revoked_at < :cutoff', {
-            cutoff: sessionCutoff,
-          })
-          .execute(),
-        this.db
-          .createQueryBuilder()
-          .delete()
-          .from(AuthChallenge)
-          .where('expires_at < :cutoff', { cutoff: challengeCutoff })
-          .execute(),
-      ]);
-      const sessions = sessionsResult.affected ?? 0;
+      const [expiredSessionsResult, revokedSessionsResult, challengesResult] =
+        await Promise.all([
+          this.db
+            .createQueryBuilder()
+            .delete()
+            .from(AuthSession)
+            .where('expires_at < :cutoff', { cutoff: sessionCutoff })
+            .execute(),
+          this.db
+            .createQueryBuilder()
+            .delete()
+            .from(AuthSession)
+            .where('revoked_at IS NOT NULL AND revoked_at < :cutoff', {
+              cutoff: sessionCutoff,
+            })
+            .execute(),
+          this.db
+            .createQueryBuilder()
+            .delete()
+            .from(AuthChallenge)
+            .where('expires_at < :cutoff', { cutoff: challengeCutoff })
+            .execute(),
+        ]);
+      const sessions =
+        (expiredSessionsResult.affected ?? 0) +
+        (revokedSessionsResult.affected ?? 0);
       const challenges = challengesResult.affected ?? 0;
       if (sessions > 0 || challenges > 0) {
         this.logger.log(

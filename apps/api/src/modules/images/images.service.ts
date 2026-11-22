@@ -6,6 +6,7 @@ import { mkdir, writeFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { Environment } from '../../config/environment';
+import { Semaphore } from '../../common/concurrency';
 import { AuthActor } from '../../common/http/current-actor.decorator';
 import { ApiError } from '../../common/http/api-error';
 import { UsersService } from '../users/users.service';
@@ -19,6 +20,11 @@ const TARGET_MAX_DIMENSION: Record<ImageTarget, number> = {
   offer: 1280,
   restaurant: 1600,
 };
+const MAX_TRACKED_UPLOAD_KEYS = 10_000;
+sharp.cache(false);
+sharp.concurrency(1);
+const sharpConcurrency = new Semaphore(2);
+
 @Injectable()
 export class ImagesService {
   private readonly rates = new Map<string, { until: number; count: number }>();
@@ -47,42 +53,73 @@ export class ImagesService {
         'Image must be 5MB or smaller.',
       );
     const now = Date.now();
-    for (const [key, rate] of this.rates)
-      if (rate.until <= now) this.rates.delete(key);
-    const rate = this.rates.get(actor.userId);
-    if ((rate?.count ?? 0) >= 10 || (!rate && this.rates.size >= 10000))
+    if (this.rates.size > 1000) {
+      for (const [key, rate] of this.rates)
+        if (rate.until <= now) this.rates.delete(key);
+    }
+    const current = this.rates.get(actor.userId);
+    const rate = current && current.until > now ? current : undefined;
+    if ((rate?.count ?? 0) >= 10)
       throw new ApiError(
         429,
         'RATE_LIMITED',
         'Too many image uploads. Try again in a minute.',
       );
+    if (!rate && this.rates.size >= MAX_TRACKED_UPLOAD_KEYS) {
+      for (const [key, entry] of this.rates)
+        if (entry.until <= now) this.rates.delete(key);
+      if (this.rates.size >= MAX_TRACKED_UPLOAD_KEYS) {
+        const oldest = this.rates.keys().next().value;
+        if (oldest !== undefined) this.rates.delete(oldest);
+      }
+    }
+    this.rates.delete(actor.userId);
     this.rates.set(actor.userId, {
       until: rate?.until ?? now + 60000,
       count: (rate?.count ?? 0) + 1,
     });
+    // Fast read-only pre-check avoids CPU/RAM decode and disk I/O for unauthorized or missing targets.
+    const account = await this.users.byId(actor.userId);
+    if (
+      !account?.is_active ||
+      !account.email_verified_at ||
+      account.role !== actor.role
+    )
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        'An active verified account is required.',
+      );
+    if (target === 'restaurant') {
+      await this.restaurants.assertImageWritable(actor.userId);
+    } else if (target === 'product' || target === 'offer') {
+      await this.catalog.assertImageTarget(actor.userId, target, id!);
+    }
     let encoded: Buffer;
     try {
-      const decoder = sharp(buffer, {
-        limitInputPixels: 16_777_216,
-        failOn: 'warning',
+      encoded = await sharpConcurrency.run(async () => {
+        const decoder = sharp(buffer, {
+          limitInputPixels: 16_777_216,
+          failOn: 'error',
+        });
+        const meta = await decoder.metadata();
+        if (
+          !['jpeg', 'png', 'webp'].includes(meta.format ?? '') ||
+          (meta.pages ?? 1) > 1
+        )
+          throw new Error();
+        const maxDim = TARGET_MAX_DIMENSION[target];
+        return decoder
+          .rotate()
+          .resize({
+            width: maxDim,
+            height: maxDim,
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .webp({ quality: 82, effort: 6, smartSubsample: true })
+          .toBuffer();
       });
-      const meta = await decoder.metadata();
-      if (
-        !['jpeg', 'png', 'webp'].includes(meta.format ?? '') ||
-        (meta.pages ?? 1) > 1
-      )
-        throw new Error();
-      const maxDim = TARGET_MAX_DIMENSION[target];
-      encoded = await decoder
-        .rotate()
-        .resize({
-          width: maxDim,
-          height: maxDim,
-          fit: 'inside',
-          withoutEnlargement: true,
-        })
-        .webp({ quality: 82, effort: 6, smartSubsample: true })
-        .toBuffer();
     } catch {
       throw new ApiError(
         422,

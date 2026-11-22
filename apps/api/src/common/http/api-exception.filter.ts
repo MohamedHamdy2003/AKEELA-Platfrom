@@ -5,13 +5,15 @@ import {
   HttpException,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
 
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
   catch(error: unknown, host: ArgumentsHost): void {
-    const response = host.switchToHttp().getResponse<Response>();
+    const http = host.switchToHttp();
+    const request = http.getRequest<Request | undefined>();
+    const response = http.getResponse<Response>();
     let status = 500;
     let code = 'INTERNAL_ERROR';
     let message = 'An unexpected error occurred.';
@@ -27,26 +29,35 @@ export class ApiExceptionFilter implements ExceptionFilter {
               fields?: Record<string, string[]>;
             })
           : {};
+      const isMulterFileTooLarge =
+        status === 413 &&
+        !details.code &&
+        typeof details.message === 'string' &&
+        /file too large/i.test(details.message);
       code =
         details.code ??
-        {
-          401: 'UNAUTHENTICATED',
-          403: 'FORBIDDEN',
-          404: 'NOT_FOUND',
-          429: 'RATE_LIMITED',
-        }[status] ??
-        'REQUEST_FAILED';
+        (isMulterFileTooLarge
+          ? 'IMAGE_TOO_LARGE'
+          : ({
+              401: 'UNAUTHENTICATED',
+              403: 'FORBIDDEN',
+              404: 'NOT_FOUND',
+              413: 'PAYLOAD_TOO_LARGE',
+              429: 'RATE_LIMITED',
+            }[status] ?? 'REQUEST_FAILED'));
       message =
         details.code && typeof details.message === 'string'
           ? details.message
-          : ({
-              400: 'Invalid request body.',
-              413: 'Image must be 5MB or smaller.',
-              401: 'Authentication is required.',
-              403: 'Access is denied.',
-              404: 'Record or route not found.',
-              429: 'Too many requests.',
-            }[status] ?? 'The request could not be completed.');
+          : isMulterFileTooLarge
+            ? 'Image must be 5MB or smaller.'
+            : ({
+                400: 'Invalid request body.',
+                413: 'Request payload is too large.',
+                401: 'Authentication is required.',
+                403: 'Access is denied.',
+                404: 'Record or route not found.',
+                429: 'Too many requests.',
+              }[status] ?? 'The request could not be completed.');
       fields = details.fields;
     } else if (
       error instanceof QueryFailedError &&
@@ -61,12 +72,32 @@ export class ApiExceptionFilter implements ExceptionFilter {
       error instanceof QueryFailedError &&
       (error.driverError as { code?: string }).code === '23505'
     ) {
+      const driverError = error.driverError as {
+        constraint?: string;
+        table?: string;
+      };
+      const isUserIdentityConflict =
+        driverError.table === 'users' ||
+        driverError.constraint === 'uq_users_email' ||
+        driverError.constraint === 'uq_users_phone';
       status = 409;
       code = 'CONFLICT';
-      message = 'An account with this email or phone already exists.';
+      message = isUserIdentityConflict
+        ? 'An account with this email or phone already exists.'
+        : 'A conflicting record already exists.';
     } else {
       // Never log SQL, request bodies, credentials, or raw tokens.
-      Logger.error('Unhandled request failure.', 'HTTP');
+      const method = request?.method ?? 'UNKNOWN';
+      const path = (request?.path ?? request?.url ?? '').split('?')[0] || '/';
+      const errName = error instanceof Error ? error.name : 'UnknownError';
+      const pgCode =
+        error instanceof QueryFailedError
+          ? (error.driverError as { code?: string })?.code
+          : undefined;
+      Logger.error(
+        `Unhandled request failure: ${method} ${path} [${errName}${pgCode ? ` pg:${pgCode}` : ''}]`,
+        'HTTP',
+      );
     }
     response.status(status).json({
       success: false,

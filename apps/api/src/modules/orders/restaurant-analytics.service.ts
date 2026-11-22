@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
 import { AuthActor } from '../../common/http/current-actor.decorator';
+import { formatMoneyCents, moneyCents } from '../../common/money';
 import { UsersService } from '../users/users.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 import { CatalogService } from '../catalog/catalog.service';
@@ -9,10 +10,20 @@ import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderItemAddon } from './entities/order-item-addon.entity';
 import { AnalyticsRange } from './orders.dto';
+import {
+  addDaysIso,
+  AnalyticsCache,
+  resolveCairoAnalyticsWindow,
+} from './analytics-cache';
 
 function roundRate(part: number, total: number): number {
   if (!total) return 0;
   return Math.round((part / total) * 1000) / 10;
+}
+
+function roundBigIntRate(part: bigint, total: bigint): number {
+  if (total <= 0n) return 0;
+  return Number((part * 1000n + total / 2n) / total) / 10;
 }
 
 function parseOptionalMinutes(value: string | number | null | undefined) {
@@ -23,14 +34,10 @@ function parseOptionalMinutes(value: string | number | null | undefined) {
     : null;
 }
 
-function addDaysIso(isoDate: string, deltaDays: number): string {
-  const [y, m, d] = isoDate.split('-').map(Number);
-  const dt = new Date(Date.UTC(y!, m! - 1, d! + deltaDays));
-  return dt.toISOString().slice(0, 10);
-}
-
 @Injectable()
 export class RestaurantAnalyticsService {
+  private readonly cache = new AnalyticsCache();
+
   constructor(
     private readonly db: DataSource,
     private readonly users: UsersService,
@@ -69,49 +76,15 @@ export class RestaurantAnalyticsService {
     return profile.rest_id;
   }
 
-  private async resolveWindow(range: AnalyticsRange): Promise<{
-    todayIso: string;
-    startIso: string | null;
-    since: Date | null;
-    prevSince: Date | null;
-    days: number | null;
-  }> {
-    const [{ today_iso }] = (await this.db.query(
-      "SELECT to_char((NOW() AT TIME ZONE 'Africa/Cairo')::date, 'YYYY-MM-DD') AS today_iso",
-    )) as [{ today_iso: string }];
-
-    if (range === 'all') {
-      return {
-        todayIso: today_iso,
-        startIso: null,
-        since: null,
-        prevSince: null,
-        days: null,
-      };
-    }
-
-    const days =
-      range === 'today' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : 90;
-    const startIso = addDaysIso(today_iso, -(days - 1));
-    const prevStartIso = addDaysIso(startIso, -days);
-
-    const [{ since, prev_since }] = (await this.db.query(
-      "SELECT (CAST($1 AS date)::timestamp AT TIME ZONE 'Africa/Cairo') AS since, (CAST($2 AS date)::timestamp AT TIME ZONE 'Africa/Cairo') AS prev_since",
-      [startIso, prevStartIso],
-    )) as [{ since: Date; prev_since: Date }];
-
-    return {
-      todayIso: today_iso,
-      startIso,
-      since: new Date(since),
-      prevSince: new Date(prev_since),
-      days,
-    };
-  }
-
   async overview(actor: AuthActor, range: AnalyticsRange = '30d') {
     const restId = await this.assertActiveRestaurant(actor);
-    const window = await this.resolveWindow(range);
+    return this.cache.getOrLoad(`restaurant:${restId}:${range}`, () =>
+      this.computeOverview(restId, range),
+    );
+  }
+
+  private async computeOverview(restId: string, range: AnalyticsRange) {
+    const window = await resolveCairoAnalyticsWindow(this.db, range);
     const ordersRepo = this.db.getRepository(Order);
 
     const kpiQuery = (start: Date | null, end: Date | null) => {
@@ -182,15 +155,34 @@ export class RestaurantAnalyticsService {
       return qb.getRawOne<{ addons_revenue: string }>();
     };
 
-    const loyaltyQb = ordersRepo
-      .createQueryBuilder('o')
-      .select('o.customer_id', 'customer_id')
-      .addSelect('COUNT(*)::int', 'orders_count')
-      .where("o.rest_id = :restId AND o.status = 'Delivered'", { restId })
-      .groupBy('o.customer_id');
-    if (window.since) {
-      loyaltyQb.andWhere('o.created_at >= :since', { since: window.since });
-    }
+    const loyaltyQuery = async (): Promise<{
+      unique_customers: number;
+      repeat_customers: number;
+    }> => {
+      const params: unknown[] = [restId];
+      const sinceClause = window.since
+        ? (() => {
+            params.push(window.since);
+            return 'AND o.created_at >= $2';
+          })()
+        : '';
+      const [row] = (await this.db.query(
+        `SELECT
+          COUNT(*)::int AS unique_customers,
+          COUNT(*) FILTER (WHERE orders_count >= 2)::int AS repeat_customers
+        FROM (
+          SELECT o.customer_id, COUNT(*) AS orders_count
+          FROM orders o
+          WHERE o.rest_id = $1 AND o.status = 'Delivered' ${sinceClause}
+          GROUP BY o.customer_id
+        ) sub`,
+        params,
+      )) as [{ unique_customers: number; repeat_customers: number }];
+      return {
+        unique_customers: Number(row?.unique_customers ?? 0),
+        repeat_customers: Number(row?.repeat_customers ?? 0),
+      };
+    };
 
     const statusQb = ordersRepo
       .createQueryBuilder('o')
@@ -220,10 +212,13 @@ export class RestaurantAnalyticsService {
       .where('o.rest_id = :restId', { restId })
       .groupBy(
         "to_char((o.created_at AT TIME ZONE 'Africa/Cairo')::date, 'YYYY-MM-DD')",
-      )
-      .orderBy('date', 'ASC');
+      );
     if (window.since) {
-      dailyQb.andWhere('o.created_at >= :since', { since: window.since });
+      dailyQb
+        .andWhere('o.created_at >= :since', { since: window.since })
+        .orderBy('date', 'ASC');
+    } else {
+      dailyQb.orderBy('date', 'DESC').limit(90);
     }
 
     const hoursQb = ordersRepo
@@ -290,31 +285,26 @@ export class RestaurantAnalyticsService {
         "COUNT(*) FILTER (WHERE o.status IN ('Accepted', 'Picked_Up'))::int",
         'active_in_progress',
       )
-      .where('o.rest_id = :restId', { restId, stalePendingCutoff });
+      .where(
+        "o.rest_id = :restId AND o.status IN ('Pending', 'Accepted', 'Picked_Up')",
+        { restId, stalePendingCutoff },
+      );
 
-    const [
-      currentRow,
-      prevRow,
-      addonsRevRow,
-      prevAddonsRevRow,
-      loyaltyRows,
-      statusRows,
-      dailyRows,
-      hourRows,
-      itemRows,
-      addonRows,
-      liveAlertRow,
-      menuSummary,
-    ] = await Promise.all([
-      kpiQuery(window.since, null),
-      window.since && window.prevSince
-        ? kpiQuery(window.prevSince, window.since)
-        : Promise.resolve(null),
-      addonsRevenueQuery(window.since, null),
-      window.since && window.prevSince
-        ? addonsRevenueQuery(window.prevSince, window.since)
-        : Promise.resolve(null),
-      loyaltyQb.getRawMany<{ customer_id: string; orders_count: number }>(),
+    // Execute in small bounded batches (<= 4 concurrent queries) to avoid exhausting the pool.
+    const [currentRow, prevRow, addonsRevRow, prevAddonsRevRow] =
+      await Promise.all([
+        kpiQuery(window.since, null),
+        window.since && window.prevSince
+          ? kpiQuery(window.prevSince, window.since)
+          : Promise.resolve(null),
+        addonsRevenueQuery(window.since, null),
+        window.since && window.prevSince
+          ? addonsRevenueQuery(window.prevSince, window.since)
+          : Promise.resolve(null),
+      ]);
+
+    const [loyalty, statusRows, rawDailyRows, hourRows] = await Promise.all([
+      loyaltyQuery(),
       statusQb.getRawMany<{ status: OrderStatus; count: number }>(),
       dailyQb.getRawMany<{
         date: string;
@@ -323,6 +313,9 @@ export class RestaurantAnalyticsService {
         food_revenue: string;
       }>(),
       hoursQb.getRawMany<{ hour: number; orders: number }>(),
+    ]);
+
+    const [itemRows, addonRows, liveAlertRow, menuSummary] = await Promise.all([
       itemsQb.getRawMany<{
         prod_id: string | null;
         offer_id: string | null;
@@ -342,6 +335,8 @@ export class RestaurantAnalyticsService {
       }>(),
       this.catalog.restaurantMenuSummary(restId),
     ]);
+
+    const dailyRows = window.since ? rawDailyRows : [...rawDailyRows].reverse();
 
     const status_breakdown: Record<OrderStatus, number> = {
       Pending: 0,
@@ -388,7 +383,7 @@ export class RestaurantAnalyticsService {
         );
       }
     } else {
-      for (const row of dailyRows.slice(-90)) {
+      for (const row of dailyRows) {
         daily_series.push({
           date: row.date,
           orders: Number(row.orders),
@@ -410,8 +405,8 @@ export class RestaurantAnalyticsService {
     const catByProdId = new Map(
       menuSummary.products.map((p) => [p.prod_id, p.cat_title]),
     );
-    const catAgg = new Map<string, { units: number; revenueCents: number }>();
-    let totalItemsRevenueCents = 0;
+    const catAgg = new Map<string, { units: number; revenueCents: bigint }>();
+    let totalItemsRevenueCents = 0n;
 
     const aggregatedItems = new Map<
       string,
@@ -419,13 +414,13 @@ export class RestaurantAnalyticsService {
         item_name: string;
         item_type: 'product' | 'offer';
         units_sold: number;
-        revenueCents: number;
+        revenueCents: bigint;
       }
     >();
 
     for (const row of itemRows) {
       const units = Number(row.units_sold);
-      const revCents = Math.round(Number(row.revenue) * 100);
+      const revCents = moneyCents(row.revenue);
       totalItemsRevenueCents += revCents;
       if (row.prod_id) {
         unitsByProdId.set(
@@ -461,28 +456,32 @@ export class RestaurantAnalyticsService {
       }
     }
 
+    const compareBigIntDesc = (a: bigint, b: bigint) =>
+      a > b ? -1 : a < b ? 1 : 0;
+
     const top_items = [...aggregatedItems.values()]
       .sort(
         (a, b) =>
-          b.revenueCents - a.revenueCents || b.units_sold - a.units_sold,
+          compareBigIntDesc(a.revenueCents, b.revenueCents) ||
+          b.units_sold - a.units_sold,
       )
       .slice(0, 8)
       .map((item) => ({
         item_name: item.item_name,
         item_type: item.item_type,
         units_sold: item.units_sold,
-        revenue: (item.revenueCents / 100).toFixed(2),
-        share_pct: roundRate(item.revenueCents, totalItemsRevenueCents),
+        revenue: formatMoneyCents(item.revenueCents),
+        share_pct: roundBigIntRate(item.revenueCents, totalItemsRevenueCents),
       }));
 
     const category_breakdown = [...catAgg.entries()]
-      .sort((a, b) => b[1].revenueCents - a[1].revenueCents)
+      .sort((a, b) => compareBigIntDesc(a[1].revenueCents, b[1].revenueCents))
       .slice(0, 8)
       .map(([cat_title, agg]) => ({
         cat_title,
         units_sold: agg.units,
-        revenue: (agg.revenueCents / 100).toFixed(2),
-        share_pct: roundRate(agg.revenueCents, totalItemsRevenueCents),
+        revenue: formatMoneyCents(agg.revenueCents),
+        share_pct: roundBigIntRate(agg.revenueCents, totalItemsRevenueCents),
       }));
 
     const slow_items = menuSummary.products
@@ -496,14 +495,13 @@ export class RestaurantAnalyticsService {
       }))
       .sort(
         (a, b) =>
-          a.units_sold - b.units_sold || Number(b.price) - Number(a.price),
+          a.units_sold - b.units_sold ||
+          compareBigIntDesc(moneyCents(a.price), moneyCents(b.price)),
       )
       .slice(0, 5);
 
-    const uniqueCustomers = loyaltyRows.length;
-    const repeatCustomers = loyaltyRows.filter(
-      (r) => Number(r.orders_count) >= 2,
-    ).length;
+    const uniqueCustomers = loyalty.unique_customers;
+    const repeatCustomers = loyalty.repeat_customers;
 
     const totalOrders = Number(currentRow?.total_orders ?? 0);
     const deliveredOrders = Number(currentRow?.delivered_orders ?? 0);
