@@ -25,6 +25,15 @@ const folders = (await readdir(collection, { withFileTypes: true }))
   .map((item) => item.name)
   .sort();
 assert.ok(folders.length > 0);
+const folderPrefixes = new Set(folders.map((name) => name.slice(0, 2)));
+for (const [number, section] of sections.entries()) {
+  if (/^\| (GET|POST|PUT|PATCH|DELETE) \| `([^`]+)`/m.test(section)) {
+    assert.ok(
+      folderPrefixes.has(number),
+      `Missing Bruno folder for HTTP feature section ${number}`,
+    );
+  }
+}
 const inventory = [];
 for (const folder of folders) {
   lang.collectionBruToJson(await read(`${folder}/folder.bru`));

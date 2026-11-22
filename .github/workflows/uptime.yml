@@ -88,7 +88,10 @@ jobs:
                 --title "[Uptime Alert] Production health check failed" \
                 --body "$body"
             else
-              gh issue comment "$issue_number" --repo "$GITHUB_REPOSITORY" --body "$body"
+              last_comment="$(gh issue view "$issue_number" --repo "$GITHUB_REPOSITORY" --json body,comments --jq '(.comments[-1].body // .body)')"
+              if ! grep -Fq "$PROBE_DETAILS" <<<"$last_comment"; then
+                gh issue comment "$issue_number" --repo "$GITHUB_REPOSITORY" --body "$body"
+              fi
             fi
             exit 1
           elif [[ -n "$issue_number" ]]; then

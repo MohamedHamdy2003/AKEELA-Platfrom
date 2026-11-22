@@ -1,10 +1,19 @@
-// Inputs have already passed the numeric(12,2) DTO validation.
+const MONEY_PATTERN = /^\d+(\.\d{1,2})?$/;
+
 export function moneyCents(value: string): bigint {
+  if (!MONEY_PATTERN.test(value)) {
+    throw new RangeError(`Invalid money amount: ${value}`);
+  }
   const [whole = '0', fraction = ''] = value.split('.');
   return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
 }
 
+export function formatMoneyCents(cents: bigint): string {
+  const sign = cents < 0n ? '-' : '';
+  const abs = cents < 0n ? -cents : cents;
+  return `${sign}${abs / 100n}.${(abs % 100n).toString().padStart(2, '0')}`;
+}
+
 export function moneyAmount(value: string): string {
-  const cents = moneyCents(value);
-  return `${cents / 100n}.${(cents % 100n).toString().padStart(2, '0')}`;
+  return formatMoneyCents(moneyCents(value));
 }

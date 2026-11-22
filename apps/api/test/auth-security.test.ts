@@ -54,12 +54,25 @@ test('OTP hashes bind both user and purpose; refresh tokens are random opaque va
 
 function context(
   ip: string,
-  email: string,
+  email: string | undefined,
   headers: Record<string, unknown>,
+  actorUserId?: string,
 ): ExecutionContext {
   return {
     switchToHttp: () => ({
-      getRequest: () => ({ ip, body: { email } }),
+      getRequest: () => ({
+        ip,
+        body: email !== undefined ? { email } : {},
+        ...(actorUserId
+          ? {
+              actor: {
+                userId: actorUserId,
+                sessionId: '00000000-0000-4000-8000-000000000001',
+                role: 'Customer',
+              },
+            }
+          : {}),
+      }),
       getResponse: () => ({
         setHeader: (key: string, value: unknown) => {
           headers[key] = value;
@@ -78,6 +91,19 @@ test('auth account limit applies across IPs and emits Retry-After', () => {
   assert.throws(
     () =>
       guard.canActivate(context('127.0.0.2', ' alice@example.com ', headers)),
+    (error: unknown) => error instanceof ApiError && error.getStatus() === 429,
+  );
+  assert.ok(Number(headers['Retry-After']) > 0);
+});
+test('auth account limit applies to authenticated actor routes without email body (e.g. PATCH /me/password)', () => {
+  const guard = new AuthRateLimitGuard(config);
+  const headers: Record<string, unknown> = {};
+  assert.equal(
+    guard.canActivate(context('127.0.0.1', undefined, headers, '42')),
+    true,
+  );
+  assert.throws(
+    () => guard.canActivate(context('127.0.0.2', undefined, headers, '42')),
     (error: unknown) => error instanceof ApiError && error.getStatus() === 429,
   );
   assert.ok(Number(headers['Retry-After']) > 0);

@@ -1,5 +1,11 @@
 import { DetailWorkspace } from './detail-workspace';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import {
   AlertTriangle,
   Ban,
@@ -13,6 +19,7 @@ import {
 import { ApiClient, ApiError, query } from './api';
 import {
   statuses,
+  type Driver,
   type Order,
   type OrderStatus,
   type OrderStatusCounts,
@@ -36,11 +43,19 @@ import {
   useResource,
 } from './ui';
 export type OrderDateFilters = { date_from: string; date_to: string };
+const DELIVERY_STATUSES: OrderStatus[] = [
+  'Accepted',
+  'Picked_Up',
+  'Delivered',
+  'Failed',
+];
 export function OrdersBoard({
   api,
   prefix,
   revision,
   delivery = false,
+  initialStatus,
+  onInitialStatusConsumed,
   actions,
   dateFields,
 }: {
@@ -48,6 +63,8 @@ export function OrdersBoard({
   prefix: string;
   revision: number;
   delivery?: boolean;
+  initialStatus?: string;
+  onInitialStatusConsumed?: () => void;
   actions: (order: Order, refresh: () => void) => ReactNode;
   dateFields?: (
     value: OrderDateFilters,
@@ -56,17 +73,28 @@ export function OrdersBoard({
 }) {
   const [page, setPage] = useState(1),
     [filters, setFilters] = useState({
-      status: '',
+      status: initialStatus ?? '',
       date_from: '',
       date_to: '',
     }),
     [id, setId] = useState<string | null>(null),
     [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (initialStatus !== undefined && initialStatus !== '') {
+      setFilters((current) => ({ ...current, status: initialStatus }));
+      setPage(1);
+      onInitialStatusConsumed?.();
+    }
+  }, [initialStatus, onInitialStatusConsumed]);
   const list = useResource<OrderSummary[]>(
     api,
     prefix + '/orders' + query({ page, per_page: 10, ...filters }),
     revision + tick,
   );
+  useEffect(() => {
+    const last = list.result?.meta?.last_page;
+    if (last && page > last) setPage(Math.max(1, last));
+  }, [list.result?.meta?.last_page, page]);
   const detail = useResource<Order>(
     api,
     id ? prefix + '/orders/' + id : null,
@@ -81,7 +109,19 @@ export function OrdersBoard({
       api,
       delivery ? '/delivery-company/drivers?per_page=1&is_active=true' : null,
       revision + tick,
+    ),
+    driversDirectory = useResource<Driver[]>(
+      api,
+      delivery ? '/delivery-company/drivers?per_page=100' : null,
+      revision + tick,
     );
+  const driverNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const driver of driversDirectory.result?.data ?? []) {
+      map.set(driver.driver_id, driver.driver_name);
+    }
+    return map;
+  }, [driversDirectory.result]);
   const statusCounts = counts.result?.data;
   const refresh = () => setTick((value) => value + 1);
   const toggleStatus = (target: string) => {
@@ -91,6 +131,9 @@ export function OrdersBoard({
     }));
     setPage(1);
   };
+  const availableStatuses = delivery
+    ? DELIVERY_STATUSES
+    : (Object.keys(statuses) as OrderStatus[]);
   const metricItems = delivery
     ? [
         {
@@ -116,6 +159,14 @@ export function OrdersBoard({
           status: 'Delivered' as OrderStatus,
           active: filters.status === 'Delivered',
           onClick: () => toggleStatus('Delivered'),
+        },
+        {
+          label: statuses.Failed,
+          value: statusCounts?.Failed ?? null,
+          icon: <AlertTriangle size={20} />,
+          status: 'Failed' as OrderStatus,
+          active: filters.status === 'Failed',
+          onClick: () => toggleStatus('Failed'),
         },
         {
           label: 'السائقون النشطون',
@@ -191,6 +242,11 @@ export function OrdersBoard({
           {detail.result && (
             <OrderFacts
               order={detail.result.data}
+              driverName={
+                detail.result.data.driver_id
+                  ? driverNameById.get(detail.result.data.driver_id)
+                  : undefined
+              }
               actions={actions(detail.result.data, refresh)}
             />
           )}
@@ -217,9 +273,9 @@ export function OrdersBoard({
               }}
             >
               <option value="">جميع الحالات</option>
-              {Object.entries(statuses).map(([value, label]) => (
+              {availableStatuses.map((value) => (
                 <option value={value} key={value}>
-                  {label}
+                  {statuses[value]}
                 </option>
               ))}
             </select>
@@ -289,44 +345,58 @@ export function OrdersBoard({
                   </tr>
                 </thead>
                 <tbody>
-                  {list.result?.data.map((order) => (
-                    <tr
-                      key={order.order_id}
-                      data-selected={id === order.order_id}
-                    >
-                      <td>
-                        <strong>
-                          <bdi>#{order.order_id}</bdi>
-                        </strong>
-                      </td>
-                      <td>{dateTime(order.created_at)}</td>
-                      <td>
-                        <Badge status={order.status} />
-                      </td>
-                      {delivery && (
+                  {list.result?.data.map((order) => {
+                    const driverName = order.driver_id
+                      ? driverNameById.get(order.driver_id)
+                      : undefined;
+                    return (
+                      <tr
+                        key={order.order_id}
+                        data-selected={id === order.order_id}
+                      >
                         <td>
-                          <bdi>
-                            {order.driver_id
-                              ? '#' + order.driver_id
-                              : 'لم يُسند'}
-                          </bdi>
+                          <strong>
+                            <bdi>#{order.order_id}</bdi>
+                          </strong>
                         </td>
-                      )}
-                      <td>
-                        <bdi>{money(order.total_price)}</bdi>
-                      </td>
-                      <td>
-                        <button
-                          className="button compact"
-                          aria-expanded={id === order.order_id}
-                          data-detail-record={order.order_id}
-                          onClick={() => setId(order.order_id)}
-                        >
-                          عرض التفاصيل
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        <td>{dateTime(order.created_at)}</td>
+                        <td>
+                          <Badge status={order.status} />
+                        </td>
+                        {delivery && (
+                          <td>
+                            {order.driver_id ? (
+                              driverName ? (
+                                <span className="cell-stack">
+                                  <strong>{driverName}</strong>
+                                  <small>
+                                    <bdi>#{order.driver_id}</bdi>
+                                  </small>
+                                </span>
+                              ) : (
+                                <bdi>#{order.driver_id}</bdi>
+                              )
+                            ) : (
+                              'لم يُسند'
+                            )}
+                          </td>
+                        )}
+                        <td>
+                          <bdi>{money(order.total_price)}</bdi>
+                        </td>
+                        <td>
+                          <button
+                            className="button compact"
+                            aria-expanded={id === order.order_id}
+                            data-detail-record={order.order_id}
+                            onClick={() => setId(order.order_id)}
+                          >
+                            عرض التفاصيل
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -341,67 +411,85 @@ export function AccountScreen({
   api,
   user,
   updated,
+  onPasswordChanged,
 }: {
   api: ApiClient;
   user: User;
   updated: (user: User) => void;
+  onPasswordChanged?: () => void;
 }) {
   const [name, setName] = useState(user.full_name),
     [phone, setPhone] = useState(user.phone),
     [current, setCurrent] = useState(''),
     [password, setPassword] = useState(''),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState<unknown>(null),
-    [notice, setNotice] = useState('');
+    [profileBusy, setProfileBusy] = useState(false),
+    [passwordBusy, setPasswordBusy] = useState(false),
+    [profileError, setProfileError] = useState<unknown>(null),
+    [passwordError, setPasswordError] = useState<unknown>(null),
+    [profileNotice, setProfileNotice] = useState('');
+  useEffect(() => {
+    setName(user.full_name);
+    setPhone(user.phone);
+  }, [user.full_name, user.phone]);
   const save = async (event: FormEvent) => {
     event.preventDefault();
-    setBusy(true);
-    setError(null);
-    setNotice('');
+    if (profileBusy) return;
+    setProfileBusy(true);
+    setProfileError(null);
+    setProfileNotice('');
     try {
       const result = await api.request<User>('/me', {
         method: 'PATCH',
-        body: { full_name: name, phone },
+        body: { full_name: name.trim(), phone: phone.trim() },
       });
       updated(result.data);
-      setNotice('تم حفظ بيانات الحساب.');
+      setProfileNotice('تم حفظ بيانات الحساب.');
     } catch (cause) {
-      setError(cause);
+      setProfileError(cause);
     } finally {
-      setBusy(false);
+      setProfileBusy(false);
     }
   };
   const change = async (event: FormEvent) => {
     event.preventDefault();
-    setBusy(true);
-    setError(null);
+    if (passwordBusy) return;
+    setPasswordBusy(true);
+    setPasswordError(null);
     try {
       await api.request('/me/password', {
         method: 'PATCH',
         body: { current_password: current, new_password: password },
       });
+      onPasswordChanged?.();
       api.clearSession();
     } catch (cause) {
-      setError(cause);
+      setPasswordError(cause);
     } finally {
-      setBusy(false);
+      setPasswordBusy(false);
     }
   };
-  const fields = error instanceof ApiError ? error.fields : {};
+  const profileFields =
+    profileError instanceof ApiError ? profileError.fields : {};
+  const passwordFields =
+    passwordError instanceof ApiError ? passwordError.fields : {};
   return (
     <>
       <PageTitle
         title="حسابي"
         description="بيانات تسجيل الدخول وأمان الحساب."
       />
-      {!!error && <Failure error={error} />}
-      {notice && <Notice>{notice}</Notice>}
       <section className="panel panel-pad">
         <h2>بيانات الحساب</h2>
+        {!!profileError && <Failure error={profileError} />}
+        {profileNotice && <Notice>{profileNotice}</Notice>}
         <form onSubmit={(event) => void save(event)}>
-          <fieldset disabled={busy}>
+          <fieldset disabled={profileBusy}>
             <div className="form-grid">
-              <Field label="الاسم الكامل" name="full_name" errors={fields}>
+              <Field
+                label="الاسم الكامل"
+                name="full_name"
+                errors={profileFields}
+              >
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
@@ -409,7 +497,7 @@ export function AccountScreen({
                   maxLength={150}
                 />
               </Field>
-              <Field label="رقم الهاتف" name="phone" errors={fields}>
+              <Field label="رقم الهاتف" name="phone" errors={profileFields}>
                 <input
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
@@ -425,7 +513,7 @@ export function AccountScreen({
             </div>
             <div className="actions">
               <button className="button primary">
-                {busy ? 'جار الحفظ…' : 'حفظ البيانات'}
+                {profileBusy ? 'جار الحفظ…' : 'حفظ البيانات'}
               </button>
             </div>
           </fieldset>
@@ -434,13 +522,14 @@ export function AccountScreen({
       <section className="panel panel-pad">
         <h2>تغيير كلمة المرور</h2>
         <p className="muted">سيتم إنهاء جميع الجلسات بعد التغيير.</p>
+        {!!passwordError && <Failure error={passwordError} />}
         <form onSubmit={(event) => void change(event)}>
-          <fieldset disabled={busy}>
+          <fieldset disabled={passwordBusy}>
             <div className="form-grid">
               <Field
                 label="كلمة المرور الحالية"
                 name="current_password"
-                errors={fields}
+                errors={passwordFields}
               >
                 <input
                   type="password"
@@ -454,7 +543,7 @@ export function AccountScreen({
               <Field
                 label="كلمة المرور الجديدة"
                 name="new_password"
-                errors={fields}
+                errors={passwordFields}
               >
                 <input
                   type="password"
@@ -469,7 +558,9 @@ export function AccountScreen({
               </Field>
             </div>
             <div className="actions">
-              <button className="button primary">تغيير كلمة المرور</button>
+              <button className="button primary">
+                {passwordBusy ? 'جار التغيير…' : 'تغيير كلمة المرور'}
+              </button>
             </div>
           </fieldset>
         </form>

@@ -4,7 +4,7 @@ Three React/Vite/TypeScript dashboards are implemented: Restaurant, Admin and De
 
 AKEELA monorepo with a restaurant ordering backend using NestJS, PostgreSQL and TypeORM. One modular monolith, one database and four roles: Customer, Restaurant, Delivery_Company and Admin.
 
-Features 01-14 cover authentication, restaurant approval, catalog/addons/offers, customer addresses/cart/checkout, history and delivery. Features 15-16 add image uploads and health probes. Feature 17 adds authorized Socket.IO order notifications. Includes 81 Bruno requests, PostgreSQL integration tests, Docker/Caddy and GitHub CI/CD.
+Features 01-14 cover authentication, restaurant approval, catalog/addons/offers, customer addresses/cart/checkout, history and delivery. Features 15-16 add image uploads and health probes. Feature 17 adds authorized Socket.IO order notifications. Includes 89 Bruno requests, PostgreSQL integration tests, Docker/Caddy and GitHub CI/CD.
 
 ## Repository layout
 
@@ -43,7 +43,7 @@ The command prints the path to a private local CSV with every account's role, em
 
 Use `npm run seed:demo-restaurants -- --refresh-demo-names` to replace only the five original demo owner labels with natural sample names. Custom names, credentials and profile states stay unchanged. This command is local-only and creates no accounts. Sample contacts remain synthetic to avoid using real people's contact information.
 
-Swagger: `http://localhost:3000/api/v1/docs`. OpenAPI JSON: `http://localhost:3000/api/v1/docs-json`. All 81 REST endpoints include input/response schemas, examples, JWT authorization and mobile integration rules. See [SWAGGER.md](docs/SWAGGER.md). Try it out sends real requests to the selected API.
+Swagger: `http://localhost:3000/api/v1/docs`. OpenAPI JSON: `http://localhost:3000/api/v1/docs-json`. All 89 REST endpoints include input/response schemas, examples, JWT authorization and mobile integration rules. See [SWAGGER.md](docs/SWAGGER.md). Try it out sends real requests to the selected API.
 
 Swagger has four role views: Customer, Restaurant, Admin and Delivery Company, each with its own feature groups. Use the top selector or `/api/v1/docs/customer`, `/restaurant`, `/admin` and `/delivery-company` under the same docs prefix. The full JSON remains unchanged for existing imports.
 

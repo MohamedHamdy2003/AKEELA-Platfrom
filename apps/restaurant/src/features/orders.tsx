@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Check, MapPin, X } from 'lucide-react';
+import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import { api, query } from '../lib/api';
 import { dateTime, money, sumMoney } from '../lib/format';
 import {
@@ -16,7 +17,6 @@ import {
   Dialog,
   Empty,
   Failure,
-  Field,
   Loading,
   Notice,
   PageHeading,
@@ -78,13 +78,22 @@ export function OrdersTable({
 export function Orders({
   initialId,
   onInitialConsumed,
+  initialStatus,
+  onInitialStatusConsumed,
 }: {
   initialId?: string | null;
   onInitialConsumed: () => void;
+  initialStatus?: string;
+  onInitialStatusConsumed?: () => void;
 }) {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
-    status: '',
+    status: initialStatus ?? '',
+    date_from: '',
+    date_to: '',
+  });
+  const [draft, setDraft] = useState({
+    status: initialStatus ?? '',
     date_from: '',
     date_to: '',
   });
@@ -96,22 +105,39 @@ export function Orders({
       onInitialConsumed();
     }
   }, [initialId, onInitialConsumed]);
+  useEffect(() => {
+    if (initialStatus) {
+      setFilters((current) => ({ ...current, status: initialStatus }));
+      setDraft((current) => ({ ...current, status: initialStatus }));
+      setPage(1);
+      onInitialStatusConsumed?.();
+    }
+  }, [initialStatus, onInitialStatusConsumed]);
   const resource = useResource<OrderSummary[]>(
     '/restaurant/orders' + query({ page, per_page: 20, ...filters }),
   );
+  useEffect(() => {
+    const last = resource.result?.meta?.last_page;
+    if (last && page > last) setPage(Math.max(1, last));
+  }, [resource.result?.meta?.last_page, page]);
   function filter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = Object.fromEntries(
-      new FormData(event.currentTarget),
-    ) as typeof filters;
-    if (form.date_from && form.date_to && form.date_from > form.date_to) {
+    if (draft.date_from && draft.date_to && draft.date_from > draft.date_to) {
       setFilterError('تاريخ البداية يجب أن يسبق تاريخ النهاية.');
       return;
     }
     setFilterError('');
     setPage(1);
-    setFilters(form);
+    setFilters(draft);
   }
+  const hasFilters = Boolean(
+    filters.status ||
+    filters.date_from ||
+    filters.date_to ||
+    draft.status ||
+    draft.date_from ||
+    draft.date_to,
+  );
   return (
     <>
       <PageHeading
@@ -119,7 +145,14 @@ export function Orders({
         subtitle="تابع الطلبات وتفاصيلها، خطوة بخطوة."
       />
       <form className="filter-bar" onSubmit={filter}>
-        <Select label="الحالة" name="status">
+        <Select
+          label="الحالة"
+          name="status"
+          value={draft.status}
+          onChange={(event) =>
+            setDraft((current) => ({ ...current, status: event.target.value }))
+          }
+        >
           <option value="">كل الحالات</option>
           {Object.entries(statuses).map(([value, label]) => (
             <option key={value} value={value}>
@@ -127,21 +160,43 @@ export function Orders({
             </option>
           ))}
         </Select>
-        <Field label="من تاريخ" name="date_from" type="date" />
-        <Field label="إلى تاريخ" name="date_to" type="date" />
-        <button className="button primary">تطبيق الفلاتر</button>
+        <ArabicDateFields
+          value={{ date_from: draft.date_from, date_to: draft.date_to }}
+          change={(dates) => setDraft((current) => ({ ...current, ...dates }))}
+        />
+        <div className="filter-bar-actions">
+          <button className="button primary">تطبيق الفلاتر</button>
+          {hasFilters && (
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => {
+                const empty = { status: '', date_from: '', date_to: '' };
+                setDraft(empty);
+                setFilters(empty);
+                setFilterError('');
+                setPage(1);
+              }}
+            >
+              إعادة ضبط الفلاتر
+            </button>
+          )}
+        </div>
       </form>
       {filterError && <Notice error={new Error(filterError)} />}
       <div className="panel table-panel">
-        {resource.loading ? (
+        {!resource.result && resource.loading ? (
           <TableSkeleton />
-        ) : resource.error ? (
+        ) : !resource.result && resource.error ? (
           <Failure error={resource.error} retry={resource.reload} />
         ) : (
-          <OrdersTable
-            orders={resource.result?.data ?? []}
-            onSelect={setSelected}
-          />
+          <>
+            {Boolean(resource.error) && <Notice error={resource.error} />}
+            <OrdersTable
+              orders={resource.result?.data ?? []}
+              onSelect={setSelected}
+            />
+          </>
         )}
       </div>
       <Pager meta={resource.result?.meta} onPage={setPage} />
@@ -205,9 +260,9 @@ export function OrderDetails({
     >
       <Notice error={error} />
       <Notice>{message}</Notice>
-      {resource.loading ? (
+      {!order && resource.loading ? (
         <Loading />
-      ) : resource.error ? (
+      ) : !order && resource.error ? (
         <Failure error={resource.error} retry={resource.reload} />
       ) : (
         order && (

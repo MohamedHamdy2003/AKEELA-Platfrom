@@ -9,19 +9,25 @@ import {
   timingSafeEqual,
 } from 'node:crypto';
 import { Environment } from '../../config/environment';
+import { Semaphore } from '../../common/concurrency';
+
+const scryptConcurrency = new Semaphore(2);
 
 @Injectable()
 export class AuthCryptoService {
   constructor(private readonly config: ConfigService<Environment, true>) {}
   private derive(password: string, salt: string): Promise<Buffer> {
-    return new Promise((resolve, reject) =>
-      scrypt(
-        password,
-        salt,
-        64,
-        { N: 65536, r: 8, p: 2, maxmem: 128 * 1024 * 1024 },
-        (error, key) => (error ? reject(error) : resolve(key)),
-      ),
+    return scryptConcurrency.run(
+      () =>
+        new Promise((resolve, reject) =>
+          scrypt(
+            password,
+            salt,
+            64,
+            { N: 65536, r: 8, p: 2, maxmem: 128 * 1024 * 1024 },
+            (error, key) => (error ? reject(error) : resolve(key)),
+          ),
+        ),
     );
   }
   async hashPassword(password: string): Promise<string> {

@@ -53,8 +53,12 @@ export class ImagesCleanupService implements OnModuleInit, OnModuleDestroy {
     const marker = '/images/';
     const index = url.lastIndexOf(marker);
     if (index === -1) return null;
-    const candidate = basename(url.slice(index + marker.length).split('?')[0]!);
-    return MANAGED_IMAGE_PATTERN.test(candidate) ? candidate : null;
+    const candidate = basename(
+      url.slice(index + marker.length).split(/[?#]/)[0]!,
+    );
+    return MANAGED_IMAGE_PATTERN.test(candidate)
+      ? candidate.toLowerCase()
+      : null;
   }
 
   async cleanupOrphans(maxAgeMs = ORPHAN_GRACE_MS): Promise<number> {
@@ -99,7 +103,7 @@ export class ImagesCleanupService implements OnModuleInit, OnModuleDestroy {
 
       let removed = 0;
       for (const file of candidates) {
-        if (referenced.has(file)) continue;
+        if (referenced.has(file.toLowerCase())) continue;
         try {
           await unlink(join(dir, file));
           removed += 1;

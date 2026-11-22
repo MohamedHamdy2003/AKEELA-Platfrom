@@ -41,13 +41,13 @@
 2. The company verifies its email using OTP, then logs in.
 3. Manage company details and add active drivers.
 4. Receive orders automatically after restaurants accept them.
-5. Assign an active company driver to an `Accepted` order.
-6. After pickup, mark the order as `Picked_Up`.
-7. After delivery, mark it as `Delivered`.
+5. Assign an active company driver to an `Accepted` order, transitioning it immediately to `Picked_Up`.
+6. Reassign another active driver while `Picked_Up` if needed, or confirm pickup idempotently.
+7. After delivery, mark it as `Delivered` (orders remaining `Picked_Up` for 90 minutes auto-deliver).
 
 - The company sees only orders assigned to it. Its service and login account cannot be disabled in the current single-company version.
 - Drivers have no login accounts in this version; the company updates delivery status.
-- The driver can be changed before pickup.
+- The driver can be changed while `Accepted` or `Picked_Up`.
 
 ## 4. Admin
 
@@ -79,8 +79,8 @@
 |---|---|---|
 | Customer checks out | Customer | `Pending` |
 | Restaurant accepts | Restaurant; company assignment is automatic | `Accepted` |
-| Company confirms pickup | Assigned Delivery Company | `Picked_Up` |
-| Company confirms delivery | Assigned Delivery Company | `Delivered` |
+| Company assigns driver / confirms pickup | Assigned Delivery Company | `Picked_Up` |
+| Company confirms delivery (or 90m auto-deliver) | Assigned Delivery Company / System | `Delivered` |
 | Restaurant rejects a Pending order | Restaurant | `Rejected` |
 | Customer cancels a Pending order | Customer | `Cancelled` |
 | Admin marks an Accepted or Picked_Up order as failed | Admin | `Failed` |

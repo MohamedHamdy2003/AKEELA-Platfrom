@@ -266,7 +266,17 @@ export function TrendChart({ series }: { series: AdminAnalyticsDailyPoint[] }) {
                     height={plotH}
                     fill="transparent"
                     className="adm-hit"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${shortCairoDate(pt.point.date)}: ${pt.point.orders} طلب`}
                     onMouseEnter={() => setActiveIndex(pt.index)}
+                    onFocus={() => setActiveIndex(pt.index)}
+                    onBlur={() => setActiveIndex(null)}
+                    onClick={() =>
+                      setActiveIndex((cur) =>
+                        cur === pt.index ? null : pt.index,
+                      )
+                    }
                   />
                   {(isActive || points.length <= 14) && (
                     <circle
@@ -309,7 +319,7 @@ export function StatusDonutChart({
   onSelectOrders,
 }: {
   counts: OrderStatusCounts;
-  onSelectOrders: () => void;
+  onSelectOrders: (status?: OrderStatus) => void;
 }) {
   const [hoveredStatus, setHoveredStatus] = useState<OrderStatus | null>(null);
   const total = STATUS_ORDER.reduce((sum, key) => sum + (counts[key] ?? 0), 0);
@@ -381,8 +391,20 @@ export function StatusDonutChart({
                     strokeDasharray={`${Math.max(1.5, seg.dash - 1.2)} ${circumference}`}
                     strokeDashoffset={-seg.offset}
                     className="adm-donut-seg"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${statuses[seg.key]}: ${seg.value}`}
                     onMouseEnter={() => setHoveredStatus(seg.key)}
                     onMouseLeave={() => setHoveredStatus(null)}
+                    onFocus={() => setHoveredStatus(seg.key)}
+                    onBlur={() => setHoveredStatus(null)}
+                    onClick={() => onSelectOrders(seg.key)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectOrders(seg.key);
+                      }
+                    }}
                   />
                 );
               })}
@@ -412,7 +434,9 @@ export function StatusDonutChart({
                   className={'adm-legend-row' + (dimmed ? ' is-dimmed' : '')}
                   onMouseEnter={() => setHoveredStatus(key)}
                   onMouseLeave={() => setHoveredStatus(null)}
-                  onClick={onSelectOrders}
+                  onFocus={() => setHoveredStatus(key)}
+                  onBlur={() => setHoveredStatus(null)}
+                  onClick={() => onSelectOrders(key)}
                 >
                   <span className="adm-legend-label">
                     <span
@@ -531,7 +555,17 @@ export function PeakHoursChart({
             return (
               <g
                 key={point.hour}
+                tabIndex={0}
+                role="button"
+                aria-label={`${formatHourAr(point.hour)}: ${point.orders} طلب`}
                 onMouseEnter={() => setHoveredHour(point.hour)}
+                onFocus={() => setHoveredHour(point.hour)}
+                onBlur={() => setHoveredHour(null)}
+                onClick={() =>
+                  setHoveredHour((cur) =>
+                    cur === point.hour ? null : point.hour,
+                  )
+                }
                 className="adm-hit"
               >
                 <rect

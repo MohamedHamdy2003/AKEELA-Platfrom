@@ -1,14 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
 import type { Envelope } from './models';
 
 export function useResource<T>(path: string | null) {
-  const [result, setResult] = useState<Envelope<T> | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<{
+    path: string | null;
+    result: Envelope<T> | null;
+    error: unknown;
+    loading: boolean;
+  }>(() => ({
+    path,
+    result: null,
+    error: null,
+    loading: Boolean(path),
+  }));
   const [revision, setRevision] = useState(0);
   const reload = useCallback(() => setRevision((n) => n + 1), []);
-  const previousPath = useRef<string | null>(null);
   useEffect(() => {
     if (
       !path?.startsWith('/restaurant/orders') &&
@@ -18,7 +25,10 @@ export function useResource<T>(path: string | null) {
     let timer: ReturnType<typeof setTimeout>;
     const update = () => {
       clearTimeout(timer);
-      timer = setTimeout(reload, 100);
+      timer = setTimeout(
+        reload,
+        path.startsWith('/restaurant/analytics') ? 1500 : 120,
+      );
     };
     window.addEventListener('akeela:orders-changed', update);
     return () => {
@@ -27,24 +37,41 @@ export function useResource<T>(path: string | null) {
     };
   }, [path, reload]);
   useEffect(() => {
+    if (!path) {
+      setState({ path: null, result: null, error: null, loading: false });
+      return;
+    }
     const controller = new AbortController();
-    if (previousPath.current !== path) setResult(null);
-    previousPath.current = path;
-    setError(null);
-    setLoading(!!path);
-    if (path)
-      api
-        .request<T>(path, { signal: controller.signal })
-        .then((data) => {
-          if (!controller.signal.aborted) setResult(data);
-        })
-        .catch((cause) => {
-          if (!controller.signal.aborted) setError(cause);
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setLoading(false);
-        });
+    setState((current) => ({
+      path,
+      result: current.path === path ? current.result : null,
+      error: null,
+      loading: true,
+    }));
+    api
+      .request<T>(path, { signal: controller.signal })
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setState({ path, result: data, error: null, loading: false });
+        }
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) {
+          setState((current) => ({
+            path,
+            result: current.path === path ? current.result : null,
+            error: cause,
+            loading: false,
+          }));
+        }
+      });
     return () => controller.abort();
   }, [path, revision]);
-  return { result, error, loading, reload };
+  const matches = state.path === path;
+  return {
+    result: matches ? state.result : null,
+    error: matches ? state.error : null,
+    loading: matches ? state.loading : Boolean(path),
+    reload,
+  };
 }

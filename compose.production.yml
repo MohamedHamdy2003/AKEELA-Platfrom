@@ -9,27 +9,32 @@ services:
     image: ${ADMIN_IMAGE:-akeela-admin:local}
     restart: unless-stopped
     mem_limit: 64m
+    security_opt: ['no-new-privileges:true']
     networks: [edge]
     logging: *default-logging
   restaurant:
     image: ${RESTAURANT_IMAGE:-akeela-restaurant:local}
     restart: unless-stopped
     mem_limit: 64m
+    security_opt: ['no-new-privileges:true']
     networks: [edge]
     logging: *default-logging
   delivery:
     image: ${DELIVERY_IMAGE:-akeela-delivery:local}
     restart: unless-stopped
     mem_limit: 64m
+    security_opt: ['no-new-privileges:true']
     networks: [edge]
     logging: *default-logging
   api:
     image: ${API_IMAGE:-akeela-api:local}
     restart: unless-stopped
     init: true
-    mem_limit: 512m
+    mem_limit: 1g
+    security_opt: ['no-new-privileges:true']
     environment: &api-environment
       NODE_ENV: production
+      NODE_OPTIONS: '--max-old-space-size=384'
       PORT: '3000'
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
       TZ: Africa/Cairo
@@ -56,7 +61,7 @@ services:
       SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_REQUIRE_TLS: 'true'
+      SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM}
@@ -76,6 +81,30 @@ services:
       SMTP_FALLBACK_2_USER: ${SMTP_FALLBACK_2_USER:-}
       SMTP_FALLBACK_2_PASSWORD: ${SMTP_FALLBACK_2_PASSWORD:-}
       SMTP_FALLBACK_2_FROM: ${SMTP_FALLBACK_2_FROM:-}
+      SMTP_FALLBACK_3_NAME: ${SMTP_FALLBACK_3_NAME:-}
+      SMTP_FALLBACK_3_HOST: ${SMTP_FALLBACK_3_HOST:-}
+      SMTP_FALLBACK_3_PORT: ${SMTP_FALLBACK_3_PORT:-587}
+      SMTP_FALLBACK_3_SECURE: ${SMTP_FALLBACK_3_SECURE:-false}
+      SMTP_FALLBACK_3_REQUIRE_TLS: ${SMTP_FALLBACK_3_REQUIRE_TLS:-true}
+      SMTP_FALLBACK_3_USER: ${SMTP_FALLBACK_3_USER:-}
+      SMTP_FALLBACK_3_PASSWORD: ${SMTP_FALLBACK_3_PASSWORD:-}
+      SMTP_FALLBACK_3_FROM: ${SMTP_FALLBACK_3_FROM:-}
+      SMTP_FALLBACK_4_NAME: ${SMTP_FALLBACK_4_NAME:-}
+      SMTP_FALLBACK_4_HOST: ${SMTP_FALLBACK_4_HOST:-}
+      SMTP_FALLBACK_4_PORT: ${SMTP_FALLBACK_4_PORT:-587}
+      SMTP_FALLBACK_4_SECURE: ${SMTP_FALLBACK_4_SECURE:-false}
+      SMTP_FALLBACK_4_REQUIRE_TLS: ${SMTP_FALLBACK_4_REQUIRE_TLS:-true}
+      SMTP_FALLBACK_4_USER: ${SMTP_FALLBACK_4_USER:-}
+      SMTP_FALLBACK_4_PASSWORD: ${SMTP_FALLBACK_4_PASSWORD:-}
+      SMTP_FALLBACK_4_FROM: ${SMTP_FALLBACK_4_FROM:-}
+      SMTP_FALLBACK_5_NAME: ${SMTP_FALLBACK_5_NAME:-}
+      SMTP_FALLBACK_5_HOST: ${SMTP_FALLBACK_5_HOST:-}
+      SMTP_FALLBACK_5_PORT: ${SMTP_FALLBACK_5_PORT:-587}
+      SMTP_FALLBACK_5_SECURE: ${SMTP_FALLBACK_5_SECURE:-false}
+      SMTP_FALLBACK_5_REQUIRE_TLS: ${SMTP_FALLBACK_5_REQUIRE_TLS:-true}
+      SMTP_FALLBACK_5_USER: ${SMTP_FALLBACK_5_USER:-}
+      SMTP_FALLBACK_5_PASSWORD: ${SMTP_FALLBACK_5_PASSWORD:-}
+      SMTP_FALLBACK_5_FROM: ${SMTP_FALLBACK_5_FROM:-}
     volumes:
       - images:/app/storage/images
     networks: [edge, database]
@@ -100,7 +129,8 @@ services:
     image: ${API_IMAGE:-akeela-api:local}
     restart: 'no'
     init: true
-    mem_limit: 512m
+    mem_limit: 768m
+    security_opt: ['no-new-privileges:true']
     logging: *default-logging
     command:
       ['sh', '-c', 'npm run migration:run:prod && npm run create:admin:prod']
@@ -119,6 +149,8 @@ services:
     image: postgres:17
     restart: unless-stopped
     mem_limit: 768m
+    shm_size: 256m
+    security_opt: ['no-new-privileges:true']
     logging: *default-logging
     environment:
       POSTGRES_USER: akeela
@@ -136,6 +168,7 @@ services:
     image: caddy:2
     restart: unless-stopped
     mem_limit: 128m
+    security_opt: ['no-new-privileges:true']
     logging: *default-logging
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}

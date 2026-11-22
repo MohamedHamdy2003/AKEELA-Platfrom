@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Mail, Phone, ShieldAlert, UserPlus } from 'lucide-react';
 import { ApiError, query } from '@akeela/portal/api';
 import { DetailWorkspace } from '@akeela/portal/detail-workspace';
@@ -37,20 +37,29 @@ export function Drivers() {
     '/delivery-company/drivers' +
       query({ page, per_page: 10, is_active: active }),
   );
+  useEffect(() => {
+    const last = resource.result?.meta?.last_page;
+    if (last && page > last) setPage(Math.max(1, last));
+  }, [resource.result?.meta?.last_page, page]);
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (busy) return;
     const values = new FormData(event.currentTarget);
+    const driverName = String(values.get('driver_name') ?? '').trim();
+    const driverPhone = String(values.get('driver_phone') ?? '').trim();
+    const driverEmail = String(values.get('driver_email') ?? '').trim();
     setBusy(true);
     setError(null);
+    setNotice('');
     try {
       await api.request(
         '/delivery-company/drivers' + (edit ? '/' + edit.driver_id : ''),
         {
           method: edit ? 'PATCH' : 'POST',
           body: {
-            driver_name: values.get('driver_name'),
-            driver_phone: values.get('driver_phone'),
-            driver_email: values.get('driver_email') || null,
+            driver_name: driverName,
+            driver_phone: driverPhone,
+            driver_email: driverEmail || null,
             is_active: values.has('is_active'),
           },
         },
@@ -99,6 +108,8 @@ export function Drivers() {
             onChange={(event) => {
               setActive(event.target.value);
               setPage(1);
+              setEdit(undefined);
+              setError(null);
             }}
           >
             <option value="">جميع السائقين</option>
@@ -112,6 +123,7 @@ export function Drivers() {
         title={sheetTitle}
         eyebrow={sheetEyebrow}
         onClose={() => {
+          if (busy) return;
           setEdit(undefined);
           setError(null);
         }}
@@ -171,6 +183,7 @@ export function Drivers() {
                         name="driver_phone"
                         type="tel"
                         dir="ltr"
+                        pattern={'\\+[1-9][0-9]{7,14}'}
                         defaultValue={edit?.driver_phone}
                         required
                       />
@@ -274,6 +287,7 @@ export function Drivers() {
                         <td>
                           <button
                             className="button compact driver-edit-btn"
+                            aria-expanded={selected}
                             data-detail-record={item.driver_id}
                             data-active={selected || undefined}
                             onClick={() => {

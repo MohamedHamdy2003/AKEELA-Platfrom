@@ -101,7 +101,7 @@ export function RestaurantAnalyticsScreen({
   navigate,
 }: {
   profile: Profile;
-  navigate: (route: string) => void;
+  navigate: (route: string, filter?: string) => void;
 }) {
   const [range, setRange] = useState<AnalyticsRange>('30d');
   const [itemsTab, setItemsTab] = useState<'top' | 'slow'>('top');
@@ -109,15 +109,21 @@ export function RestaurantAnalyticsScreen({
   const analytics = useResource<RestaurantAnalytics>(
     `/restaurant/analytics?range=${range}`,
   );
-  const [cached, setCached] = useState<RestaurantAnalytics | null>(null);
+  const [cached, setCached] = useState<{
+    range: AnalyticsRange;
+    data: RestaurantAnalytics;
+  } | null>(null);
 
   useEffect(() => {
     if (analytics.result?.data) {
-      setCached(analytics.result.data);
+      setCached({ range, data: analytics.result.data });
     }
-  }, [analytics.result]);
+  }, [analytics.result, range]);
 
-  const data = analytics.result?.data ?? cached;
+  const sameRangeCached = cached?.range === range ? cached.data : null;
+  const data =
+    analytics.result?.data ??
+    (analytics.error ? sameRangeCached : (cached?.data ?? null));
   const kpis = data?.kpis;
   const prev = data?.previous_kpis ?? null;
   const alerts = data?.live_alerts;
@@ -210,7 +216,7 @@ export function RestaurantAnalyticsScreen({
                   <button
                     type="button"
                     className="rst-alert-pill is-danger"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Pending')}
                   >
                     <AlertTriangle size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -223,7 +229,7 @@ export function RestaurantAnalyticsScreen({
                   <button
                     type="button"
                     className="rst-alert-pill is-warning"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Pending')}
                   >
                     <Clock size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -235,7 +241,7 @@ export function RestaurantAnalyticsScreen({
                   <button
                     type="button"
                     className="rst-alert-pill is-info"
-                    onClick={() => navigate('orders')}
+                    onClick={() => navigate('orders', 'Accepted')}
                   >
                     <ShoppingBag size={15} aria-hidden="true" />
                     <span className="numeric">
@@ -326,7 +332,7 @@ export function RestaurantAnalyticsScreen({
             <button
               type="button"
               className="rst-kpi"
-              onClick={() => navigate('orders')}
+              onClick={() => navigate('orders', 'Delivered')}
             >
               <div className="rst-kpi-top">
                 <span className="rst-kpi-label">
@@ -430,7 +436,7 @@ export function RestaurantAnalyticsScreen({
             <RestaurantTrendChart series={data.daily_series} />
             <RestaurantStatusDonut
               counts={data.status_breakdown}
-              onSelectOrders={() => navigate('orders')}
+              onSelectOrders={(status) => navigate('orders', status)}
             />
           </div>
 
@@ -621,7 +627,7 @@ export function RestaurantAnalyticsScreen({
                           <span className="rst-pill is-amber numeric">
                             {item.units_sold === 0
                               ? 'بدون مبيعات'
-                              : `${item.units_sold} طلب فقط`}
+                              : `${item.units_sold} وحدة فقط`}
                           </span>
                         </span>
                       </div>

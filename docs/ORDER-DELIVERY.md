@@ -8,7 +8,7 @@ Set DEFAULT_DELIVERY_COMPANY_ID in the ignored apps/api/.env to the company prof
 
 Empty configuration is allowed at startup. Acceptance returns 409 DELIVERY_COMPANY_UNAVAILABLE and keeps Pending if configuration is missing, the company does not exist, its service/account is inactive, or its account email is unverified. No default ID is hard-coded and no first-company lookup is used.
 
-The owner confirmed one always-active company for this version. Company creation/profile updates reject is_active=false, and Admin cannot disable Delivery_Company login accounts. Defensive checks remain for out-of-band data changes. Drivers can be disabled; assignment, pickup and delivery require an active owned driver. Before pickup an active replacement may be selected; after pickup the driver cannot change.
+The owner confirmed one always-active company for this version. Company creation/profile updates reject is_active=false, and Admin cannot disable Delivery_Company login accounts. Defensive checks remain for out-of-band data changes. Drivers can be disabled; assignment, pickup and delivery require an active owned driver. An active replacement driver may be selected while Accepted or Picked_Up.
 
 ## Permissions and transitions
 

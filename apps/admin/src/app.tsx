@@ -44,11 +44,21 @@ function AdminWorkspace() {
   const [user, setUser] = useState<User | null>(null),
     [route, setRoute] = useState(currentRoute),
     [revision, setRevision] = useState(0),
+    [analyticsRevision, setAnalyticsRevision] = useState(0),
+    [ordersStatus, setOrdersStatus] = useState(''),
+    [restaurantsStatus, setRestaurantsStatus] = useState(''),
+    [authNotice, setAuthNotice] = useState(''),
     [status, setStatus] = useState<RealtimeStatus>('connecting');
   const { restoring, restoreError, retryRestore } = useSessionRestore(
     api,
     setUser,
   );
+  useEffect(() => {
+    const label = navigation.find(([key]) => key === route)?.[1];
+    document.title = user
+      ? `AKEELA - إدارة المنصة${label ? ` - ${label}` : ''}`
+      : 'AKEELA - إدارة المنصة';
+  }, [user, route]);
   useEffect(() => {
     const change = () => setRoute(currentRoute());
     window.addEventListener('popstate', change);
@@ -61,6 +71,11 @@ function AdminWorkspace() {
     };
   }, []);
   useEffect(() => {
+    if (revision === 0) return;
+    const timer = setTimeout(() => setAnalyticsRevision(revision), 2000);
+    return () => clearTimeout(timer);
+  }, [revision]);
+  useEffect(() => {
     if (!user) return;
     return watchOrders({
       baseUrl: base,
@@ -69,12 +84,19 @@ function AdminWorkspace() {
       status: setStatus,
     });
   }, [user?.user_id]);
-  const navigate = (key: string) => {
+  const navigate = (key: string, filter?: string) => {
+    if (key === 'orders') setOrdersStatus(filter ?? '');
+    if (key === 'restaurants') setRestaurantsStatus(filter ?? '');
     const target = '/' + key;
     if (window.location.pathname !== target) {
       window.history.pushState(null, '', target);
     }
     setRoute(key);
+  };
+  const forceLocalLogout = () => {
+    api.clearSession();
+    window.history.replaceState(null, '', '/');
+    setRoute('home');
   };
   if (restoring || restoreError)
     return (
@@ -95,7 +117,16 @@ function AdminWorkspace() {
     );
   if (!user)
     return (
-      <AuthPage api={api} title="إدارة المنصة" theme="admin" login={setUser} />
+      <AuthPage
+        api={api}
+        title="إدارة المنصة"
+        theme="admin"
+        initialNotice={authNotice}
+        login={(account) => {
+          setAuthNotice('');
+          setUser(account);
+        }}
+      />
     );
   return (
     <ArabicFields>
@@ -107,15 +138,21 @@ function AdminWorkspace() {
         route={route}
         navigate={navigate}
         status={status}
+        forceLocalLogout={forceLocalLogout}
         logout={async () => {
           await api.request('/auth/logout', { method: 'POST' });
-          api.clearSession();
-          window.history.replaceState(null, '', '/');
-          setRoute('home');
+          forceLocalLogout();
         }}
       >
-        {route === 'home' && <Home revision={revision} navigate={navigate} />}
-        {route === 'restaurants' && <Restaurants />}
+        {route === 'home' && (
+          <Home revision={analyticsRevision} navigate={navigate} />
+        )}
+        {route === 'restaurants' && (
+          <Restaurants
+            initialStatus={restaurantsStatus}
+            onInitialStatusConsumed={() => setRestaurantsStatus('')}
+          />
+        )}
         {route === 'users' && (
           <>
             <PageTitle
@@ -131,6 +168,8 @@ function AdminWorkspace() {
             api={api}
             prefix="/admin"
             revision={revision}
+            initialStatus={ordersStatus}
+            onInitialStatusConsumed={() => setOrdersStatus('')}
             dateFields={(value, change) => (
               <ArabicDateFields value={value} change={change} />
             )}
@@ -140,7 +179,16 @@ function AdminWorkspace() {
           />
         )}
         {route === 'account' && (
-          <AccountScreen api={api} user={user} updated={setUser} />
+          <AccountScreen
+            api={api}
+            user={user}
+            updated={setUser}
+            onPasswordChanged={() =>
+              setAuthNotice(
+                'تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.',
+              )
+            }
+          />
         )}
       </Shell>
     </ArabicFields>

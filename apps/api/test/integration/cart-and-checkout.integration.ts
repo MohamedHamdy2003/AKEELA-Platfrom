@@ -222,6 +222,16 @@ test('Features 11 and 12: cart and checkout with actual PostgreSQL', async (t) =
         .delete('/api/v1/customer/cart')
         .set('Authorization', auth())
         .expect(200);
+      // Removing the last item clears the parent cart so switching restaurants does not 409.
+      const single = await add().expect(201);
+      const singleItemId = single.body.data.items[0].cart_item_id;
+      const clearedByZero = await api()
+        .patch(`/api/v1/customer/cart/items/${singleItemId}`)
+        .set('Authorization', auth())
+        .send({ quantity: 0 })
+        .expect(200);
+      assert.equal(clearedByZero.body.data.cart_id, null);
+      assert.deepEqual(clearedByZero.body.data.items, []);
     },
   );
   await t.test(

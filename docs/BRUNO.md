@@ -1,6 +1,6 @@
 # Bruno API Collection
 
-The Git-managed collection lives at `bruno/AKEELA`. It contains 81 implemented requests across folders 01-16. New implemented features get the same numbered folder names as the API specifications; do not add runnable placeholders for unimplemented endpoints.
+The Git-managed collection lives at `bruno/AKEELA`. It contains 89 implemented requests across folders 01-16. New implemented features get the same numbered folder names as the API specifications; do not add runnable placeholders for unimplemented endpoints.
 
 ## Open the project collection
 

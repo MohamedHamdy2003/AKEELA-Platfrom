@@ -228,7 +228,13 @@ export function DeliveryTrendChart({
                 height={Math.max(4, padTop + plotH - points[0]!.y)}
                 rx={8}
                 fill="#1b5ca8"
+                tabIndex={0}
+                role="button"
+                aria-label={`${shortCairoDate(points[0]!.point.date)}: ${points[0]!.point.delivered} مُسلّم`}
                 onMouseEnter={() => setActiveIndex(0)}
+                onFocus={() => setActiveIndex(0)}
+                onBlur={() => setActiveIndex(null)}
+                onClick={() => setActiveIndex((cur) => (cur === 0 ? null : 0))}
               />
             ) : (
               <>
@@ -269,7 +275,17 @@ export function DeliveryTrendChart({
                     height={plotH}
                     fill="transparent"
                     className="del-hit"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${shortCairoDate(pt.point.date)}: تم التسليم ${pt.point.delivered} من ${pt.point.assigned}`}
                     onMouseEnter={() => setActiveIndex(pt.index)}
+                    onFocus={() => setActiveIndex(pt.index)}
+                    onBlur={() => setActiveIndex(null)}
+                    onClick={() =>
+                      setActiveIndex((cur) =>
+                        cur === pt.index ? null : pt.index,
+                      )
+                    }
                   />
                   {(isActive || points.length <= 14) && (
                     <circle
@@ -312,7 +328,7 @@ export function DeliveryStatusDonut({
   onSelectOrders,
 }: {
   counts: DeliveryAnalyticsStatusBreakdown;
-  onSelectOrders: () => void;
+  onSelectOrders: (status?: DeliveryStatusKey) => void;
 }) {
   const [hoveredStatus, setHoveredStatus] = useState<DeliveryStatusKey | null>(
     null,
@@ -391,8 +407,20 @@ export function DeliveryStatusDonut({
                     strokeDasharray={`${Math.max(1.5, seg.dash - 1.2)} ${circumference}`}
                     strokeDashoffset={-seg.offset}
                     className="del-donut-seg"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${statuses[seg.key]}: ${seg.value} (${seg.pct}%)`}
                     onMouseEnter={() => setHoveredStatus(seg.key)}
                     onMouseLeave={() => setHoveredStatus(null)}
+                    onFocus={() => setHoveredStatus(seg.key)}
+                    onBlur={() => setHoveredStatus(null)}
+                    onClick={() => onSelectOrders(seg.key)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectOrders(seg.key);
+                      }
+                    }}
                   />
                 );
               })}
@@ -422,7 +450,9 @@ export function DeliveryStatusDonut({
                   className={'del-legend-row' + (dimmed ? ' is-dimmed' : '')}
                   onMouseEnter={() => setHoveredStatus(key)}
                   onMouseLeave={() => setHoveredStatus(null)}
-                  onClick={onSelectOrders}
+                  onFocus={() => setHoveredStatus(key)}
+                  onBlur={() => setHoveredStatus(null)}
+                  onClick={() => onSelectOrders(key)}
                 >
                   <span className="del-legend-label">
                     <span
@@ -543,7 +573,17 @@ export function DeliveryPeakHoursChart({
             return (
               <g
                 key={point.hour}
+                tabIndex={0}
+                role="button"
+                aria-label={`${formatHourAr(point.hour)}: ${point.orders} طلب مسنَد`}
                 onMouseEnter={() => setHoveredHour(point.hour)}
+                onFocus={() => setHoveredHour(point.hour)}
+                onBlur={() => setHoveredHour(null)}
+                onClick={() =>
+                  setHoveredHour((cur) =>
+                    cur === point.hour ? null : point.hour,
+                  )
+                }
                 className="del-hit"
               >
                 <rect

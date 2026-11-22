@@ -70,15 +70,13 @@ function ArabicDate({
 }) {
   const [draft, setDraft] = useState(() => parts(value));
   const emitted = useRef(value);
-  const previousMinimum = useRef(min);
   const hint = useId();
   useEffect(() => {
-    if (value !== emitted.current || min !== previousMinimum.current) {
+    if (value !== emitted.current) {
       setDraft(parts(value));
       emitted.current = value;
     }
-    previousMinimum.current = min;
-  }, [value, min]);
+  }, [value]);
   const year = latinDigits(draft.year);
   const days = draft.month
     ? monthDays(Number(draft.month), Number(year) || 2024)
@@ -99,8 +97,11 @@ function ArabicDate({
       next.day = '';
     setDraft(next);
     const result = dateValue(next.day, next.month, next.year);
-    emitted.current = result && (!min || result >= min) ? result : '';
-    change(emitted.current);
+    const nextEmitted = result && (!min || result >= min) ? result : '';
+    if (nextEmitted !== emitted.current) {
+      emitted.current = nextEmitted;
+      change(nextEmitted);
+    }
   }
   return (
     <fieldset className="field arabic-date">

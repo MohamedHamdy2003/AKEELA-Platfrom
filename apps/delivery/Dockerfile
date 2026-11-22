@@ -12,15 +12,11 @@ COPY packages/brand packages/brand
 COPY packages/portal packages/portal
 COPY apps/delivery apps/delivery
 ARG VITE_API_BASE_URL=/api/v1
-ARG VITE_MAP_TILE_URL
-ARG VITE_MAP_ATTRIBUTION
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-ENV VITE_MAP_TILE_URL=$VITE_MAP_TILE_URL
-ENV VITE_MAP_ATTRIBUTION=$VITE_MAP_ATTRIBUTION
 RUN npm run build --workspace @akeela/delivery
 
-FROM nginx:stable-alpine
+FROM nginxinc/nginx-unprivileged:stable-alpine
 COPY apps/delivery/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/delivery/dist /usr/share/nginx/html
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1
+HEALTHCHECK --interval=10s --timeout=3s --start-period=3s --start-interval=2s CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1

@@ -111,6 +111,43 @@
   color: var(--p-text, #132a26);
 }
 
+.restaurant-confirm-dialog .dialog-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  flex-shrink: 0;
+}
+
+.restaurant-confirm-dialog .dialog-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  color: var(--p-muted, #72827d);
+  cursor: pointer;
+}
+
+.restaurant-confirm-dialog .dialog-close-btn:hover:not(:disabled) {
+  background: var(--p-bg, #f7f9f8);
+  color: var(--p-text, #132a26);
+}
+
+@keyframes dialog-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .dialog-badge.badge-activate {
   color: #15803d;
   background: color-mix(in srgb, #16a34a, transparent 88%);

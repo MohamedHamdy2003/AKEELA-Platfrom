@@ -16,7 +16,7 @@ export function AdminActions({
         <Confirm
           label="تسجيل تعثّر الطلب"
           danger
-          description="سيتم إنهاء الطلب بحالة Failed. لا يمكن التراجع عن هذا الإجراء."
+          description="سيتم إنهاء الطلب بحالة «متعثر». لا يمكن التراجع عن هذا الإجراء."
           run={() =>
             api.request('/admin/orders/' + order.order_id + '/fail', {
               method: 'POST',

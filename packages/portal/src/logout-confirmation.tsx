@@ -5,10 +5,12 @@ import './logout-confirmation.css';
 export function LogoutConfirmation({
   appName,
   confirm,
+  forceLocal,
   closed,
 }: {
   appName: string;
   confirm: () => Promise<void>;
+  forceLocal?: () => void;
   closed: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -88,9 +90,22 @@ export function LogoutConfirmation({
         <span>تأكد من حفظ أي تغييرات قبل المتابعة.</span>
       </div>
       {failed && (
-        <p className="logout-confirmation-error" role="alert">
-          تعذّر تسجيل الخروج. تحقّق من الاتصال وحاول مجددًا.
-        </p>
+        <div className="logout-confirmation-error" role="alert">
+          <p>تعذّر تسجيل الخروج. تحقّق من الاتصال وحاول مجددًا.</p>
+          {forceLocal && (
+            <button
+              type="button"
+              className="logout-confirmation-local"
+              disabled={busy}
+              onClick={() => {
+                dialogRef.current?.close();
+                forceLocal();
+              }}
+            >
+              إنهاء الجلسة محليًا على هذا الجهاز
+            </button>
+          )}
+        </div>
       )}
       <div className="logout-confirmation-actions">
         <button

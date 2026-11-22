@@ -1,3 +1,7 @@
+import {
+  decodeJwtExpiryMs,
+  formatApiErrorMessage,
+} from '@akeela/portal/error-messages';
 import { browserSessionStore } from '@akeela/portal/session-store';
 import type { SessionStore } from '@akeela/portal/session-store';
 import type { Envelope, Tokens, User } from './models.ts';
@@ -21,24 +25,10 @@ export class ApiError extends Error {
     this.retryAfter = retryAfter;
   }
 }
-const messages: Record<string, string> = {
-  UNAUTHENTICATED: 'انتهت الجلسة. سجّل الدخول مجددًا.',
-  FORBIDDEN: 'لا يملك حسابك صلاحية تنفيذ هذا الإجراء.',
-  EMAIL_NOT_VERIFIED: 'أكّد بريدك الإلكتروني قبل تسجيل الدخول.',
-  RESTAURANT_NOT_ACTIVE: 'إدارة المطعم غير متاحة حتى تفعيله من الإدارة.',
-  NOT_FOUND: 'العنصر غير موجود أو لم يعد متاحًا.',
-  CONFLICT:
-    'تعذّر الحفظ بسبب بيانات مكررة أو تغيّر الحالة. راجع البيانات وحدّث الصفحة.',
-  ORDER_CONFLICT: 'تغيّر الطلب أثناء التنفيذ. تم طلب أحدث حالة.',
-  DELIVERY_COMPANY_UNAVAILABLE:
-    'تعذّر قبول الطلب لعدم توفر شركة التوصيل. ما زال الطلب بانتظار القبول.',
-  VALIDATION_ERROR: 'راجع الحقول الموضحة ثم حاول مجددًا.',
-  RATE_LIMITED: 'محاولات كثيرة. انتظر قليلًا قبل المحاولة مجددًا.',
-  OTP_INVALID_OR_EXPIRED: 'الرمز غير صحيح أو انتهت صلاحيته. اطلب رمزًا جديدًا.',
-  NETWORK: 'تعذّر الاتصال بالخدمة. تحقق من الاتصال ثم أعد المحاولة.',
-};
 export function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) return messages[error.code] ?? error.message;
+  if (error instanceof ApiError) {
+    return formatApiErrorMessage(error.code, error.message, error.retryAfter);
+  }
   return error instanceof Error ? error.message : 'تعذّر إتمام العملية.';
 }
 export class ApiClient {
@@ -127,6 +117,10 @@ export class ApiClient {
   }
   async tokenForRealtime(): Promise<string | null> {
     if (!this.tokens) return null;
+    const expMs = decodeJwtExpiryMs(this.tokens.access_token);
+    if (expMs !== null && expMs - Date.now() > 60_000) {
+      return this.tokens.access_token;
+    }
     await this.request('/me');
     return this.tokens?.access_token ?? null;
   }
@@ -195,7 +189,11 @@ export class ApiClient {
       });
     } catch (error) {
       if (options.signal?.aborted) throw error;
-      throw new ApiError(0, 'NETWORK', messages.NETWORK);
+      throw new ApiError(
+        0,
+        'NETWORK',
+        'تعذّر الاتصال بالخدمة. تحقق من الاتصال ثم أعد المحاولة.',
+      );
     }
     if (
       response.status === 401 &&

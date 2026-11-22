@@ -7,6 +7,11 @@ import { RestaurantsService } from '../restaurants/restaurants.service';
 import { DeliveryService } from '../delivery/delivery.service';
 import { Order, OrderStatus } from './entities/order.entity';
 import { AnalyticsRange } from './orders.dto';
+import {
+  addDaysIso,
+  AnalyticsCache,
+  resolveCairoAnalyticsWindow,
+} from './analytics-cache';
 
 function roundRate(part: number, total: number): number {
   if (!total) return 0;
@@ -21,14 +26,10 @@ function parseOptionalMinutes(value: string | number | null | undefined) {
     : null;
 }
 
-function addDaysIso(isoDate: string, deltaDays: number): string {
-  const [y, m, d] = isoDate.split('-').map(Number);
-  const dt = new Date(Date.UTC(y!, m! - 1, d! + deltaDays));
-  return dt.toISOString().slice(0, 10);
-}
-
 @Injectable()
 export class DeliveryAnalyticsService {
+  private readonly cache = new AnalyticsCache();
+
   constructor(
     private readonly db: DataSource,
     private readonly users: UsersService,
@@ -57,56 +58,22 @@ export class DeliveryAnalyticsService {
     if (!company.is_active) {
       throw new ApiError(
         403,
-        'FORBIDDEN',
-        'Delivery company profile must be active.',
+        'DELIVERY_COMPANY_INACTIVE',
+        'Delivery company service is not active.',
       );
     }
     return company.company_id;
   }
 
-  private async resolveWindow(range: AnalyticsRange): Promise<{
-    todayIso: string;
-    startIso: string | null;
-    since: Date | null;
-    prevSince: Date | null;
-    days: number | null;
-  }> {
-    const [{ today_iso }] = (await this.db.query(
-      "SELECT to_char((NOW() AT TIME ZONE 'Africa/Cairo')::date, 'YYYY-MM-DD') AS today_iso",
-    )) as [{ today_iso: string }];
-
-    if (range === 'all') {
-      return {
-        todayIso: today_iso,
-        startIso: null,
-        since: null,
-        prevSince: null,
-        days: null,
-      };
-    }
-
-    const days =
-      range === 'today' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : 90;
-    const startIso = addDaysIso(today_iso, -(days - 1));
-    const prevStartIso = addDaysIso(startIso, -days);
-
-    const [{ since, prev_since }] = (await this.db.query(
-      "SELECT (CAST($1 AS date)::timestamp AT TIME ZONE 'Africa/Cairo') AS since, (CAST($2 AS date)::timestamp AT TIME ZONE 'Africa/Cairo') AS prev_since",
-      [startIso, prevStartIso],
-    )) as [{ since: Date; prev_since: Date }];
-
-    return {
-      todayIso: today_iso,
-      startIso,
-      since: new Date(since),
-      prevSince: new Date(prev_since),
-      days,
-    };
-  }
-
   async overview(actor: AuthActor, range: AnalyticsRange = '30d') {
     const companyId = await this.assertActiveCompany(actor);
-    const window = await this.resolveWindow(range);
+    return this.cache.getOrLoad(`delivery:${companyId}:${range}`, () =>
+      this.computeOverview(companyId, range),
+    );
+  }
+
+  private async computeOverview(companyId: string, range: AnalyticsRange) {
+    const window = await resolveCairoAnalyticsWindow(this.db, range);
     const ordersRepo = this.db.getRepository(Order);
 
     const kpiQuery = (start: Date | null, end: Date | null) => {
@@ -180,10 +147,13 @@ export class DeliveryAnalyticsService {
       .where('o.company_id = :companyId', { companyId })
       .groupBy(
         "to_char((o.created_at AT TIME ZONE 'Africa/Cairo')::date, 'YYYY-MM-DD')",
-      )
-      .orderBy('date', 'ASC');
+      );
     if (window.since) {
-      dailyQb.andWhere('o.created_at >= :since', { since: window.since });
+      dailyQb
+        .andWhere('o.created_at >= :since', { since: window.since })
+        .orderBy('date', 'ASC');
+    } else {
+      dailyQb.orderBy('date', 'DESC').limit(90);
     }
 
     const hoursQb = ordersRepo
@@ -274,11 +244,14 @@ export class DeliveryAnalyticsService {
         "COUNT(*) FILTER (WHERE o.status = 'Picked_Up' AND o.updated_at <= :longTransitCutoff)::int",
         'long_in_transit',
       )
-      .where('o.company_id = :companyId', {
-        companyId,
-        staleUnassignedCutoff,
-        longTransitCutoff,
-      });
+      .where(
+        "o.company_id = :companyId AND o.status IN ('Accepted', 'Picked_Up')",
+        {
+          companyId,
+          staleUnassignedCutoff,
+          longTransitCutoff,
+        },
+      );
 
     const liveDriverLoadsQb = ordersRepo
       .createQueryBuilder('o')
@@ -290,18 +263,7 @@ export class DeliveryAnalyticsService {
       )
       .groupBy('o.driver_id');
 
-    const [
-      currentRow,
-      prevRow,
-      statusRows,
-      dailyRows,
-      hourRows,
-      driverStatsRows,
-      restRows,
-      liveQueueRow,
-      liveDriverLoadRows,
-      ownedDrivers,
-    ] = await Promise.all([
+    const [currentRow, prevRow, statusRows, rawDailyRows] = await Promise.all([
       kpiQuery(window.since, null),
       window.since && window.prevSince
         ? kpiQuery(window.prevSince, window.since)
@@ -314,6 +276,9 @@ export class DeliveryAnalyticsService {
         failed: number;
         delivery_fees: string;
       }>(),
+    ]);
+
+    const [hourRows, driverStatsRows, restRows] = await Promise.all([
       hoursQb.getRawMany<{ hour: number; orders: number }>(),
       driverStatsQb.getRawMany<{
         driver_id: string;
@@ -329,6 +294,9 @@ export class DeliveryAnalyticsService {
         failed_orders: number;
         delivery_fees: string;
       }>(),
+    ]);
+
+    const [liveQueueRow, liveDriverLoadRows, ownedDrivers] = await Promise.all([
       liveQueueQb.getRawOne<{
         unassigned_accepted: number;
         in_transit: number;
@@ -341,6 +309,8 @@ export class DeliveryAnalyticsService {
       }>(),
       this.delivery.companyDrivers(companyId),
     ]);
+
+    const dailyRows = window.since ? rawDailyRows : [...rawDailyRows].reverse();
 
     const status_breakdown = {
       Accepted: 0,
@@ -389,7 +359,7 @@ export class DeliveryAnalyticsService {
         );
       }
     } else {
-      for (const row of dailyRows.slice(-90)) {
+      for (const row of dailyRows) {
         daily_series.push({
           date: row.date,
           assigned: Number(row.assigned),

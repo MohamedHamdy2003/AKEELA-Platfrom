@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { cairo } from '../lib/format';
+import { cairo, cairoGreeting } from '../lib/format';
 import { ArrowLeft, CircleCheck, Clock3, ShieldAlert } from 'lucide-react';
 import { useResource } from '../lib/use-resource';
 import type { Dashboard, OrderSummary, Profile } from '../lib/models';
@@ -96,7 +96,7 @@ export function Home({
   return (
     <>
       <PageHeading
-        title={'صباح الخير، ' + profile.rest_title}
+        title={cairoGreeting() + '، ' + profile.rest_title}
         subtitle="كل ما يحتاجه يومك، في مكان واحد."
         action={
           <button className="button primary" onClick={() => navigate('orders')}>
@@ -151,12 +151,15 @@ export function Home({
         </button>
       </div>
       <div className="panel table-panel">
-        {resource.loading ? (
+        {!resource.result && resource.loading ? (
           <TableSkeleton />
-        ) : resource.error ? (
+        ) : !resource.result && resource.error ? (
           <Failure error={resource.error} retry={resource.reload} />
         ) : resource.result ? (
-          <OrdersTable orders={resource.result.data} onSelect={openOrder} />
+          <>
+            {Boolean(resource.error) && <Notice error={resource.error} />}
+            <OrdersTable orders={resource.result.data} onSelect={openOrder} />
+          </>
         ) : (
           <Empty />
         )}

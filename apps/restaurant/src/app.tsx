@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import logo from '@akeela/brand/logo.png';
 import logoWebp from '@akeela/brand/logo.webp';
-import { watchOrders } from '@akeela/portal/realtime';
+import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
 import { api } from './lib/api';
 import type { CatalogKind, Dashboard, Profile, User } from './lib/models';
 import { today } from './lib/format';
@@ -145,16 +145,35 @@ function Workspace() {
   const logoutTrigger = useRef<HTMLButtonElement>(null);
   const menuTrigger = useRef<HTMLButtonElement>(null);
   const [initialOrder, setInitialOrder] = useState<string | null>(null);
-  const navigate = useCallback((key: string) => {
+  const [ordersStatus, setOrdersStatus] = useState('');
+  const [authNotice, setAuthNotice] = useState('');
+  const [realtimeStatus, setRealtimeStatus] =
+    useState<RealtimeStatus>('connecting');
+  const lastStatusRefreshAt = useRef(0);
+  const hasDashboardRef = useRef(false);
+  hasDashboardRef.current = Boolean(dashboard && profile);
+  const navigate = useCallback((key: string, filter?: string) => {
     const target = '/' + key;
     if (window.location.pathname !== target) {
       window.history.pushState(null, '', target);
+    }
+    if (key === 'orders' && filter !== undefined) {
+      setOrdersStatus(filter);
     }
     setRoute(key);
     setMobile(false);
   }, []);
   const consumeInitial = useCallback(() => setInitialOrder(null), []);
-  const refreshStatus = useCallback(async () => {
+  const consumeOrdersStatus = useCallback(() => setOrdersStatus(''), []);
+  const refreshStatus = useCallback(async (force = false) => {
+    const now = Date.now();
+    if (
+      !force &&
+      hasDashboardRef.current &&
+      now - lastStatusRefreshAt.current < 60_000
+    ) {
+      return;
+    }
     const generation = sessionGeneration.current;
     setError(null);
     setBusy(true);
@@ -164,6 +183,7 @@ function Workspace() {
         api.request<Profile>('/restaurant/profile'),
       ]);
       if (generation === sessionGeneration.current) {
+        lastStatusRefreshAt.current = Date.now();
         setDashboard(status.data);
         setProfile(details.data);
       }
@@ -173,9 +193,14 @@ function Workspace() {
       if (generation === sessionGeneration.current) setBusy(false);
     }
   }, []);
+  const forceRefreshStatus = useCallback(
+    () => void refreshStatus(true),
+    [refreshStatus],
+  );
   useEffect(() => {
     api.onSessionEnd = () => {
       sessionGeneration.current++;
+      lastStatusRefreshAt.current = 0;
       setUser(null);
       setDashboard(null);
       setProfile(null);
@@ -183,7 +208,7 @@ function Workspace() {
     };
     api.onActivationDenied = () => {
       setDashboard((old) => (old ? { ...old, can_manage: false } : old));
-      void refreshStatus();
+      void refreshStatus(true);
     };
     return () => {
       api.onSessionEnd = undefined;
@@ -197,15 +222,16 @@ function Workspace() {
       baseUrl: import.meta.env.VITE_API_BASE_URL || '/api/v1',
       getToken: () => api.tokenForRealtime(),
       changed: () => window.dispatchEvent(new Event('akeela:orders-changed')),
+      status: setRealtimeStatus,
     });
   }, [authenticated, dashboard?.can_manage]);
   useEffect(() => {
-    if (authenticated) void refreshStatus();
+    if (authenticated) void refreshStatus(false);
   }, [authenticated, route, refreshStatus]);
   useEffect(() => {
     if (!user) return;
     const onFocus = () => {
-      void refreshStatus();
+      void refreshStatus(false);
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
@@ -231,6 +257,11 @@ function Workspace() {
     window.history.replaceState(null, '', '/');
     setRoute('home');
   }
+  function forceLocalLogout() {
+    api.clearSession();
+    window.history.replaceState(null, '', '/');
+    setRoute('home');
+  }
   if (restoring || restoreError)
     return (
       <main className="state" aria-label="استعادة الجلسة">
@@ -244,8 +275,11 @@ function Workspace() {
   if (!user)
     return (
       <Auth
+        initialNotice={authNotice}
         onLogin={(account) => {
           sessionGeneration.current++;
+          lastStatusRefreshAt.current = 0;
+          setAuthNotice('');
           setUser(account);
           navigate('home');
         }}
@@ -260,7 +294,7 @@ function Workspace() {
       ) : (
         <Failure
           error={error || new Error('تعذّر تحميل بيانات المطعم.')}
-          retry={refreshStatus}
+          retry={forceRefreshStatus}
         />
       )
     ) : locked ? (
@@ -269,7 +303,7 @@ function Workspace() {
         profile={profile}
         navigate={navigate}
         openOrder={() => undefined}
-        onProfileChanged={refreshStatus}
+        onProfileChanged={forceRefreshStatus}
       />
     ) : route === 'home' ? (
       <Home
@@ -280,16 +314,30 @@ function Workspace() {
           setInitialOrder(id);
           navigate('orders');
         }}
-        onProfileChanged={refreshStatus}
+        onProfileChanged={forceRefreshStatus}
       />
     ) : route === 'analytics' ? (
       <RestaurantAnalyticsScreen profile={profile} navigate={navigate} />
     ) : route === 'orders' ? (
-      <Orders initialId={initialOrder} onInitialConsumed={consumeInitial} />
+      <Orders
+        initialId={initialOrder}
+        onInitialConsumed={consumeInitial}
+        initialStatus={ordersStatus}
+        onInitialStatusConsumed={consumeOrdersStatus}
+      />
     ) : route === 'profile' ? (
-      <RestaurantProfile canManage={manageable} onSaved={refreshStatus} />
+      <RestaurantProfile canManage={manageable} onSaved={forceRefreshStatus} />
     ) : route === 'account' ? (
-      <Account user={user} canManage={manageable} onSaved={setUser} />
+      <Account
+        user={user}
+        canManage={manageable}
+        onSaved={setUser}
+        onPasswordChanged={() =>
+          setAuthNotice(
+            'تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.',
+          )
+        }
+      />
     ) : (
       <Catalog key={route} kind={route as CatalogKind} />
     );
@@ -415,6 +463,7 @@ function Workspace() {
         <LogoutConfirmation
           appName="لوحة المطعم"
           confirm={logout}
+          forceLocal={forceLocalLogout}
           closed={() => {
             setLogoutOpen(false);
             requestAnimationFrame(() => {
@@ -426,10 +475,27 @@ function Workspace() {
           }}
         />
       )}
-      <main id="main-content" className="workspace" inert={mobile}>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="workspace"
+        inert={mobile}
+      >
         <header className="topbar">
           <span>لوحة المطعم</span>
-          <span>{today()}</span>
+          <div className="topbar-meta">
+            {manageable && (
+              <span className={'rt-pill is-' + realtimeStatus}>
+                <span className="rt-dot" aria-hidden="true" />
+                {realtimeStatus === 'connected'
+                  ? 'تحديث لحظي متصل'
+                  : realtimeStatus === 'offline'
+                    ? 'الاتصال اللحظي منقطع'
+                    : 'جارٍ الاتصال اللحظي…'}
+              </span>
+            )}
+            <span>{today()}</span>
+          </div>
         </header>
         {!!error && dashboard && <Notice error={error} />}
         <div className="workspace-body" key={route} data-route={route}>
@@ -442,7 +508,7 @@ function Workspace() {
             <button
               className="text-button"
               disabled={busy}
-              onClick={refreshStatus}
+              onClick={forceRefreshStatus}
             >
               <RefreshCw size={16} />
               تحديث الحالة

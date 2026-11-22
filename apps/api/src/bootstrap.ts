@@ -23,6 +23,9 @@ export function configureApplication(
         redirect: false,
         immutable: true,
         maxAge: '1y',
+        setHeaders: (res) => {
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+        },
       }),
     );
   const express = app.getHttpAdapter().getInstance();

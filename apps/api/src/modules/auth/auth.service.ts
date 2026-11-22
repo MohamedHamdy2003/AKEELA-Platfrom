@@ -298,7 +298,6 @@ export class AuthService {
     return this.db.transaction(async (manager) => {
       const account = await this.users.byId(candidate.user_id, manager, true);
       if (!account) this.unauthorized();
-      this.checkAccount(account);
       const repo = manager.getRepository(AuthSession);
       const session = await repo.findOne({
         where: { session_id: candidate.session_id, refresh_token_hash: hash },
@@ -306,6 +305,7 @@ export class AuthService {
       });
       if (!session || session.revoked_at || session.expires_at <= new Date())
         this.unauthorized();
+      this.checkAccount(account);
       const refresh = this.crypto.newRefresh();
       session.refresh_token_hash = this.crypto.tokenHash(refresh);
       await repo.save(session);
@@ -369,7 +369,10 @@ export class AuthService {
   ): Promise<void> {
     await manager
       .getRepository(AuthSession)
-      .update({ user_id: userId }, { revoked_at: new Date() });
+      .update(
+        { user_id: userId, revoked_at: IsNull() },
+        { revoked_at: new Date() },
+      );
   }
   async logout(actor: AuthActor): Promise<void> {
     await this.db.transaction(async (manager) => {
@@ -384,7 +387,42 @@ export class AuthService {
   }
   async resetPassword(input: ResetPasswordDto): Promise<void> {
     const candidate = await this.users.byEmail(input.email);
-    if (!candidate) this.invalidOtp();
+    if (!candidate || !candidate.is_active) this.invalidOtp();
+    // Verify OTP validity before running expensive scrypt hashing to prevent
+    // unauthenticated CPU/memory DoS and account-existence timing leaks.
+    const precheck = await this.db
+      .getRepository(AuthChallenge)
+      .createQueryBuilder('c')
+      .addSelect('c.otp_hash')
+      .where('c.user_id = :userId AND c.purpose = :purpose', {
+        userId: candidate.user_id,
+        purpose: 'Password_Reset',
+      })
+      .getOne();
+    if (
+      !precheck ||
+      precheck.consumed_at ||
+      precheck.expires_at <= new Date() ||
+      precheck.attempt_count >=
+        this.config.get('OTP_MAX_ATTEMPTS', { infer: true })
+    )
+      this.invalidOtp();
+    if (
+      !this.crypto.matchesOtp(
+        candidate.user_id,
+        'Password_Reset',
+        input.otp,
+        precheck.otp_hash,
+      )
+    ) {
+      await this.db.transaction(async (manager) => {
+        const account = await this.users.byId(candidate.user_id, manager, true);
+        if (account?.is_active) {
+          await this.consumeCode(account, 'Password_Reset', input.otp, manager);
+        }
+      });
+      this.invalidOtp();
+    }
     const hash = await this.crypto.hashPassword(input.new_password);
     const success = await this.db.transaction(async (manager) => {
       const account = await this.users.byId(candidate.user_id, manager, true);
@@ -407,16 +445,21 @@ export class AuthService {
     actor: AuthActor,
     input: ChangePasswordDto,
   ): Promise<void> {
+    // Perform both scrypt derivations outside the DB transaction so no pool
+    // connection or pessimistic user row lock is held during hashing.
+    const candidate = await this.users.byId(actor.userId);
+    if (
+      !candidate ||
+      !(await this.crypto.verifyPassword(
+        input.current_password,
+        candidate.password_hash,
+      ))
+    )
+      this.unauthorized();
     const hash = await this.crypto.hashPassword(input.new_password);
     await this.db.transaction(async (manager) => {
       const account = await this.users.byId(actor.userId, manager, true);
-      if (
-        !account ||
-        !(await this.crypto.verifyPassword(
-          input.current_password,
-          account.password_hash,
-        ))
-      )
+      if (!account || account.password_hash !== candidate.password_hash)
         this.unauthorized();
       await this.assertLiveSession(actor, manager);
       this.checkAccount(account);
@@ -426,12 +469,14 @@ export class AuthService {
         manager,
       );
       await this.revokeAll(account.user_id, manager);
-      await manager
-        .getRepository(AuthChallenge)
-        .update(
-          { user_id: account.user_id, purpose: 'Password_Reset' },
-          { consumed_at: new Date() },
-        );
+      await manager.getRepository(AuthChallenge).update(
+        {
+          user_id: account.user_id,
+          purpose: 'Password_Reset',
+          consumed_at: IsNull(),
+        },
+        { consumed_at: new Date() },
+      );
     });
   }
   private async assertLiveSession(

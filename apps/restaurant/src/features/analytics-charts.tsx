@@ -227,7 +227,13 @@ export function RestaurantTrendChart({
                 height={Math.max(4, padTop + plotH - points[0]!.y)}
                 rx={8}
                 fill="#008657"
+                tabIndex={0}
+                role="button"
+                aria-label={`${shortCairoDate(points[0]!.point.date)}: ${points[0]!.point.orders} طلب`}
                 onMouseEnter={() => setActiveIndex(0)}
+                onFocus={() => setActiveIndex(0)}
+                onBlur={() => setActiveIndex(null)}
+                onClick={() => setActiveIndex((cur) => (cur === 0 ? null : 0))}
               />
             ) : (
               <>
@@ -268,7 +274,17 @@ export function RestaurantTrendChart({
                     height={plotH}
                     fill="transparent"
                     className="rst-hit"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${shortCairoDate(pt.point.date)}: ${pt.point.orders} طلب`}
                     onMouseEnter={() => setActiveIndex(pt.index)}
+                    onFocus={() => setActiveIndex(pt.index)}
+                    onBlur={() => setActiveIndex(null)}
+                    onClick={() =>
+                      setActiveIndex((cur) =>
+                        cur === pt.index ? null : pt.index,
+                      )
+                    }
                   />
                   {(isActive || points.length <= 14) && (
                     <circle
@@ -311,7 +327,7 @@ export function RestaurantStatusDonut({
   onSelectOrders,
 }: {
   counts: Record<OrderStatus, number>;
-  onSelectOrders: () => void;
+  onSelectOrders: (status?: OrderStatus) => void;
 }) {
   const [hoveredStatus, setHoveredStatus] = useState<OrderStatus | null>(null);
   const total = STATUS_ORDER.reduce((sum, key) => sum + (counts[key] ?? 0), 0);
@@ -383,8 +399,20 @@ export function RestaurantStatusDonut({
                     strokeDasharray={`${Math.max(1.5, seg.dash - 1.2)} ${circumference}`}
                     strokeDashoffset={-seg.offset}
                     className="rst-donut-seg"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${statuses[seg.key]}: ${seg.value} (${seg.pct}%)`}
                     onMouseEnter={() => setHoveredStatus(seg.key)}
                     onMouseLeave={() => setHoveredStatus(null)}
+                    onFocus={() => setHoveredStatus(seg.key)}
+                    onBlur={() => setHoveredStatus(null)}
+                    onClick={() => onSelectOrders(seg.key)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectOrders(seg.key);
+                      }
+                    }}
                   />
                 );
               })}
@@ -414,7 +442,9 @@ export function RestaurantStatusDonut({
                   className={'rst-legend-row' + (dimmed ? ' is-dimmed' : '')}
                   onMouseEnter={() => setHoveredStatus(key)}
                   onMouseLeave={() => setHoveredStatus(null)}
-                  onClick={onSelectOrders}
+                  onFocus={() => setHoveredStatus(key)}
+                  onBlur={() => setHoveredStatus(null)}
+                  onClick={() => onSelectOrders(key)}
                 >
                   <span className="rst-legend-label">
                     <span
@@ -535,7 +565,17 @@ export function RestaurantPeakHoursChart({
             return (
               <g
                 key={point.hour}
+                tabIndex={0}
+                role="button"
+                aria-label={`${formatHourAr(point.hour)}: ${point.orders} طلب`}
                 onMouseEnter={() => setHoveredHour(point.hour)}
+                onFocus={() => setHoveredHour(point.hour)}
+                onBlur={() => setHoveredHour(null)}
+                onClick={() =>
+                  setHoveredHour((cur) =>
+                    cur === point.hour ? null : point.hour,
+                  )
+                }
                 className="rst-hit"
               >
                 <rect

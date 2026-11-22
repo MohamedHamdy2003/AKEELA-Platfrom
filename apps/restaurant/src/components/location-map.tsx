@@ -23,6 +23,10 @@ export function LocationMap({
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const tilesRef = useRef<L.TileLayer | null>(null);
+  const editableRef = useRef(editable);
+  const onChooseRef = useRef(onChoose);
+  editableRef.current = editable;
+  onChooseRef.current = onChoose;
   const [tileError, setTileError] = useState(false);
 
   useEffect(() => {
@@ -43,9 +47,9 @@ export function LocationMap({
     tilesRef.current = tiles;
     tiles.on('tileerror', () => setTileError(true));
     map.on('click', (event: L.LeafletMouseEvent) => {
-      if (!editable) return;
+      if (!editableRef.current) return;
       const point = event.latlng.wrap();
-      onChoose({
+      onChooseRef.current({
         latitude: Math.max(-90, Math.min(90, point.lat)).toFixed(7),
         longitude: point.lng.toFixed(7),
       });
@@ -61,7 +65,21 @@ export function LocationMap({
       markerRef.current = null;
       tilesRef.current = null;
     };
-  }, [onChoose, editable]);
+  }, []);
+
+  useEffect(() => {
+    const marker = markerRef.current;
+    if (!marker) return;
+    if (editable) marker.dragging?.enable();
+    else marker.dragging?.disable();
+    const element = marker.getElement();
+    if (element) {
+      element.title = editable
+        ? 'موقع المطعم — اسحب الدبوس أو حرّكه بمفاتيح الأسهم'
+        : 'موقع المطعم المحفوظ';
+      element.tabIndex = editable ? 0 : -1;
+    }
+  }, [editable]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -81,11 +99,12 @@ export function LocationMap({
       return;
     }
     const point = L.latLng(latitude, longitude);
+    const hadMarker = Boolean(markerRef.current);
     if (!markerRef.current) {
       const marker = L.marker(point, {
-        draggable: editable,
-        keyboard: editable,
-        title: editable
+        draggable: editableRef.current,
+        keyboard: editableRef.current,
+        title: editableRef.current
           ? 'موقع المطعم — اسحب الدبوس أو حرّكه بمفاتيح الأسهم'
           : 'موقع المطعم المحفوظ',
         icon: L.divIcon({
@@ -97,14 +116,13 @@ export function LocationMap({
       }).addTo(map);
       markerRef.current = marker;
       const choose = (position: L.LatLng) => {
-        if (!editable) return;
+        if (!editableRef.current) return;
         const next = position.wrap();
-        onChoose({
+        onChooseRef.current({
           latitude: Math.max(-90, Math.min(90, next.lat)).toFixed(7),
           longitude: next.lng.toFixed(7),
         });
       };
-      marker.on('dragstart', () => choose(marker.getLatLng()));
       marker.on('dragend', () => choose(marker.getLatLng()));
       marker.getElement()?.addEventListener('keydown', (event) => {
         const offsets: Record<string, [number, number]> = {
@@ -123,8 +141,9 @@ export function LocationMap({
         );
       });
     } else markerRef.current.setLatLng(point);
-    map.setView(point, 16, { animate: false });
-  }, [coordinates.latitude, coordinates.longitude, onChoose, editable]);
+    const targetZoom = hadMarker ? map.getZoom() : 16;
+    map.setView(point, targetZoom, { animate: false });
+  }, [coordinates.latitude, coordinates.longitude]);
 
   return (
     <div className="location-picker full">

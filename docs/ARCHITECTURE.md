@@ -6,7 +6,7 @@ The Restaurant client is now implemented in apps/restaurant with React/Vite/Type
 
 ## Scope and status
 
-One deployable NestJS application, one PostgreSQL database, and TypeORM. Features 01-14 include twenty table mappings, one history view and eight reviewed migrations. Features 01-16 are implemented, including image uploads and health checks. See [AUTH.md](AUTH.md).
+One deployable NestJS application, one PostgreSQL database, and TypeORM. Features 01-14 include twenty table mappings, one history view and eleven reviewed migrations. Features 01-17 are implemented, including image uploads, health checks, and Socket.IO order notifications. See [AUTH.md](AUTH.md).
 
 The user approved the foundation and authorized Features 01-16, local tests, CI/CD and deployment preparation. Other features and actual VPS deployment still require authorization.
 

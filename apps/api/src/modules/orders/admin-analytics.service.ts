@@ -8,20 +8,21 @@ import { DeliveryService } from '../delivery/delivery.service';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { AnalyticsRange } from './orders.dto';
+import {
+  addDaysIso,
+  AnalyticsCache,
+  resolveCairoAnalyticsWindow,
+} from './analytics-cache';
 
 function roundRate(part: number, total: number): number {
   if (!total) return 0;
   return Math.round((part / total) * 1000) / 10;
 }
 
-function addDaysIso(isoDate: string, deltaDays: number): string {
-  const [y, m, d] = isoDate.split('-').map(Number);
-  const dt = new Date(Date.UTC(y!, m! - 1, d! + deltaDays));
-  return dt.toISOString().slice(0, 10);
-}
-
 @Injectable()
 export class AdminAnalyticsService {
+  private readonly cache = new AnalyticsCache();
+
   constructor(
     private readonly db: DataSource,
     private readonly users: UsersService,
@@ -48,49 +49,15 @@ export class AdminAnalyticsService {
     }
   }
 
-  private async resolveWindow(range: AnalyticsRange): Promise<{
-    todayIso: string;
-    startIso: string | null;
-    since: Date | null;
-    prevSince: Date | null;
-    days: number | null;
-  }> {
-    const [{ today_iso }] = (await this.db.query(
-      "SELECT to_char((NOW() AT TIME ZONE 'Africa/Cairo')::date, 'YYYY-MM-DD') AS today_iso",
-    )) as [{ today_iso: string }];
-
-    if (range === 'all') {
-      return {
-        todayIso: today_iso,
-        startIso: null,
-        since: null,
-        prevSince: null,
-        days: null,
-      };
-    }
-
-    const days =
-      range === 'today' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : 90;
-    const startIso = addDaysIso(today_iso, -(days - 1));
-    const prevStartIso = addDaysIso(startIso, -days);
-
-    const [{ since, prev_since }] = (await this.db.query(
-      "SELECT (CAST($1 AS date)::timestamp AT TIME ZONE 'Africa/Cairo') AS since, (CAST($2 AS date)::timestamp AT TIME ZONE 'Africa/Cairo') AS prev_since",
-      [startIso, prevStartIso],
-    )) as [{ since: Date; prev_since: Date }];
-
-    return {
-      todayIso: today_iso,
-      startIso,
-      since: new Date(since),
-      prevSince: new Date(prev_since),
-      days,
-    };
-  }
-
   async overview(actor: AuthActor, range: AnalyticsRange = '30d') {
     await this.assertActiveAdmin(actor);
-    const window = await this.resolveWindow(range);
+    return this.cache.getOrLoad(`admin:${range}`, () =>
+      this.computeOverview(range),
+    );
+  }
+
+  private async computeOverview(range: AnalyticsRange) {
+    const window = await resolveCairoAnalyticsWindow(this.db, range);
     const ordersRepo = this.db.getRepository(Order);
 
     const kpiQuery = (start: Date | null, end: Date | null) => {
@@ -165,10 +132,13 @@ export class AdminAnalyticsService {
       )
       .groupBy(
         "to_char((o.created_at AT TIME ZONE 'Africa/Cairo')::date, 'YYYY-MM-DD')",
-      )
-      .orderBy('date', 'ASC');
+      );
     if (window.since) {
-      dailyQb.where('o.created_at >= :since', { since: window.since });
+      dailyQb
+        .where('o.created_at >= :since', { since: window.since })
+        .orderBy('date', 'ASC');
+    } else {
+      dailyQb.orderBy('date', 'DESC').limit(90);
     }
 
     const hoursQb = ordersRepo
@@ -185,26 +155,47 @@ export class AdminAnalyticsService {
       hoursQb.where('o.created_at >= :since', { since: window.since });
     }
 
-    const restaurantsQb = ordersRepo
-      .createQueryBuilder('o')
-      .select('o.rest_id', 'rest_id')
-      .addSelect('COUNT(*)::int', 'total_orders')
-      .addSelect(
-        "COUNT(*) FILTER (WHERE o.status = 'Delivered')::int",
-        'delivered_orders',
+    const restBaseSelect = () => {
+      const qb = ordersRepo
+        .createQueryBuilder('o')
+        .select('o.rest_id', 'rest_id')
+        .addSelect('COUNT(*)::int', 'total_orders')
+        .addSelect(
+          "COUNT(*) FILTER (WHERE o.status = 'Delivered')::int",
+          'delivered_orders',
+        )
+        .addSelect(
+          "COUNT(*) FILTER (WHERE o.status = 'Rejected')::int",
+          'rejected_orders',
+        )
+        .addSelect(
+          "COALESCE(SUM(o.total_price) FILTER (WHERE o.status = 'Delivered'), 0)::numeric(14,2)",
+          'gmv',
+        )
+        .groupBy('o.rest_id');
+      if (window.since) {
+        qb.where('o.created_at >= :since', { since: window.since });
+      }
+      return qb;
+    };
+
+    const topRestaurantsQb = restBaseSelect()
+      .orderBy(
+        "COALESCE(SUM(o.total_price) FILTER (WHERE o.status = 'Delivered'), 0)",
+        'DESC',
       )
-      .addSelect(
-        "COUNT(*) FILTER (WHERE o.status = 'Rejected')::int",
-        'rejected_orders',
+      .addOrderBy("COUNT(*) FILTER (WHERE o.status = 'Delivered')", 'DESC')
+      .addOrderBy('COUNT(*)', 'DESC')
+      .limit(5);
+
+    const attentionRestaurantsQb = restBaseSelect()
+      .having("COUNT(*) FILTER (WHERE o.status = 'Rejected') > 0")
+      .orderBy(
+        "(COUNT(*) FILTER (WHERE o.status = 'Rejected')::float / NULLIF(COUNT(*), 0))",
+        'DESC',
       )
-      .addSelect(
-        "COALESCE(SUM(o.total_price) FILTER (WHERE o.status = 'Delivered'), 0)::numeric(14,2)",
-        'gmv',
-      )
-      .groupBy('o.rest_id');
-    if (window.since) {
-      restaurantsQb.where('o.created_at >= :since', { since: window.since });
-    }
+      .addOrderBy("COUNT(*) FILTER (WHERE o.status = 'Rejected')", 'DESC')
+      .limit(5);
 
     const topItemsQb = this.db
       .getRepository(OrderItem)
@@ -226,21 +217,23 @@ export class AdminAnalyticsService {
 
     const stalePendingCutoff = new Date(Date.now() - 15 * 60 * 1000);
     const staleAcceptedCutoff = new Date(Date.now() - 20 * 60 * 1000);
+    const staleAlertsQb = ordersRepo
+      .createQueryBuilder('o')
+      .select(
+        "COUNT(*) FILTER (WHERE o.status = 'Pending' AND o.created_at <= :stalePendingCutoff)::int",
+        'stale_pending',
+      )
+      .addSelect(
+        "COUNT(*) FILTER (WHERE o.status = 'Accepted' AND o.driver_id IS NULL AND o.updated_at <= :staleAcceptedCutoff)::int",
+        'stale_accepted',
+      )
+      .where("o.status IN ('Pending', 'Accepted')", {
+        stalePendingCutoff,
+        staleAcceptedCutoff,
+      });
 
-    const [
-      currentRow,
-      prevRow,
-      statusRows,
-      dailyRows,
-      hourRows,
-      restRows,
-      itemRows,
-      stalePending,
-      staleAccepted,
-      userSummary,
-      restActivation,
-      driverSummary,
-    ] = await Promise.all([
+    // Run in bounded batches of <= 4 concurrent queries so analytics never starve the DB pool.
+    const [currentRow, prevRow, statusRows, rawDailyRows] = await Promise.all([
       kpiQuery(window.since, null),
       window.since && window.prevSince
         ? kpiQuery(window.prevSince, window.since)
@@ -252,37 +245,45 @@ export class AdminAnalyticsService {
         delivered: number;
         gmv: string;
       }>(),
-      hoursQb.getRawMany<{ hour: number; orders: number }>(),
-      restaurantsQb.getRawMany<{
-        rest_id: string;
-        total_orders: number;
-        delivered_orders: number;
-        rejected_orders: number;
-        gmv: string;
-      }>(),
-      topItemsQb.getRawMany<{
-        rest_id: string;
-        item_name: string;
-        units_sold: number;
-        revenue: string;
-      }>(),
-      ordersRepo
-        .createQueryBuilder('o')
-        .where("o.status = 'Pending' AND o.created_at <= :cutoff", {
-          cutoff: stalePendingCutoff,
-        })
-        .getCount(),
-      ordersRepo
-        .createQueryBuilder('o')
-        .where(
-          "o.status = 'Accepted' AND o.driver_id IS NULL AND o.updated_at <= :cutoff",
-          { cutoff: staleAcceptedCutoff },
-        )
-        .getCount(),
-      this.users.analyticsSummary(window.since, window.prevSince),
-      this.restaurants.activationSummary(),
-      this.delivery.driverCounts(),
     ]);
+
+    const [hourRows, topRestRows, attentionRestRows, itemRows] =
+      await Promise.all([
+        hoursQb.getRawMany<{ hour: number; orders: number }>(),
+        topRestaurantsQb.getRawMany<{
+          rest_id: string;
+          total_orders: number;
+          delivered_orders: number;
+          rejected_orders: number;
+          gmv: string;
+        }>(),
+        attentionRestaurantsQb.getRawMany<{
+          rest_id: string;
+          total_orders: number;
+          delivered_orders: number;
+          rejected_orders: number;
+          gmv: string;
+        }>(),
+        topItemsQb.getRawMany<{
+          rest_id: string;
+          item_name: string;
+          units_sold: number;
+          revenue: string;
+        }>(),
+      ]);
+
+    const [staleRow, userSummary, restActivation, driverSummary] =
+      await Promise.all([
+        staleAlertsQb.getRawOne<{
+          stale_pending: number;
+          stale_accepted: number;
+        }>(),
+        this.users.analyticsSummary(window.since, window.prevSince),
+        this.restaurants.activationSummary(),
+        this.delivery.driverCounts(),
+      ]);
+
+    const dailyRows = window.since ? rawDailyRows : [...rawDailyRows].reverse();
 
     const status_breakdown: Record<OrderStatus, number> = {
       Pending: 0,
@@ -324,7 +325,7 @@ export class AdminAnalyticsService {
         );
       }
     } else {
-      for (const row of dailyRows.slice(-90)) {
+      for (const row of dailyRows) {
         daily_series.push({
           date: row.date,
           orders: Number(row.orders),
@@ -342,7 +343,13 @@ export class AdminAnalyticsService {
       orders: hourMap.get(hour) ?? 0,
     }));
 
-    const parsedRests = restRows.map((row) => {
+    const parseRestRow = (row: {
+      rest_id: string;
+      total_orders: number;
+      delivered_orders: number;
+      rejected_orders: number;
+      gmv: string;
+    }) => {
       const total = Number(row.total_orders);
       const delivered = Number(row.delivered_orders);
       const rejected = Number(row.rejected_orders);
@@ -354,25 +361,10 @@ export class AdminAnalyticsService {
         rejection_rate: roundRate(rejected, total),
         gmv: row.gmv,
       };
-    });
+    };
 
-    const topRaw = [...parsedRests]
-      .sort(
-        (a, b) =>
-          Number(b.gmv) - Number(a.gmv) ||
-          b.delivered_orders - a.delivered_orders ||
-          b.total_orders - a.total_orders,
-      )
-      .slice(0, 5);
-
-    const attentionRaw = [...parsedRests]
-      .filter((r) => r.rejected_orders > 0)
-      .sort(
-        (a, b) =>
-          b.rejection_rate - a.rejection_rate ||
-          b.rejected_orders - a.rejected_orders,
-      )
-      .slice(0, 5);
+    const topRaw = topRestRows.map(parseRestRow);
+    const attentionRaw = attentionRestRows.map(parseRestRow);
 
     const neededRestIds = [
       ...new Set([
@@ -436,8 +428,8 @@ export class AdminAnalyticsService {
         })),
       ),
       alerts: {
-        stale_pending_orders: stalePending,
-        stale_accepted_orders: staleAccepted,
+        stale_pending_orders: Number(staleRow?.stale_pending ?? 0),
+        stale_accepted_orders: Number(staleRow?.stale_accepted ?? 0),
         pending_restaurants: restActivation.pending,
         unverified_companies: userSummary.totals.unverified_companies,
       },

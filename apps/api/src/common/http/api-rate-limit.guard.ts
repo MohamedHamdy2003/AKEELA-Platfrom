@@ -37,16 +37,10 @@ export class ApiRateLimitGuard implements CanActivate {
     const current = this.counters.get(key);
     const active = current && current.until > now ? current : undefined;
 
-    if (
-      (active && active.count >= MAX_REQUESTS_PER_WINDOW) ||
-      (!active && this.counters.size >= MAX_TRACKED_IPS)
-    ) {
+    if (active && active.count >= MAX_REQUESTS_PER_WINDOW) {
       response.setHeader(
         'Retry-After',
-        Math.max(
-          1,
-          Math.ceil(((active?.until ?? now + WINDOW_MS) - now) / 1000),
-        ),
+        Math.max(1, Math.ceil((active.until - now) / 1000)),
       );
       throw new ApiError(
         429,
@@ -55,6 +49,17 @@ export class ApiRateLimitGuard implements CanActivate {
       );
     }
 
+    if (!active && this.counters.size >= MAX_TRACKED_IPS) {
+      for (const [entryKey, value] of this.counters) {
+        if (value.until <= now) this.counters.delete(entryKey);
+      }
+      if (this.counters.size >= MAX_TRACKED_IPS) {
+        const oldest = this.counters.keys().next().value;
+        if (oldest !== undefined) this.counters.delete(oldest);
+      }
+    }
+
+    this.counters.delete(key);
     this.counters.set(key, {
       count: (active?.count ?? 0) + 1,
       until: active?.until ?? now + WINDOW_MS,

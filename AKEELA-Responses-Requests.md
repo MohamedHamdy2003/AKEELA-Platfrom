@@ -259,15 +259,15 @@ Checkout calculates current server prices and creates a Pending order directly. 
 | POST | `/admin/orders/{order_id}/fail` | Mark an eligible order as Failed. | No body | `200` · OrderState |
 | GET | `/delivery-company/orders` | List orders assigned to the company. | Query: `page=1&per_page=20&status=Accepted&date_from=2026-11-01&date_to=2026-11-30` | `200` · List<OrderSummary> |
 | GET | `/delivery-company/orders/{order_id}` | Read assigned order details, pickup location, and delivery address. | No body | `200` · DeliveryOrder |
-| PUT | `/delivery-company/orders/{order_id}/driver` | Assign or change an owned active driver before pickup. | Body: `{"driver_id":"30"}` | `200` · OrderState |
-| POST | `/delivery-company/orders/{order_id}/pickup` | Mark an assigned Accepted order as Picked_Up. | No body | `200` · OrderState |
+| PUT | `/delivery-company/orders/{order_id}/driver` | Assign or reassign an owned active driver while Accepted or Picked_Up (transitions Accepted to Picked_Up). | Body: `{"driver_id":"30"}` | `200` · OrderState |
+| POST | `/delivery-company/orders/{order_id}/pickup` | Confirm pickup of an assigned Accepted or Picked_Up order (idempotent). | No body | `200` · OrderState |
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. | No body | `200` · OrderState |
 | GET | `/admin/orders/counts` | Return order counts grouped by status across the platform. | No body | `200` · OrderStatusCounts |
 | GET | `/delivery-company/orders/counts` | Return assigned order counts grouped by status for the company. | No body | `200` · OrderStatusCounts |
 | GET | `/admin/analytics` | Return platform KPIs, trends, peak hours, restaurant rankings, top items, alerts, and totals. | Query: `range=30d` | `200` · AdminAnalytics |
 | GET | `/delivery-company/analytics` | Return company-scoped dispatch KPIs, live queue alerts, fleet utilization, driver leaderboard, trends, peak hours, and top pickup restaurants. | Query: `range=30d` | `200` · DeliveryAnalytics |
 
-List date filters use valid `YYYY-MM-DD` dates in Africa/Cairo. Both bounds include their whole local day; `date_from` must not follow `date_to`. Delivery pickup details use the current restaurant address/coordinates; the customer delivery address and prices remain order snapshots. Only acceptance retries from Accepted are idempotent; other invalid/final-state transitions return `409 CONFLICT`.
+List date filters use valid `YYYY-MM-DD` dates in Africa/Cairo. Both bounds include their whole local day; `date_from` must not follow `date_to`. Delivery pickup details use the current restaurant address/coordinates; the customer delivery address and prices remain order snapshots. Acceptance retries from Accepted and pickup retries from Picked_Up are idempotent; other invalid/final-state transitions return `409 CONFLICT`.
 
 Order action response values:
 
@@ -276,7 +276,7 @@ Order action response values:
 | Customer cancel | Cancelled | null | null |
 | Restaurant reject | Rejected | null | null |
 | Restaurant accept | Accepted | Automatically selected company ID | null |
-| Company driver assignment | Accepted | Assigned company ID | Selected driver ID |
+| Company driver assignment | Picked_Up | Assigned company ID | Selected driver ID |
 | Company pickup | Picked_Up | Assigned company ID | Assigned driver ID |
 | Company delivery | Delivered | Assigned company ID | Assigned driver ID |
 | Admin fail | Failed | Existing company ID | Existing driver ID or null |

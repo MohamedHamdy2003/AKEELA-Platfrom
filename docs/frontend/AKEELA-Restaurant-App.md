@@ -79,29 +79,32 @@ All API paths below omit `/api/v1`. Configure the full API base URL; the API dom
 
 ## 03. Menu Management
 
-| Method | API                                                | Screen action                                     |
-| ------ | -------------------------------------------------- | ------------------------------------------------- |
-| GET    | `/restaurant/categories`                           | List owned categories, including inactive ones.   |
-| POST   | `/restaurant/categories`                           | Create a category.                                |
-| PATCH  | `/restaurant/categories/{cat_id}`                  | Edit title/order/activity.                        |
-| GET    | `/restaurant/products`                             | List products; optional `cat_id`.                 |
-| GET    | `/restaurant/products/{prod_id}`                   | Load a product for editing.                       |
-| POST   | `/restaurant/products`                             | Create a product in an owned category.            |
-| PATCH  | `/restaurant/products/{prod_id}`                   | Save product edits.                               |
-| PUT    | `/restaurant/products/{prod_id}/image`             | Upload its image after creation.                  |
-| GET    | `/restaurant/addons`                               | List owned addons.                                |
-| POST   | `/restaurant/addons`                               | Create an addon.                                  |
-| PATCH  | `/restaurant/addons/{addon_id}`                    | Edit name/price/activity.                         |
-| GET    | `/restaurant/products/{prod_id}/addons`            | Load addon links, including disabled links.       |
-| PUT    | `/restaurant/products/{prod_id}/addons/{addon_id}` | Create/enable/disable a link using `{is_active}`. |
-| GET    | `/restaurant/offers`                               | List offers, including inactive/expired ones.     |
-| POST   | `/restaurant/offers`                               | Create an offer.                                  |
-| PATCH  | `/restaurant/offers/{offer_id}`                    | Save offer edits.                                 |
-| PUT    | `/restaurant/offers/{offer_id}/image`              | Upload its image after creation.                  |
+| Method | API                                                | Screen action                                                       |
+| ------ | -------------------------------------------------- | ------------------------------------------------------------------- |
+| GET    | `/restaurant/categories`                           | List owned categories (with `product_count`), including inactive.   |
+| POST   | `/restaurant/categories`                           | Create a category (auto-assigned next `display_order`).             |
+| PATCH  | `/restaurant/categories/{cat_id}`                  | Edit title, swap `display_order` atomically, or toggle activity.    |
+| DELETE | `/restaurant/categories/{cat_id}`                  | Delete an empty category (`product_count === 0`) and compact order. |
+| GET    | `/restaurant/products`                             | List products; optional `cat_id` or `unlinked=true\|false`.         |
+| GET    | `/restaurant/products/{prod_id}`                   | Load a product for editing.                                         |
+| POST   | `/restaurant/products`                             | Create a product in an owned category or unlinked (`cat_id: null`). |
+| PATCH  | `/restaurant/products/{prod_id}`                   | Save product edits, move category, or unlink (`cat_id: null`).      |
+| DELETE | `/restaurant/products/{prod_id}`                   | Permanently delete an unlinked product (`cat_id === null`).         |
+| PUT    | `/restaurant/products/{prod_id}/image`             | Upload its image after creation.                                    |
+| GET    | `/restaurant/addons`                               | List owned addons; optional `unlinked=true\|false`.                 |
+| POST   | `/restaurant/addons`                               | Create an addon (starts unlinked and inactive).                     |
+| PATCH  | `/restaurant/addons/{addon_id}`                    | Edit name/price/activity (activity requires >=1 linked product).    |
+| DELETE | `/restaurant/addons/{addon_id}`                    | Permanently delete an unlinked addon (0 linked products).           |
+| GET    | `/restaurant/products/{prod_id}/addons`            | Load addon links, including disabled links.                         |
+| PUT    | `/restaurant/products/{prod_id}/addons/{addon_id}` | Create/enable/disable a link using `{is_active}`.                   |
+| GET    | `/restaurant/offers`                               | List offers, including inactive/expired ones.                       |
+| POST   | `/restaurant/offers`                               | Create an offer.                                                    |
+| PATCH  | `/restaurant/offers/{offer_id}`                    | Save offer edits.                                                   |
+| PUT    | `/restaurant/offers/{offer_id}/image`              | Upload its image after creation.                                    |
 
-- Category titles are unique within the restaurant. Display order is a nonnegative integer.
-- Product form: `cat_id`, `prod_name`, optional description/image URL, `price`, `is_active`. The server derives ownership; do not invent a `rest_id` body field.
-- Addon form: `addon_name`, `addon_price`, `is_active`. Link only owned addons/products. Disable records/links instead of showing unsupported Delete actions.
+- Category titles are unique within the restaurant. Display order is contiguous `1..N` per restaurant (auto-assigned on creation, swapped atomically on edit, compacted on empty-category deletion).
+- Product form: nullable `cat_id`, `prod_name`, optional description/image URL, `price`, `is_active`. Unlinked products (`cat_id: null`) stay inactive until linked to a category and can be permanently deleted from the unlinked pool while preserving order history snapshots. The server derives ownership; do not invent a `rest_id` body field.
+- Addon form: `addon_name`, `addon_price`, `is_active`. Link only owned addons/products. Unlinked addons stay inactive until linked to at least one product and can be permanently deleted when unlinked.
 - Offer form: title, optional description/image URL, `initial_price`, `real_price`, `starts_at`, `expires_at`, `is_active`. Real price cannot exceed initial price; end must follow start. Offers have no addons.
 - Offer date inputs mean Cairo time; send Z or the correct explicit offset. Never use a fixed +02 offset for all dates or silently use the browser's timezone.
 - Image picker: JPEG/PNG/WebP up to 5MB; multipart field `file`. The server returns `{image_url}` and saves the URL. Show preview, upload progress/error and an image fallback. See [Images](../IMAGES.md).

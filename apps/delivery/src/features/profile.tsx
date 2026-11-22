@@ -71,13 +71,24 @@ export function CompanyForm({
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const values = Object.fromEntries(new FormData(event.currentTarget));
+    if (busy) return;
+    const raw = Object.fromEntries(new FormData(event.currentTarget));
+    const companyName = String(raw.company_name ?? '').trim();
+    const companyPhone = String(raw.company_phone ?? '').trim();
+    const companyEmail = String(raw.company_email ?? '').trim();
+    const companyAddress = String(raw.company_address ?? '').trim();
     setBusy(true);
     setError(null);
+    setNotice('');
     try {
       const response = await api.request<Company>('/delivery-company/profile', {
         method: 'PATCH',
-        body: { ...values, company_email: values.company_email || null },
+        body: {
+          company_name: companyName,
+          company_phone: companyPhone,
+          company_email: companyEmail || null,
+          company_address: companyAddress,
+        },
       });
       setNotice('تم حفظ بيانات الشركة وتحديث هويتها في البوابة.');
       if (response.data) onUpdated?.(response.data);
@@ -166,6 +177,16 @@ export function CompanyForm({
                     name={name}
                     defaultValue={company[name] ?? ''}
                     required={name !== 'company_email'}
+                    dir={
+                      name === 'company_email' || name === 'company_phone'
+                        ? 'ltr'
+                        : undefined
+                    }
+                    pattern={
+                      name === 'company_phone'
+                        ? '\\+[1-9][0-9]{7,14}'
+                        : undefined
+                    }
                     type={
                       name === 'company_email'
                         ? 'email'

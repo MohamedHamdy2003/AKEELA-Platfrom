@@ -96,7 +96,7 @@ test('ImagesCleanupService deletes only old unreferenced managed WebP files', as
       mockConfig({ NODE_ENV: 'test', IMAGE_STORAGE_PATH: dir }),
       {
         referencedAvatarUrls: async () => [
-          `https://api.example.com/images/${referencedOld}`,
+          `https://api.example.com/images/${referencedOld.toUpperCase()}#cachebust`,
         ],
       } as unknown as CustomersService,
       { referencedImageUrls: async () => [] } as unknown as RestaurantsService,

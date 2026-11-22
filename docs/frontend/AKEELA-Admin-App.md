@@ -7,7 +7,7 @@ This application is implemented locally. Production hosting requires the tested 
 
 Read root [AGENTS.md](../../AGENTS.md) and [this app's instructions](../../apps/admin/AGENTS.md) for the scoped reading path. Use this guide for screens and permissions; consult only the matching canonical API sections/models for the feature in progress. Do not read other app guides or the full backend for orientation. Existing root specifications remain authoritative; this guide adds no backend features.
 
-API paths omit `/api/v1`. Use a configured full API base URL; the backend domain is undecided. `admin.akeelaonline.tech` hosts the frontend, not a separate backend/database.
+API paths omit `/api/v1`. Use a configured full API base URL; the production API domain is `api.akeelaonline.tech`. `admin.akeelaonline.tech` hosts the frontend, not a separate backend/database.
 
 ## Screens and Features
 

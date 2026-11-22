@@ -55,6 +55,17 @@ export class RestaurantsService {
     return profile;
   }
 
+  async assertImageWritable(userId: string): Promise<void> {
+    const profile = await this.profile(userId);
+    if (!profile) throw new ApiError(404, 'NOT_FOUND', 'Restaurant not found.');
+    if (profile.activation_status !== 'Active')
+      throw new ApiError(
+        403,
+        'RESTAURANT_NOT_ACTIVE',
+        'Restaurant management is not active.',
+      );
+  }
+
   async setImage(
     userId: string,
     url: string,
@@ -101,19 +112,20 @@ export class RestaurantsService {
   }
 
   async listPublic(pagination: { skip: number; take: number }) {
-    const ids = await this.users.activeVerifiedRestaurantIds();
-    if (!ids.length) return { items: [], total: 0 };
     const [items, total] = await this.dataSource
       .getRepository(RestaurantProfile)
-      .findAndCount({
-        where: {
-          user_id: In(ids),
-          activation_status: 'Active',
-          is_active: true,
-        },
-        order: { created_at: 'DESC', rest_id: 'DESC' },
-        ...pagination,
-      });
+      .createQueryBuilder('r')
+      .innerJoin(
+        'users',
+        'u',
+        "u.user_id = r.user_id AND u.role = 'Restaurant' AND u.is_active = true AND u.email_verified_at IS NOT NULL",
+      )
+      .where("r.activation_status = 'Active' AND r.is_active = true")
+      .orderBy('r.created_at', 'DESC')
+      .addOrderBy('r.rest_id', 'DESC')
+      .skip(pagination.skip)
+      .take(pagination.take)
+      .getManyAndCount();
     return { items, total };
   }
 

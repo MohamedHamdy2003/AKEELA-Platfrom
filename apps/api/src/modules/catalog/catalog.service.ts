@@ -21,12 +21,46 @@ import { Offer } from './entities/offer.entity';
 import { ProductAddon } from './entities/product-addon.entity';
 import { Product } from './entities/product.entity';
 
+const cairoClockFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Africa/Cairo',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+});
+
 @Injectable()
 export class CatalogService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly restaurants: RestaurantsService,
   ) {}
+
+  async assertImageTarget(
+    userId: string,
+    kind: 'product' | 'offer',
+    id: string,
+  ): Promise<void> {
+    const profile = await this.restaurants.profile(userId);
+    if (!profile) throw new ApiError(404, 'NOT_FOUND', 'Restaurant not found.');
+    if (profile.activation_status !== 'Active')
+      throw new ApiError(
+        403,
+        'RESTAURANT_NOT_ACTIVE',
+        'Restaurant management is not active.',
+      );
+    if (kind === 'product') {
+      const exists = await this.dataSource
+        .getRepository(Product)
+        .existsBy({ rest_id: profile.rest_id, prod_id: id });
+      if (!exists) throw new ApiError(404, 'NOT_FOUND', 'Product not found.');
+    } else {
+      const exists = await this.dataSource
+        .getRepository(Offer)
+        .existsBy({ rest_id: profile.rest_id, offer_id: id });
+      if (!exists) throw new ApiError(404, 'NOT_FOUND', 'Offer not found.');
+    }
+  }
 
   async setImage(
     userId: string,
@@ -865,11 +899,13 @@ export class CatalogService {
     ]);
     const addonMap = new Map(addons.map((a) => [a.addon_id, a]));
 
-    return links.map((link) => ({
-      link,
-      addon: addonMap.get(link.addon_id)!,
-      linkedProductIds: linkedMap.get(link.addon_id.toString()) ?? [],
-    }));
+    return links
+      .filter((link) => addonMap.has(link.addon_id))
+      .map((link) => ({
+        link,
+        addon: addonMap.get(link.addon_id)!,
+        linkedProductIds: linkedMap.get(link.addon_id.toString()) ?? [],
+      }));
   }
 
   async setProductAddon(
@@ -1098,14 +1134,7 @@ export class CatalogService {
   // --- Feature 09: Public Restaurant Menu ---
 
   private isRestaurantOpen(profile: RestaurantProfile): boolean {
-    const now = new Date();
-    const local = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Africa/Cairo',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23',
-    }).format(now);
+    const local = cairoClockFormatter.format(new Date());
     const [h = 0, m = 0, sec = 0] = local.split(':').map(Number);
     const nowSec = h * 3600 + m * 60 + sec;
 

@@ -12,9 +12,14 @@ import { AuthService } from '../auth/auth.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 import { DeliveryService } from '../delivery/delivery.service';
 import { AuthActor } from '../../common/http/current-actor.decorator';
+import { ApiError } from '../../common/http/api-error';
 import { Environment } from '../../config/environment';
 import { cairoTimestamp } from '../../common/time';
 import { Order } from './entities/order.entity';
+
+const HANDSHAKE_WINDOW_MS = 60 * 1000;
+const HANDSHAKE_LIMIT_PER_IP = 60;
+const HANDSHAKE_MAX_IPS = 10_000;
 
 type Connection = {
   token: string;
@@ -42,6 +47,11 @@ export class OrderEventsGateway
     string,
     { expiry: NodeJS.Timeout; check: NodeJS.Timeout }
   >();
+  private readonly pendingByUser = new Map<string, number>();
+  private readonly handshakeRates = new Map<
+    string,
+    { count: number; until: number }
+  >();
   constructor(
     private readonly auth: AuthService,
     private readonly restaurants: RestaurantsService,
@@ -49,6 +59,47 @@ export class OrderEventsGateway
     private readonly db: DataSource,
     private readonly config: ConfigService<Environment, true>,
   ) {}
+
+  private isAuthRejection(error: unknown): boolean {
+    if (error instanceof ApiError) {
+      const status = error.getStatus();
+      return status === 401 || status === 403 || status === 404;
+    }
+    return error instanceof Error && error.message === 'INACTIVE';
+  }
+
+  private checkHandshakeRate(ip: string): boolean {
+    if (this.config.get('NODE_ENV', { infer: true }) === 'test') return true;
+    const now = Date.now();
+    if (this.handshakeRates.size > 1000) {
+      for (const [key, entry] of this.handshakeRates) {
+        if (entry.until <= now) this.handshakeRates.delete(key);
+      }
+    }
+    const current = this.handshakeRates.get(ip);
+    const active = current && current.until > now ? current : undefined;
+    if (active && active.count >= HANDSHAKE_LIMIT_PER_IP) return false;
+    if (!active && this.handshakeRates.size >= HANDSHAKE_MAX_IPS) {
+      const oldest = this.handshakeRates.keys().next().value;
+      if (oldest !== undefined) this.handshakeRates.delete(oldest);
+    }
+    this.handshakeRates.delete(ip);
+    this.handshakeRates.set(ip, {
+      count: (active?.count ?? 0) + 1,
+      until: active?.until ?? now + HANDSHAKE_WINDOW_MS,
+    });
+    return true;
+  }
+
+  private releasePending(socket: Socket): void {
+    const userId = socket.data.pendingUserId as string | undefined;
+    if (!userId) return;
+    delete socket.data.pendingUserId;
+    const current = this.pendingByUser.get(userId) ?? 0;
+    if (current <= 1) this.pendingByUser.delete(userId);
+    else this.pendingByUser.set(userId, current - 1);
+  }
+
   afterInit(namespace: Namespace) {
     this.namespace = namespace;
     namespace.use((socket, next) => {
@@ -58,18 +109,25 @@ export class OrderEventsGateway
         !this.config.get('CORS_ORIGINS', { infer: true }).includes(origin)
       )
         return next(new Error('ORIGIN_NOT_ALLOWED'));
+      const ip = socket.handshake.address || 'unknown';
+      if (!this.checkHandshakeRate(ip)) return next(new Error('RATE_LIMITED'));
       const token: unknown = socket.handshake.auth?.token;
       if (typeof token !== 'string' || token.length > 8192)
         return next(new Error('UNAUTHENTICATED'));
       void this.context(token)
         .then((context) => {
+          const userId = context.actor.userId;
           const count = [...namespace.sockets.values()].filter(
             (other) =>
               (other.data.connection as Connection | undefined)?.actor
-                .userId === context.actor.userId,
+                .userId === userId,
           ).length;
-          if (count >= 10) return next(new Error('CONNECTION_LIMIT'));
+          const pending = this.pendingByUser.get(userId) ?? 0;
+          if (count + pending >= 10) return next(new Error('CONNECTION_LIMIT'));
+          this.pendingByUser.set(userId, pending + 1);
+          socket.data.pendingUserId = userId;
           socket.data.connection = context;
+          setTimeout(() => this.releasePending(socket), 10_000).unref();
           next();
         })
         .catch(() => next(new Error('UNAUTHENTICATED')));
@@ -92,6 +150,8 @@ export class OrderEventsGateway
     return context;
   }
   handleConnection(socket: Socket) {
+    this.releasePending(socket);
+    if (!socket.connected) return;
     const context = socket.data.connection as Connection;
     if (context.actor.role === 'Admin') void socket.join('admin');
     else if (context.actor.role === 'Customer')
@@ -109,13 +169,16 @@ export class OrderEventsGateway
         .then((fresh) => {
           if (socket.connected) socket.data.connection = fresh;
         })
-        .catch(() => socket.disconnect(true));
+        .catch((error) => {
+          if (this.isAuthRejection(error)) socket.disconnect(true);
+        });
     }, 30000);
     expiry.unref();
     check.unref();
     this.timers.set(socket.id, { expiry, check });
   }
   handleDisconnect(socket: Socket) {
+    this.releasePending(socket);
     const timers = this.timers.get(socket.id);
     if (timers) {
       clearTimeout(timers.expiry);
@@ -130,6 +193,7 @@ export class OrderEventsGateway
       clearInterval(timers.check);
     }
     this.timers.clear();
+    this.pendingByUser.clear();
   }
   private canRead(context: Connection, order: Order) {
     return (
@@ -164,6 +228,8 @@ export class OrderEventsGateway
       const members = adapterRooms.get(room);
       if (members) for (const id of members) targetIds.add(id);
     }
+    // Deduplicate DB session/role checks when a user has multiple tabs open.
+    const sessionChecks = new Map<string, Promise<Connection>>();
     await Promise.allSettled(
       [...targetIds].map(async (socketId) => {
         const socket = namespace.sockets.get(socketId);
@@ -171,11 +237,17 @@ export class OrderEventsGateway
         const bound = socket.data.connection as Connection | undefined;
         if (!bound || !this.canRead(bound, order)) return;
         try {
-          const fresh = await this.context(bound.token);
+          const checkKey = bound.actor.sessionId;
+          let checkPromise = sessionChecks.get(checkKey);
+          if (!checkPromise) {
+            checkPromise = this.context(bound.token);
+            sessionChecks.set(checkKey, checkPromise);
+          }
+          const fresh = await checkPromise;
           if (socket.connected && this.canRead(fresh, order))
             socket.emit(event, payload);
-        } catch {
-          socket.disconnect(true);
+        } catch (error) {
+          if (this.isAuthRejection(error)) socket.disconnect(true);
         }
       }),
     );

@@ -12,12 +12,12 @@ header {
 handle_path /images/* {
 	root * /srv/images
 	header Cache-Control "public, max-age=31536000, immutable"
+	header Content-Security-Policy "default-src 'none'; sandbox"
 	file_server
 }
 handle {
-	reverse_proxy api:3000 {
-		health_uri /api/v1/health/ready
-		health_interval 10s
-		health_timeout 5s
+	request_body {
+		max_size 6MB
 	}
+	reverse_proxy api:3000
 }

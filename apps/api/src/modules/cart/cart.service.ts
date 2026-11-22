@@ -59,16 +59,20 @@ export class CartService {
       }
     }
   }
-  private async cart(userId: string, manager: EntityManager) {
-    return manager
+  private async cart(userId: string, manager: EntityManager, lock = true) {
+    const qb = manager
       .getRepository(Cart)
       .createQueryBuilder('c')
-      .where('c.customer_id = :userId', { userId })
-      .setLock('pessimistic_write')
-      .getOne();
+      .where('c.customer_id = :userId', { userId });
+    if (lock) qb.setLock('pessimistic_write');
+    return qb.getOne();
   }
-  async snapshot(userId: string, manager: EntityManager): Promise<CartView> {
-    const cart = await this.cart(userId, manager);
+  async snapshot(
+    userId: string,
+    manager: EntityManager,
+    lock = true,
+  ): Promise<CartView> {
+    const cart = await this.cart(userId, manager, lock);
     if (!cart)
       return {
         cart_id: null,
@@ -159,7 +163,10 @@ export class CartService {
     };
   }
   async get(userId: string) {
-    return this.transaction(userId, (m) => this.snapshot(userId, m));
+    return this.db.transaction('REPEATABLE READ', async (m) => {
+      await this.customers.assertExists(userId, m);
+      return this.snapshot(userId, m, false);
+    });
   }
   private async validateSelection(
     restId: string,
@@ -236,12 +243,21 @@ export class CartService {
       const prodId = input.prod_id ?? null;
       const offerId = input.offer_id ?? null;
       let cart = await this.cart(userId, m);
-      if (cart && cart.rest_id !== input.rest_id)
-        throw new ApiError(
-          409,
-          'CART_RESTAURANT_CONFLICT',
-          'Clear your cart before choosing another restaurant.',
-        );
+      if (cart && cart.rest_id !== input.rest_id) {
+        const remaining = await m
+          .getRepository(CartItem)
+          .countBy({ cart_id: cart.cart_id });
+        if (remaining === 0) {
+          await m.getRepository(Cart).delete({ cart_id: cart.cart_id });
+          cart = null;
+        } else {
+          throw new ApiError(
+            409,
+            'CART_RESTAURANT_CONFLICT',
+            'Clear your cart before choosing another restaurant.',
+          );
+        }
+      }
       await this.validateSelection(input.rest_id, prodId, offerId, addons, m);
       if (!cart)
         cart = await m
@@ -332,7 +348,14 @@ export class CartService {
         throw new ApiError(404, 'NOT_FOUND', 'Cart item not found.');
       if (input.quantity === 0) {
         await m.getRepository(CartItem).delete({ cart_item_id: itemId });
-        await this.touch(cart, m);
+        const remaining = await m
+          .getRepository(CartItem)
+          .countBy({ cart_id: cart.cart_id });
+        if (remaining === 0) {
+          await m.getRepository(Cart).delete({ cart_id: cart.cart_id });
+        } else {
+          await this.touch(cart, m);
+        }
         return this.snapshot(userId, m);
       }
       const old = await m
