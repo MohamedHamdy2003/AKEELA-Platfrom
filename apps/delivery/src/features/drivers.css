@@ -9,27 +9,23 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--p-accent-soft), #ffffff 28%),
-    #ffffff
-  );
-  border: 1px solid color-mix(in srgb, var(--p-accent), transparent 74%);
+  background: #f5f8fc;
+  border: 1px solid var(--p-line);
 }
 
 .driver-sheet-crest {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--p-sidebar), var(--p-accent));
-  color: #ffffff;
-  font-size: 15px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--p-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--p-accent), transparent 76%);
+  color: var(--p-accent);
+  font-size: 14px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--p-accent), transparent 72%);
 }
 
 .driver-sheet-meta {

@@ -17,10 +17,10 @@ export const DELIVERY_STATUS_ORDER: DeliveryStatusKey[] = [
 ];
 
 export const DELIVERY_STATUS_COLORS: Record<DeliveryStatusKey, string> = {
-  Delivered: '#146c36',
-  Picked_Up: '#2563eb',
-  Accepted: '#087e91',
-  Failed: '#b91c1c',
+  Delivered: '#008657',
+  Picked_Up: '#1b5ca8',
+  Accepted: '#0f766e',
+  Failed: '#c3343f',
 };
 
 function shortCairoDate(isoDate: string): string {
@@ -194,8 +194,8 @@ export function DeliveryTrendChart({
           >
             <defs>
               <linearGradient id="delTrendFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#087e91" stopOpacity="0.24" />
-                <stop offset="100%" stopColor="#087e91" stopOpacity="0.01" />
+                <stop offset="0%" stopColor="#1b5ca8" stopOpacity="0.16" />
+                <stop offset="100%" stopColor="#1b5ca8" stopOpacity="0.01" />
               </linearGradient>
             </defs>
 
@@ -206,7 +206,7 @@ export function DeliveryTrendChart({
                   y1={tick.y}
                   x2={width - padRight}
                   y2={tick.y}
-                  stroke="#e2e7eb"
+                  stroke="#e3e8ee"
                   strokeDasharray={tick.ratio === 0 ? undefined : '3 4'}
                 />
                 <text
@@ -227,7 +227,7 @@ export function DeliveryTrendChart({
                 width={56}
                 height={Math.max(4, padTop + plotH - points[0]!.y)}
                 rx={8}
-                fill="#087e91"
+                fill="#1b5ca8"
                 onMouseEnter={() => setActiveIndex(0)}
               />
             ) : (
@@ -236,7 +236,7 @@ export function DeliveryTrendChart({
                 <path
                   d={linePath}
                   fill="none"
-                  stroke="#087e91"
+                  stroke="#1b5ca8"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -250,7 +250,7 @@ export function DeliveryTrendChart({
                 y1={padTop}
                 x2={hovered.x}
                 y2={padTop + plotH}
-                stroke="#12b0bd"
+                stroke="#d96b27"
                 strokeWidth="1.25"
                 strokeDasharray="3 3"
               />
@@ -276,8 +276,8 @@ export function DeliveryTrendChart({
                       cx={pt.x}
                       cy={pt.y}
                       r={isActive ? 5.5 : 3}
-                      fill={isActive ? '#12b0bd' : '#ffffff'}
-                      stroke={isActive ? '#07384b' : '#087e91'}
+                      fill={isActive ? '#d96b27' : '#ffffff'}
+                      stroke={isActive ? '#13263a' : '#1b5ca8'}
                       strokeWidth={isActive ? 2.5 : 2}
                     />
                   )}
@@ -534,12 +534,12 @@ export function DeliveryPeakHoursChart({
             const isHovered = hoveredHour === point.hour;
             const fill =
               point.orders === 0
-                ? '#e2e7eb'
+                ? '#e3e8ee'
                 : isPeak
-                  ? '#12b0bd'
+                  ? '#d96b27'
                   : isHovered
-                    ? '#07384b'
-                    : '#087e91';
+                    ? '#13263a'
+                    : '#1b5ca8';
             return (
               <g
                 key={point.hour}
