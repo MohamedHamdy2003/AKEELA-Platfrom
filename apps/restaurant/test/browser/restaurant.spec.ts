@@ -59,7 +59,7 @@ test('desktop: identity, orders, details, acceptance and contract-safe category 
   ).toBeVisible();
   expect(
     writes.find((write) => write.path === '/restaurant/categories')?.body,
-  ).toEqual({ cat_title: 'وجبات', is_active: true, display_order: 0 });
+  ).toEqual({ cat_title: 'وجبات', is_active: true });
   await page.getByRole('button', { name: 'المنتجات', exact: true }).click();
   await page.getByRole('button', { name: 'إضافة منتج' }).click();
   await page.screenshot({
@@ -359,5 +359,242 @@ test('restaurant analytics page supports ranges, chart toggles, menu insights, a
   await expect(
     page.getByRole('heading', { name: 'الطلبات', exact: true }),
   ).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('catalog swap ordering, category details with move/unlink/delete, and unlinked products/addons pools', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  await page.setViewportSize({ width: 1440, height: 920 });
+  await setup(page);
+  await login(page);
+
+  // 1. Categories: auto-order + atomic swap selector
+  await page.getByRole('button', { name: 'التصنيفات', exact: true }).click();
+  await page.getByRole('button', { name: 'إضافة تصنيف', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('#2');
+  await page.getByLabel('اسم التصنيف', { exact: true }).fill('المشويات');
+  await page.getByRole('button', { name: 'حفظ التصنيف', exact: true }).click();
+
+  await page.getByRole('button', { name: 'إضافة تصنيف', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('#3');
+  await page.getByLabel('اسم التصنيف', { exact: true }).fill('المشروبات');
+  await page.getByRole('button', { name: 'حفظ التصنيف', exact: true }).click();
+
+  // Swap المشروبات (#3) with السندويتشات (#1)
+  await page
+    .getByRole('row', { name: /المشروبات/ })
+    .getByRole('button', { name: 'تعديل', exact: true })
+    .click();
+  const swapSelect = page.getByRole('combobox', {
+    name: 'ترتيب العرض (تبديل مع تصنيف موجود)',
+  });
+  await expect(swapSelect).toHaveValue('3');
+  await swapSelect.selectOption('1');
+  await page.getByRole('button', { name: 'حفظ التصنيف', exact: true }).click();
+
+  const catRows = page.locator('tbody tr');
+  await expect(catRows.nth(0)).toContainText('المشروبات');
+  await expect(catRows.nth(0)).toContainText('#1');
+  await expect(catRows.nth(2)).toContainText('السندويتشات');
+  await expect(catRows.nth(2)).toContainText('#3');
+
+  // 2. Add two products under السندويتشات + one unlinked draft product
+  await page.getByRole('button', { name: 'المنتجات', exact: true }).click();
+  await page.getByRole('button', { name: 'إضافة منتج', exact: true }).click();
+  await page.getByLabel('اسم المنتج').fill('شاورما فراخ');
+  await page
+    .getByRole('combobox', { name: 'التصنيف', exact: true })
+    .last()
+    .selectOption('100');
+  await page.getByLabel('السعر بالجنيه المصري').fill('85.00');
+  await page.getByRole('button', { name: 'حفظ المنتج', exact: true }).click();
+
+  await page.getByRole('button', { name: 'إضافة منتج', exact: true }).click();
+  await page.getByLabel('اسم المنتج').fill('برجر كلاسيك');
+  await page
+    .getByRole('combobox', { name: 'التصنيف', exact: true })
+    .last()
+    .selectOption('100');
+  await page.getByLabel('السعر بالجنيه المصري').fill('110.00');
+  await page.getByRole('button', { name: 'حفظ المنتج', exact: true }).click();
+
+  // Unlinked draft product starts inactive with disabled checkbox
+  await page.getByRole('button', { name: 'إضافة منتج', exact: true }).click();
+  await page.getByLabel('اسم المنتج').fill('بطاطس مقرمشة');
+  await expect(page.getByLabel('متاح للطلب')).toBeDisabled();
+  await page.getByLabel('السعر بالجنيه المصري').fill('35.00');
+  await page.getByRole('button', { name: 'حفظ المنتج', exact: true }).click();
+
+  // 3. Category Details: disabled Delete until products moved/unlinked, then unlocked!
+  await page.getByRole('button', { name: 'التصنيفات', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'السندويتشات', exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-catalog-categories.png'),
+    animations: 'disabled',
+  });
+  await page.getByRole('button', { name: 'السندويتشات', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'السندويتشات', exact: true }),
+  ).toBeVisible();
+  const deleteCatBtn = page.getByRole('button', {
+    name: 'مسح التصنيف',
+    exact: true,
+  });
+  await expect(deleteCatBtn).toBeVisible();
+  await expect(deleteCatBtn).toBeDisabled();
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-catalog-category-details.png'),
+    animations: 'disabled',
+  });
+
+  // Move شاورما فراخ to المشويات via modal
+  await page
+    .getByRole('row', { name: /شاورما فراخ/ })
+    .getByRole('button', { name: 'نقل لتصنيف آخر', exact: true })
+    .click();
+  await page
+    .getByRole('combobox', { name: 'التصنيف المستهدف', exact: true })
+    .selectOption('101');
+  await page.getByRole('button', { name: 'نقل المنتج', exact: true }).click();
+  await expect(page.getByRole('row', { name: /شاورما فراخ/ })).toHaveCount(0);
+
+  // Unlink برجر كلاسيك via confirmation modal
+  await page
+    .getByRole('row', { name: /برجر كلاسيك/ })
+    .getByRole('button', { name: 'فك الربط', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'تأكيد فك الربط', exact: true })
+    .click();
+
+  // Delete button unlocks immediately when category reaches 0 products!
+  await expect(deleteCatBtn).toBeEnabled();
+  await deleteCatBtn.click();
+  await page
+    .getByRole('button', { name: 'مسح التصنيف نهائياً', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'التصنيفات', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('row', { name: /السندويتشات/ })).toHaveCount(0);
+
+  // 4. Unlinked Products Pool: link auto-activates, delete permanently deletes
+  await page.getByRole('button', { name: 'المنتجات', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'غير مربوطة (غير مفعّلة)', exact: true })
+    .click();
+  await expect(page.getByRole('row', { name: /برجر كلاسيك/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: /بطاطس مقرمشة/ })).toBeVisible();
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-catalog-unlinked-products.png'),
+    animations: 'disabled',
+  });
+
+  // Link برجر كلاسيك -> auto-activates & leaves unlinked pool
+  await page
+    .getByRole('row', { name: /برجر كلاسيك/ })
+    .getByRole('button', { name: 'ربط بتصنيف', exact: true })
+    .click();
+  await page
+    .getByRole('combobox', { name: 'التصنيف المستهدف', exact: true })
+    .selectOption('101');
+  await page
+    .getByRole('button', { name: 'ربط وتفعيل المنتج', exact: true })
+    .click();
+  await expect(page.getByRole('row', { name: /برجر كلاسيك/ })).toHaveCount(0);
+
+  // Permanently delete بطاطس مقرمشة
+  await page
+    .getByRole('row', { name: /بطاطس مقرمشة/ })
+    .getByRole('button', { name: 'مسح بطاطس مقرمشة', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'مسح المنتج نهائياً', exact: true })
+    .click();
+  await expect(
+    page.getByText('لا توجد منتجات غير مربوطة حالياً.'),
+  ).toBeVisible();
+
+  // 5. Addons Pool: starts unlinked/inactive -> link auto-activates -> delete blocked while linked -> unlink -> delete
+  await page.getByRole('button', { name: 'الإضافات', exact: true }).click();
+  await page.getByRole('button', { name: 'إضافة إضافة', exact: true }).click();
+  await expect(page.getByLabel('مفعّل')).toBeDisabled();
+  await page.getByLabel('اسم الإضافة').fill('صوص ثومية');
+  await page.getByLabel('السعر بالجنيه المصري').fill('15.00');
+  await page.getByRole('button', { name: 'حفظ الإضافة', exact: true }).click();
+
+  await expect(page.getByRole('row', { name: /صوص ثومية/ })).toContainText(
+    'متوقف',
+  );
+  await page
+    .getByRole('row', { name: /صوص ثومية/ })
+    .getByRole('button', { name: 'ربط بمنتجات', exact: true })
+    .click();
+  await page.getByLabel('برجر كلاسيك').check();
+  await page.getByRole('button', { name: 'تم', exact: true }).click();
+  await expect(page.getByRole('row', { name: /صوص ثومية/ })).toContainText(
+    'مفعّل',
+  );
+  await expect(page.getByRole('row', { name: /صوص ثومية/ })).toContainText(
+    'مربوطة بـ 1 منتج',
+  );
+
+  // Linked addon cannot be deleted in Edit modal
+  await page
+    .getByRole('row', { name: /صوص ثومية/ })
+    .getByRole('button', { name: 'تعديل', exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: 'مسح الإضافة نهائياً', exact: true }),
+  ).toBeDisabled();
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-catalog-addon-edit.png'),
+    animations: 'disabled',
+  });
+  await page
+    .getByRole('button', { name: 'إدارة ربط المنتجات', exact: true })
+    .click();
+  await page.getByLabel('برجر كلاسيك').uncheck();
+  await page.getByRole('button', { name: 'تم', exact: true }).click();
+
+  // Now unlinked & inactive -> permanently delete
+  await page
+    .getByRole('button', { name: 'غير مربوطة (غير مفعّلة)', exact: true })
+    .click();
+  await expect(page.getByRole('row', { name: /صوص ثومية/ })).toContainText(
+    'متوقف',
+  );
+  await page
+    .getByRole('row', { name: /صوص ثومية/ })
+    .getByRole('button', { name: 'مسح صوص ثومية', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'مسح الإضافة نهائياً', exact: true })
+    .click();
+  await expect(
+    page.getByText('لا توجد إضافات غير مربوطة حالياً.'),
+  ).toBeVisible();
+
+  // 6. Mobile responsive overflow check
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'فتح القائمة' }).click();
+  await page.getByRole('button', { name: 'التصنيفات', exact: true }).click();
+  await page.screenshot({
+    path: join(tmpdir(), 'akeela-catalog-mobile.png'),
+    animations: 'disabled',
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
   expect(errors).toEqual([]);
 });

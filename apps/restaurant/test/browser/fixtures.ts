@@ -47,14 +47,54 @@ export async function setup(page: Page, activation = 'Active') {
   let orderStatus = 'Pending';
   let serviceActive = true;
   let savedProfile = { ...profile };
-  const categories = [
+  const categories: Array<{
+    cat_id: string;
+    cat_title: string;
+    display_order: number;
+    is_active: boolean;
+  }> = [
     {
       cat_id: '100',
       cat_title: 'السندويتشات',
-      display_order: 0,
+      display_order: 1,
       is_active: true,
     },
   ];
+  let nextCatId = 101;
+  const products: Array<{
+    prod_id: string;
+    cat_id: string | null;
+    prod_name: string;
+    prod_description: string | null;
+    prod_image_url: string | null;
+    price: string;
+    is_active: boolean;
+  }> = [];
+  let nextProdId = 200;
+  const addons: Array<{
+    addon_id: string;
+    addon_name: string;
+    addon_price: string;
+    is_active: boolean;
+  }> = [];
+  let nextAddonId = 300;
+  const productAddons: Array<{
+    prod_id: string;
+    addon_id: string;
+    is_active: boolean;
+  }> = [];
+  const linkedProductIdsFor = (addonId: string) =>
+    productAddons
+      .filter((l) => l.addon_id === addonId && l.is_active)
+      .map((l) => l.prod_id);
+  const serializeCat = (c: (typeof categories)[number]) => ({
+    ...c,
+    product_count: products.filter((p) => p.cat_id === c.cat_id).length,
+  });
+  const serializeAddon = (a: (typeof addons)[number]) => ({
+    ...a,
+    linked_product_ids: linkedProductIdsFor(a.addon_id),
+  });
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -336,18 +376,219 @@ export async function setup(page: Page, activation = 'Active') {
         ],
       };
     else if (path === '/restaurant/categories' && method === 'GET') {
-      data = categories;
+      data = [...categories]
+        .sort((a, b) => a.display_order - b.display_order)
+        .map(serializeCat);
       meta = { page: 1, per_page: 20, total: categories.length, last_page: 1 };
-    } else if (path.startsWith('/restaurant/categories') && method !== 'GET') {
-      const row = { cat_id: '101', ...body };
-      categories.push(row as (typeof categories)[number]);
+    } else if (path === '/restaurant/categories' && method === 'POST') {
+      const nextOrder =
+        categories.reduce((m, c) => Math.max(m, c.display_order), 0) + 1;
+      const row = {
+        cat_id: String(nextCatId++),
+        cat_title: String(body.cat_title ?? ''),
+        display_order: nextOrder,
+        is_active:
+          body.is_active === undefined ? true : Boolean(body.is_active),
+      };
+      categories.push(row);
+      data = serializeCat(row);
+    } else if (
+      /^\/restaurant\/categories\/\d+$/.test(path) &&
+      method === 'PATCH'
+    ) {
+      const catId = path.split('/').at(-1)!;
+      const cat = categories.find((c) => c.cat_id === catId)!;
+      if (body.cat_title !== undefined) cat.cat_title = String(body.cat_title);
+      if (body.is_active !== undefined) cat.is_active = Boolean(body.is_active);
+      if (
+        body.display_order !== undefined &&
+        Number(body.display_order) !== cat.display_order
+      ) {
+        const targetOrder = Number(body.display_order);
+        const other = categories.find(
+          (c) => c.cat_id !== catId && c.display_order === targetOrder,
+        );
+        if (other) {
+          other.display_order = cat.display_order;
+          cat.display_order = targetOrder;
+        }
+      }
+      data = serializeCat(cat);
+    } else if (
+      /^\/restaurant\/categories\/\d+$/.test(path) &&
+      method === 'DELETE'
+    ) {
+      const catId = path.split('/').at(-1)!;
+      const idx = categories.findIndex((c) => c.cat_id === catId);
+      if (idx >= 0) categories.splice(idx, 1);
+      categories
+        .sort((a, b) => a.display_order - b.display_order)
+        .forEach((c, i) => {
+          c.display_order = i + 1;
+        });
+      data = null;
+    } else if (path === '/restaurant/products' && method === 'GET') {
+      const catFilter = url.searchParams.get('cat_id');
+      const unlinkedFilter = url.searchParams.get('unlinked');
+      let list = [...products];
+      if (catFilter) list = list.filter((p) => p.cat_id === catFilter);
+      if (unlinkedFilter === 'true')
+        list = list.filter((p) => p.cat_id === null);
+      if (unlinkedFilter === 'false')
+        list = list.filter((p) => p.cat_id !== null);
+      data = list;
+      meta = { page: 1, per_page: 20, total: list.length, last_page: 1 };
+    } else if (path === '/restaurant/products' && method === 'POST') {
+      const catId =
+        body.cat_id === null || body.cat_id === undefined || body.cat_id === ''
+          ? null
+          : String(body.cat_id);
+      const row = {
+        prod_id: String(nextProdId++),
+        cat_id: catId,
+        prod_name: String(body.prod_name ?? ''),
+        prod_description:
+          body.prod_description === undefined || body.prod_description === null
+            ? null
+            : String(body.prod_description),
+        prod_image_url: null,
+        price: String(body.price ?? '0.00'),
+        is_active:
+          catId === null
+            ? false
+            : body.is_active === undefined
+              ? true
+              : Boolean(body.is_active),
+      };
+      products.push(row);
       data = row;
-    } else if (path === '/restaurant/products') {
-      data = method === 'GET' ? [] : { prod_id: '200', ...body };
-      meta = { page: 1, per_page: 20, total: 0, last_page: 1 };
-    } else if (path === '/restaurant/addons' || path === '/restaurant/offers') {
-      data =
-        method === 'GET' ? [] : { addon_id: '300', offer_id: '400', ...body };
+    } else if (/^\/restaurant\/products\/\d+$/.test(path) && method === 'GET') {
+      const prodId = path.split('/').at(-1)!;
+      data = products.find((p) => p.prod_id === prodId) ?? null;
+    } else if (
+      /^\/restaurant\/products\/\d+$/.test(path) &&
+      method === 'PATCH'
+    ) {
+      const prodId = path.split('/').at(-1)!;
+      const prod = products.find((p) => p.prod_id === prodId)!;
+      const wasUnlinked = prod.cat_id === null;
+      if ('cat_id' in body) {
+        if (body.cat_id === null) {
+          prod.cat_id = null;
+          prod.is_active = false;
+        } else {
+          prod.cat_id = String(body.cat_id);
+          if (wasUnlinked && body.is_active === undefined)
+            prod.is_active = true;
+        }
+      }
+      if (body.prod_name !== undefined) prod.prod_name = String(body.prod_name);
+      if (body.prod_description !== undefined)
+        prod.prod_description =
+          body.prod_description === null ? null : String(body.prod_description);
+      if (body.price !== undefined) prod.price = String(body.price);
+      if (body.is_active !== undefined && prod.cat_id !== null)
+        prod.is_active = Boolean(body.is_active);
+      data = prod;
+    } else if (
+      /^\/restaurant\/products\/\d+$/.test(path) &&
+      method === 'DELETE'
+    ) {
+      const prodId = path.split('/').at(-1)!;
+      const idx = products.findIndex((p) => p.prod_id === prodId);
+      if (idx >= 0) products.splice(idx, 1);
+      for (let i = productAddons.length - 1; i >= 0; i--) {
+        if (productAddons[i]!.prod_id === prodId) productAddons.splice(i, 1);
+      }
+      for (const a of addons) {
+        if (linkedProductIdsFor(a.addon_id).length === 0) a.is_active = false;
+      }
+      data = null;
+    } else if (
+      /^\/restaurant\/products\/\d+\/addons$/.test(path) &&
+      method === 'GET'
+    ) {
+      const prodId = path.split('/')[3]!;
+      data = productAddons
+        .filter((l) => l.prod_id === prodId)
+        .map((l) => ({
+          rest_id: '10',
+          prod_id: l.prod_id,
+          addon_id: l.addon_id,
+          is_active: l.is_active,
+          addon: serializeAddon(addons.find((a) => a.addon_id === l.addon_id)!),
+        }));
+    } else if (
+      /^\/restaurant\/products\/\d+\/addons\/\d+$/.test(path) &&
+      method === 'PUT'
+    ) {
+      const parts = path.split('/');
+      const prodId = parts[3]!;
+      const addonId = parts[5]!;
+      const addon = addons.find((a) => a.addon_id === addonId)!;
+      const before = linkedProductIdsFor(addonId).length;
+      const nextActive =
+        body.is_active === undefined ? true : Boolean(body.is_active);
+      let link = productAddons.find(
+        (l) => l.prod_id === prodId && l.addon_id === addonId,
+      );
+      if (!link) {
+        link = { prod_id: prodId, addon_id: addonId, is_active: nextActive };
+        productAddons.push(link);
+      } else {
+        link.is_active = nextActive;
+      }
+      const after = linkedProductIdsFor(addonId).length;
+      if (before === 0 && after > 0) addon.is_active = true;
+      else if (after === 0) addon.is_active = false;
+      data = {
+        rest_id: '10',
+        prod_id: prodId,
+        addon_id: addonId,
+        is_active: link.is_active,
+        addon: serializeAddon(addon),
+      };
+    } else if (path === '/restaurant/addons' && method === 'GET') {
+      const unlinkedFilter = url.searchParams.get('unlinked');
+      let list = addons.map(serializeAddon);
+      if (unlinkedFilter === 'true')
+        list = list.filter((a) => a.linked_product_ids.length === 0);
+      if (unlinkedFilter === 'false')
+        list = list.filter((a) => a.linked_product_ids.length > 0);
+      data = list;
+      meta = { page: 1, per_page: 20, total: list.length, last_page: 1 };
+    } else if (path === '/restaurant/addons' && method === 'POST') {
+      const row = {
+        addon_id: String(nextAddonId++),
+        addon_name: String(body.addon_name ?? ''),
+        addon_price: String(body.addon_price ?? '0.00'),
+        is_active: false,
+      };
+      addons.push(row);
+      data = serializeAddon(row);
+    } else if (/^\/restaurant\/addons\/\d+$/.test(path) && method === 'PATCH') {
+      const addonId = path.split('/').at(-1)!;
+      const addon = addons.find((a) => a.addon_id === addonId)!;
+      if (body.addon_name !== undefined)
+        addon.addon_name = String(body.addon_name);
+      if (body.addon_price !== undefined)
+        addon.addon_price = String(body.addon_price);
+      if (body.is_active !== undefined)
+        addon.is_active = Boolean(body.is_active);
+      data = serializeAddon(addon);
+    } else if (
+      /^\/restaurant\/addons\/\d+$/.test(path) &&
+      method === 'DELETE'
+    ) {
+      const addonId = path.split('/').at(-1)!;
+      const idx = addons.findIndex((a) => a.addon_id === addonId);
+      if (idx >= 0) addons.splice(idx, 1);
+      for (let i = productAddons.length - 1; i >= 0; i--) {
+        if (productAddons[i]!.addon_id === addonId) productAddons.splice(i, 1);
+      }
+      data = null;
+    } else if (path === '/restaurant/offers') {
+      data = method === 'GET' ? [] : { offer_id: '400', ...body };
       meta = { page: 1, per_page: 20, total: 0, last_page: 1 };
     } else if (path.startsWith('/auth/')) data = null;
     else

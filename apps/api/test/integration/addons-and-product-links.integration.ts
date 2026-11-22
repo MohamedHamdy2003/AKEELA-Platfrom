@@ -224,21 +224,33 @@ test('Feature 07 - Addons and Product Links Integration Tests', async (t) => {
       [restaurantAId, restaurantBId],
     );
 
-    // 1. Create Addon 1 for Restaurant A
+    // 0. Creating an addon with is_active=true while unlinked returns 422
+    const badCreateActive = await api()
+      .post('/api/v1/restaurant/addons')
+      .set('Authorization', bearer(restaurantAToken))
+      .send({
+        addon_name: 'Active Before Link',
+        addon_price: '15.00',
+        is_active: true,
+      });
+    assert.equal(badCreateActive.status, 422);
+    assert.equal(badCreateActive.body.error.code, 'VALIDATION_ERROR');
+
+    // 1. Create Addon 1 for Restaurant A (starts unlinked & inactive)
     const addon1Res = await api()
       .post('/api/v1/restaurant/addons')
       .set('Authorization', bearer(restaurantAToken))
       .send({
         addon_name: 'Extra Cheddar',
         addon_price: '15.00',
-        is_active: true,
       });
     assert.equal(addon1Res.status, 201);
     assert.equal(addon1Res.body.success, true);
     assert.equal(addon1Res.body.message, 'Addon created.');
     assert.equal(addon1Res.body.data.addon_name, 'Extra Cheddar');
     assert.equal(addon1Res.body.data.addon_price, '15.00');
-    assert.equal(addon1Res.body.data.is_active, true);
+    assert.equal(addon1Res.body.data.is_active, false);
+    assert.deepEqual(addon1Res.body.data.linked_product_ids, []);
     assert.equal(addon1Res.body.data.rest_id, restaurantAId);
     addonA1Id = addon1Res.body.data.addon_id;
 
@@ -249,9 +261,9 @@ test('Feature 07 - Addons and Product Links Integration Tests', async (t) => {
       .send({
         addon_name: 'Pickles',
         addon_price: '5.00',
-        is_active: true,
       });
     assert.equal(addon2Res.status, 201);
+    assert.equal(addon2Res.body.data.is_active, false);
     addonA2Id = addon2Res.body.data.addon_id;
 
     // 3. Create Addon for Restaurant B
@@ -275,28 +287,35 @@ test('Feature 07 - Addons and Product Links Integration Tests', async (t) => {
       });
     assert.equal(badPrice.status, 422);
 
-    // 5. List addons for Restaurant A
+    // 5. List addons for Restaurant A (both appear under unlinked=true)
     const listRes = await api()
-      .get('/api/v1/restaurant/addons')
+      .get('/api/v1/restaurant/addons?unlinked=true')
       .set('Authorization', bearer(restaurantAToken));
     assert.equal(listRes.status, 200);
     assert.equal(listRes.body.data.length, 2);
     assert.equal(listRes.body.data[0].addon_id, addonA1Id);
     assert.equal(listRes.body.data[1].addon_id, addonA2Id);
 
-    // 6. Update Addon 1
+    // 6. Update Addon 1 name & price while unlinked
     const updateRes = await api()
       .patch(`/api/v1/restaurant/addons/${addonA1Id}`)
       .set('Authorization', bearer(restaurantAToken))
       .send({
         addon_name: 'Smoked Cheddar',
         addon_price: '18.50',
-        is_active: false,
       });
     assert.equal(updateRes.status, 200);
     assert.equal(updateRes.body.data.addon_name, 'Smoked Cheddar');
     assert.equal(updateRes.body.data.addon_price, '18.50');
     assert.equal(updateRes.body.data.is_active, false);
+
+    // 6b. Trying to activate an unlinked addon returns 422
+    const badActivate = await api()
+      .patch(`/api/v1/restaurant/addons/${addonA1Id}`)
+      .set('Authorization', bearer(restaurantAToken))
+      .send({ is_active: true });
+    assert.equal(badActivate.status, 422);
+    assert.equal(badActivate.body.error.code, 'VALIDATION_ERROR');
 
     // 7. Update unowned addon returns 404
     const unownedUpdate = await api()
@@ -304,100 +323,162 @@ test('Feature 07 - Addons and Product Links Integration Tests', async (t) => {
       .set('Authorization', bearer(restaurantAToken))
       .send({ addon_name: 'Hijacked' });
     assert.equal(unownedUpdate.status, 404);
-
-    // Reactivate Addon 1
-    await api()
-      .patch(`/api/v1/restaurant/addons/${addonA1Id}`)
-      .set('Authorization', bearer(restaurantAToken))
-      .send({ is_active: true });
   });
 
-  await t.test('Product Addon Link operations and verification', async () => {
-    // First, create a category and a product for Restaurant A
-    const catRes = await api()
-      .post('/api/v1/restaurant/categories')
-      .set('Authorization', bearer(restaurantAToken))
-      .send({ cat_title: 'Burgers' });
-    assert.equal(catRes.status, 201);
-    const catId = catRes.body.data.cat_id;
+  await t.test(
+    'Product Addon Link operations, auto-activation, and deletion',
+    async () => {
+      // First, create a category and a product for Restaurant A
+      const catRes = await api()
+        .post('/api/v1/restaurant/categories')
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ cat_title: 'Burgers' });
+      assert.equal(catRes.status, 201);
+      const catId = catRes.body.data.cat_id;
 
-    const prodRes = await api()
-      .post('/api/v1/restaurant/products')
-      .set('Authorization', bearer(restaurantAToken))
-      .send({
-        cat_id: catId,
-        prod_name: 'Classic Burger',
-        price: '70.00',
-      });
-    assert.equal(prodRes.status, 201);
-    prodA1Id = prodRes.body.data.prod_id;
+      const prodRes = await api()
+        .post('/api/v1/restaurant/products')
+        .set('Authorization', bearer(restaurantAToken))
+        .send({
+          cat_id: catId,
+          prod_name: 'Classic Burger',
+          price: '70.00',
+        });
+      assert.equal(prodRes.status, 201);
+      prodA1Id = prodRes.body.data.prod_id;
 
-    // 1. Initial product has empty addon links
-    const emptyLinks = await api()
-      .get(`/api/v1/restaurant/products/${prodA1Id}/addons`)
-      .set('Authorization', bearer(restaurantAToken));
-    assert.equal(emptyLinks.status, 200);
-    assert.deepEqual(emptyLinks.body.data, []);
+      // 1. Initial product has empty addon links
+      const emptyLinks = await api()
+        .get(`/api/v1/restaurant/products/${prodA1Id}/addons`)
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(emptyLinks.status, 200);
+      assert.deepEqual(emptyLinks.body.data, []);
 
-    // 2. Link Addon 1 to Product 1 via PUT (returns 200)
-    const link1Res = await api()
-      .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonA1Id}`)
-      .set('Authorization', bearer(restaurantAToken))
-      .send({ is_active: true });
-    assert.equal(link1Res.status, 200);
-    assert.equal(link1Res.body.success, true);
-    assert.equal(link1Res.body.data.prod_id, prodA1Id);
-    assert.equal(link1Res.body.data.addon_id, addonA1Id);
-    assert.equal(link1Res.body.data.is_active, true);
-    assert.ok(link1Res.body.data.addon);
-    assert.equal(link1Res.body.data.addon.addon_name, 'Smoked Cheddar');
+      // 2. Link Addon 1 to Product 1 via PUT (auto-activates addon!)
+      const link1Res = await api()
+        .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonA1Id}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ is_active: true });
+      assert.equal(link1Res.status, 200);
+      assert.equal(link1Res.body.success, true);
+      assert.equal(link1Res.body.data.prod_id, prodA1Id);
+      assert.equal(link1Res.body.data.addon_id, addonA1Id);
+      assert.equal(link1Res.body.data.is_active, true);
+      assert.ok(link1Res.body.data.addon);
+      assert.equal(link1Res.body.data.addon.addon_name, 'Smoked Cheddar');
+      assert.equal(link1Res.body.data.addon.is_active, true);
+      assert.deepEqual(link1Res.body.data.addon.linked_product_ids, [prodA1Id]);
 
-    // 3. Link Addon 2 to Product 1
-    const link2Res = await api()
-      .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonA2Id}`)
-      .set('Authorization', bearer(restaurantAToken))
-      .send({ is_active: true });
-    assert.equal(link2Res.status, 200);
+      // 2b. While linked, deleting Addon 1 returns 409 CONFLICT
+      const blockedDelete = await api()
+        .delete(`/api/v1/restaurant/addons/${addonA1Id}`)
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(blockedDelete.status, 409);
+      assert.equal(blockedDelete.body.error.code, 'CONFLICT');
 
-    // 4. Update existing link to inactive (returns 200)
-    const disableLink = await api()
-      .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonA1Id}`)
-      .set('Authorization', bearer(restaurantAToken))
-      .send({ is_active: false });
-    assert.equal(disableLink.status, 200);
-    assert.equal(disableLink.body.data.is_active, false);
+      // 2c. While linked, manual deactivation and reactivation via PATCH work
+      const manualOff = await api()
+        .patch(`/api/v1/restaurant/addons/${addonA1Id}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ is_active: false });
+      assert.equal(manualOff.status, 200);
+      assert.equal(manualOff.body.data.is_active, false);
 
-    // 5. List product addon links includes both active and inactive
-    const linksList = await api()
-      .get(`/api/v1/restaurant/products/${prodA1Id}/addons`)
-      .set('Authorization', bearer(restaurantAToken));
-    assert.equal(linksList.status, 200);
-    assert.equal(linksList.body.data.length, 2);
-    assert.equal(linksList.body.data[0].addon_id, addonA1Id);
-    assert.equal(linksList.body.data[0].is_active, false);
-    assert.equal(linksList.body.data[1].addon_id, addonA2Id);
-    assert.equal(linksList.body.data[1].is_active, true);
+      const manualOn = await api()
+        .patch(`/api/v1/restaurant/addons/${addonA1Id}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ is_active: true });
+      assert.equal(manualOn.status, 200);
+      assert.equal(manualOn.body.data.is_active, true);
 
-    // 6. Link with unowned addon returns 404
-    const badAddonLink = await api()
-      .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonB1Id}`)
-      .set('Authorization', bearer(restaurantAToken))
-      .send({ is_active: true });
-    assert.equal(badAddonLink.status, 404);
+      // 3. Link Addon 2 to Product 1 (auto-activates Addon 2)
+      const link2Res = await api()
+        .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonA2Id}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ is_active: true });
+      assert.equal(link2Res.status, 200);
+      assert.equal(link2Res.body.data.addon.is_active, true);
 
-    // 7. Link with unowned product returns 404
-    const badProdLink = await api()
-      .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonB1Id}`)
-      .set('Authorization', bearer(restaurantBToken))
-      .send({ is_active: true });
-    assert.equal(badProdLink.status, 404);
+      // 4. Unlinking Addon 1 from its only product auto-deactivates Addon 1
+      const disableLink = await api()
+        .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonA1Id}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ is_active: false });
+      assert.equal(disableLink.status, 200);
+      assert.equal(disableLink.body.data.is_active, false);
+      assert.equal(disableLink.body.data.addon.is_active, false);
+      assert.deepEqual(disableLink.body.data.addon.linked_product_ids, []);
 
-    // 8. List addons of unowned product returns 404
-    const unownedList = await api()
-      .get(`/api/v1/restaurant/products/${prodA1Id}/addons`)
-      .set('Authorization', bearer(restaurantBToken));
-    assert.equal(unownedList.status, 404);
-  });
+      // 5. List product addon links includes both active and inactive
+      const linksList = await api()
+        .get(`/api/v1/restaurant/products/${prodA1Id}/addons`)
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(linksList.status, 200);
+      assert.equal(linksList.body.data.length, 2);
+      assert.equal(linksList.body.data[0].addon_id, addonA1Id);
+      assert.equal(linksList.body.data[0].is_active, false);
+      assert.equal(linksList.body.data[1].addon_id, addonA2Id);
+      assert.equal(linksList.body.data[1].is_active, true);
+
+      // 5b. Unlinked Addon 1 can now be permanently deleted (preserving historical order_item_addons snapshot)
+      const [custRow] = await db.query(
+        `SELECT user_id FROM users WHERE email = $1`,
+        [customerEmail],
+      );
+      const [orderRow] = await db.query(
+        `INSERT INTO orders (customer_id, rest_id, status, customer_address, delivery_longitude, delivery_latitude, delivery_fee, total_price)
+       VALUES ($1, $2, 'Delivered', '10 Main St', 32.27, 30.59, 30.00, 118.50)
+       RETURNING order_id`,
+        [custRow.user_id, restaurantAId],
+      );
+      const [orderItemRow] = await db.query(
+        `INSERT INTO order_items (order_id, rest_id, prod_id, offer_id, item_name, unit_price, quantity)
+       VALUES ($1, $2, $3, NULL, 'Classic Burger', 70.00, 1)
+       RETURNING order_item_id`,
+        [orderRow.order_id, restaurantAId, prodA1Id],
+      );
+      const [orderAddonRow] = await db.query(
+        `INSERT INTO order_item_addons (order_item_id, rest_id, prod_id, addon_id, addon_name, unit_price, quantity)
+       VALUES ($1, $2, $3, $4, 'Smoked Cheddar', 18.50, 1)
+       RETURNING order_item_addon_id`,
+        [orderItemRow.order_item_id, restaurantAId, prodA1Id, addonA1Id],
+      );
+
+      const deleteUnlinked = await api()
+        .delete(`/api/v1/restaurant/addons/${addonA1Id}`)
+        .set('Authorization', bearer(restaurantAToken));
+      assert.equal(deleteUnlinked.status, 200);
+      assert.equal(deleteUnlinked.body.message, 'Addon deleted.');
+
+      const [preservedAddon] = await db.query(
+        `SELECT addon_id, addon_name, unit_price FROM order_item_addons WHERE order_item_addon_id = $1`,
+        [orderAddonRow.order_item_addon_id],
+      );
+      assert.equal(preservedAddon.addon_id, null);
+      assert.equal(preservedAddon.addon_name, 'Smoked Cheddar');
+      assert.equal(preservedAddon.unit_price, '18.50');
+
+      // 6. Link with unowned addon returns 404
+      const badAddonLink = await api()
+        .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonB1Id}`)
+        .set('Authorization', bearer(restaurantAToken))
+        .send({ is_active: true });
+      assert.equal(badAddonLink.status, 404);
+
+      // 7. Link with unowned product returns 404
+      const badProdLink = await api()
+        .put(`/api/v1/restaurant/products/${prodA1Id}/addons/${addonB1Id}`)
+        .set('Authorization', bearer(restaurantBToken))
+        .send({ is_active: true });
+      assert.equal(badProdLink.status, 404);
+
+      // 8. List addons of unowned product returns 404
+      const unownedList = await api()
+        .get(`/api/v1/restaurant/products/${prodA1Id}/addons`)
+        .set('Authorization', bearer(restaurantBToken));
+      assert.equal(unownedList.status, 404);
+    },
+  );
 });
 
 test('concurrent PUT addon links are idempotent', async () => {

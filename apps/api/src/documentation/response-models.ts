@@ -271,15 +271,27 @@ export const responseModels: Record<string, SchemaObject> = {
     cat_title: text('Category name, unique within a restaurant.'),
     display_order: integer,
     is_active: bool,
+    product_count: integer,
     ...timestamps,
   }),
-  Product: object({ ...product, rest_id: id, is_active: bool, ...timestamps }),
+  Product: object({
+    ...product,
+    cat_id: nullableId,
+    rest_id: id,
+    is_active: bool,
+    ...timestamps,
+  }),
   Addon: object({
     addon_id: id,
     rest_id: id,
     addon_name: text('Addon name.'),
     addon_price: money,
     is_active: bool,
+    linked_product_ids: {
+      type: 'array',
+      items: id,
+      description: 'Owned product IDs with an active link to this addon.',
+    },
     ...timestamps,
   }),
   ProductAddon: object({
@@ -359,7 +371,11 @@ export const responseModels: Record<string, SchemaObject> = {
     'Informational current totals, not a reservation. address_id is null for a one-time address.',
   ),
   OrderSummary: object(summary),
-  OrderItemAddon: object({ order_item_addon_id: id, ...addonSnapshot }),
+  OrderItemAddon: object({
+    order_item_addon_id: id,
+    ...addonSnapshot,
+    addon_id: nullableId,
+  }),
   OrderItem: object(
     {
       order_item_id: id,

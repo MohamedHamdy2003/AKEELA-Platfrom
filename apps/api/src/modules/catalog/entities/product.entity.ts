@@ -25,6 +25,10 @@ import {
   onUpdate: 'RESTRICT',
 })
 @Check('ck_products_price', 'price >= 0')
+@Check(
+  'ck_products_unlinked_inactive',
+  'cat_id IS NOT NULL OR is_active = false',
+)
 export class Product {
   @PrimaryGeneratedColumn('identity', { type: 'bigint' })
   prod_id!: string;
@@ -32,8 +36,8 @@ export class Product {
   @Column({ type: 'bigint' })
   rest_id!: string;
 
-  @Column({ type: 'bigint' })
-  cat_id!: string;
+  @Column({ type: 'bigint', nullable: true })
+  cat_id!: string | null;
 
   @Column({ type: 'varchar', length: 150 })
   prod_name!: string;

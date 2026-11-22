@@ -134,7 +134,9 @@ export class CatalogService {
         : Promise.resolve([] as ProductAddon[]),
     ]);
 
-    const catIds = [...new Set(products.map((p) => p.cat_id))];
+    const catIds = [
+      ...new Set(products.map((p) => p.cat_id).filter((v): v is string => !!v)),
+    ];
     const categories = catIds.length
       ? await manager
           .getRepository(Category)
@@ -153,7 +155,7 @@ export class CatalogService {
     return requests.map(({ prodId, offerId, addonIds }) => {
       const product = prodId ? (productMap.get(prodId) ?? null) : null;
       const offer = offerId ? (offerMap.get(offerId) ?? null) : null;
-      const category = product
+      const category = product?.cat_id
         ? (categoryMap.get(product.cat_id) ?? null)
         : null;
       const item = product
@@ -200,10 +202,60 @@ export class CatalogService {
 
   // --- Feature 05: Categories ---
 
+  private async getCategoryProductCounts(
+    restId: string,
+    catIds: string[],
+    manager: EntityManager = this.dataSource.manager,
+  ): Promise<Map<string, number>> {
+    const counts = new Map<string, number>();
+    if (!catIds.length) return counts;
+    const rows = await manager
+      .getRepository(Product)
+      .createQueryBuilder('p')
+      .select('p.cat_id', 'cat_id')
+      .addSelect('COUNT(*)::int', 'count')
+      .where('p.rest_id = :restId AND p.cat_id IN (:...catIds)', {
+        restId,
+        catIds,
+      })
+      .groupBy('p.cat_id')
+      .getRawMany<{ cat_id: string; count: number }>();
+    for (const row of rows) {
+      counts.set(row.cat_id.toString(), Number(row.count));
+    }
+    return counts;
+  }
+
+  private async getAddonLinkedProductIds(
+    restId: string,
+    addonIds: string[],
+    manager: EntityManager = this.dataSource.manager,
+  ): Promise<Map<string, string[]>> {
+    const map = new Map<string, string[]>();
+    if (!addonIds.length) return map;
+    const links = await manager.getRepository(ProductAddon).find({
+      select: { addon_id: true, prod_id: true },
+      where: { rest_id: restId, addon_id: In(addonIds), is_active: true },
+      order: { prod_id: 'ASC' },
+    });
+    for (const link of links) {
+      const addonKey = link.addon_id.toString();
+      const prodKey = link.prod_id.toString();
+      const list = map.get(addonKey);
+      if (list) list.push(prodKey);
+      else map.set(addonKey, [prodKey]);
+    }
+    return map;
+  }
+
   async listCategories(
     restId: string,
     pagination: { skip: number; take: number },
-  ): Promise<{ items: Category[]; total: number }> {
+  ): Promise<{
+    items: Category[];
+    total: number;
+    productCounts: Map<string, number>;
+  }> {
     const qb = this.dataSource
       .getRepository(Category)
       .createQueryBuilder('c')
@@ -214,7 +266,11 @@ export class CatalogService {
       .take(pagination.take);
 
     const [items, total] = await qb.getManyAndCount();
-    return { items, total };
+    const productCounts = await this.getCategoryProductCounts(
+      restId,
+      items.map((c) => c.cat_id),
+    );
+    return { items, total, productCounts };
   }
 
   async createCategory(
@@ -243,10 +299,17 @@ export class CatalogService {
         );
       }
 
+      const maxRow = await repo
+        .createQueryBuilder('c')
+        .select('COALESCE(MAX(c.display_order), 0)', 'max_order')
+        .where('c.rest_id = :restId', { restId })
+        .getRawOne<{ max_order: string | number }>();
+      const nextOrder = Number(maxRow?.max_order ?? 0) + 1;
+
       const category = repo.create({
         rest_id: restId,
         cat_title: dto.cat_title.trim(),
-        display_order: dto.display_order ?? 0,
+        display_order: nextOrder,
         is_active: dto.is_active ?? true,
       });
 
@@ -258,7 +321,7 @@ export class CatalogService {
     restId: string,
     catId: string,
     dto: UpdateCategoryDto,
-  ): Promise<Category> {
+  ): Promise<{ category: Category; productCount: number }> {
     return this.dataSource.transaction(async (manager) => {
       await this.restaurants.assertCatalogWritable(restId, manager);
       const repo = manager.getRepository(Category);
@@ -292,7 +355,37 @@ export class CatalogService {
         category.cat_title = trimmed;
       }
 
-      if (dto.display_order !== undefined) {
+      if (
+        dto.display_order !== undefined &&
+        dto.display_order !== Number(category.display_order)
+      ) {
+        const swapTarget = await repo
+          .createQueryBuilder('c')
+          .where(
+            'c.rest_id = :restId AND c.cat_id <> :catId AND c.display_order = :targetOrder',
+            { restId, catId, targetOrder: dto.display_order },
+          )
+          .setLock('pessimistic_write')
+          .getOne();
+
+        if (!swapTarget) {
+          throw new ApiError(
+            422,
+            'VALIDATION_ERROR',
+            'Choose an existing category display order to swap with.',
+            {
+              display_order: [
+                'Target display_order must match an existing category in your restaurant.',
+              ],
+            },
+          );
+        }
+
+        const previousOrder = Number(category.display_order);
+        await repo.update(
+          { rest_id: restId, cat_id: swapTarget.cat_id },
+          { display_order: previousOrder },
+        );
         category.display_order = dto.display_order;
       }
 
@@ -300,7 +393,52 @@ export class CatalogService {
         category.is_active = dto.is_active;
       }
 
-      return repo.save(category);
+      const saved = await repo.save(category);
+      const productCount = await manager.getRepository(Product).count({
+        where: { rest_id: restId, cat_id: catId },
+      });
+      return { category: saved, productCount };
+    });
+  }
+
+  async deleteCategory(restId: string, catId: string): Promise<void> {
+    return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
+      const repo = manager.getRepository(Category);
+      const category = await repo
+        .createQueryBuilder('c')
+        .where('c.rest_id = :restId AND c.cat_id = :catId', { restId, catId })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!category) {
+        throw new ApiError(404, 'NOT_FOUND', 'Category not found.');
+      }
+
+      const productCount = await manager.getRepository(Product).count({
+        where: { rest_id: restId, cat_id: catId },
+      });
+      if (productCount > 0) {
+        throw new ApiError(
+          409,
+          'CONFLICT',
+          `Cannot delete category while it still contains ${productCount} product(s). Move or unlink all products first.`,
+        );
+      }
+
+      await repo.delete({ rest_id: restId, cat_id: catId });
+      await manager.query(
+        `WITH ranked AS (
+          SELECT cat_id, ROW_NUMBER() OVER (ORDER BY display_order ASC, cat_id ASC)::int AS new_order
+          FROM categories
+          WHERE rest_id = $1
+        )
+        UPDATE categories c
+        SET display_order = ranked.new_order
+        FROM ranked
+        WHERE c.cat_id = ranked.cat_id AND c.display_order <> ranked.new_order`,
+        [restId],
+      );
     });
   }
 
@@ -308,7 +446,12 @@ export class CatalogService {
 
   async listProducts(
     restId: string,
-    query: { cat_id?: string; skip: number; take: number },
+    query: {
+      cat_id?: string;
+      unlinked?: 'true' | 'false';
+      skip: number;
+      take: number;
+    },
   ): Promise<{ items: Product[]; total: number }> {
     if (query.cat_id !== undefined) {
       const cat = await this.dataSource.getRepository(Category).findOneBy({
@@ -327,6 +470,11 @@ export class CatalogService {
 
     if (query.cat_id !== undefined) {
       qb.andWhere('p.cat_id = :catId', { catId: query.cat_id });
+    }
+    if (query.unlinked === 'true') {
+      qb.andWhere('p.cat_id IS NULL');
+    } else if (query.unlinked === 'false') {
+      qb.andWhere('p.cat_id IS NOT NULL');
     }
 
     qb.orderBy('p.created_at', 'DESC')
@@ -352,24 +500,38 @@ export class CatalogService {
   async createProduct(restId: string, dto: CreateProductDto): Promise<Product> {
     return this.dataSource.transaction(async (manager) => {
       await this.restaurants.assertCatalogWritable(restId, manager);
-      const catRepo = manager.getRepository(Category);
-      const cat = await catRepo.findOneBy({
-        rest_id: restId,
-        cat_id: dto.cat_id,
-      });
-      if (!cat) {
-        throw new ApiError(404, 'NOT_FOUND', 'Category not found.');
+      const catId = dto.cat_id ?? null;
+
+      if (catId !== null) {
+        const cat = await manager.getRepository(Category).findOneBy({
+          rest_id: restId,
+          cat_id: catId,
+        });
+        if (!cat) {
+          throw new ApiError(404, 'NOT_FOUND', 'Category not found.');
+        }
+      } else if (dto.is_active === true) {
+        throw new ApiError(
+          422,
+          'VALIDATION_ERROR',
+          'A product cannot be active until it is linked to a category.',
+          {
+            is_active: [
+              'Link this product to a category before activating it.',
+            ],
+          },
+        );
       }
 
       const prodRepo = manager.getRepository(Product);
       const product = prodRepo.create({
         rest_id: restId,
-        cat_id: dto.cat_id,
+        cat_id: catId,
         prod_name: dto.prod_name.trim(),
         prod_description: dto.prod_description ?? null,
         prod_image_url: dto.prod_image_url ?? null,
         price: moneyAmount(dto.price),
-        is_active: dto.is_active ?? true,
+        is_active: catId === null ? false : (dto.is_active ?? true),
       });
 
       return prodRepo.save(product);
@@ -397,9 +559,25 @@ export class CatalogService {
         throw new ApiError(404, 'NOT_FOUND', 'Product not found.');
       }
 
-      if (dto.cat_id !== undefined) {
-        const catRepo = manager.getRepository(Category);
-        const cat = await catRepo.findOneBy({
+      const wasUnlinked = product.cat_id === null;
+
+      if (dto.cat_id === null) {
+        if (dto.is_active === true) {
+          throw new ApiError(
+            422,
+            'VALIDATION_ERROR',
+            'A product cannot be active until it is linked to a category.',
+            {
+              is_active: [
+                'Link this product to a category before activating it.',
+              ],
+            },
+          );
+        }
+        product.cat_id = null;
+        product.is_active = false;
+      } else if (dto.cat_id !== undefined) {
+        const cat = await manager.getRepository(Category).findOneBy({
           rest_id: restId,
           cat_id: dto.cat_id,
         });
@@ -407,6 +585,9 @@ export class CatalogService {
           throw new ApiError(404, 'NOT_FOUND', 'Category not found.');
         }
         product.cat_id = dto.cat_id;
+        if (wasUnlinked && dto.is_active === undefined) {
+          product.is_active = true;
+        }
       }
 
       if (dto.prod_name !== undefined) {
@@ -426,6 +607,18 @@ export class CatalogService {
       }
 
       if (dto.is_active !== undefined) {
+        if (dto.is_active === true && product.cat_id === null) {
+          throw new ApiError(
+            422,
+            'VALIDATION_ERROR',
+            'A product cannot be active until it is linked to a category.',
+            {
+              is_active: [
+                'Link this product to a category before activating it.',
+              ],
+            },
+          );
+        }
         product.is_active = dto.is_active;
       }
 
@@ -433,33 +626,117 @@ export class CatalogService {
     });
   }
 
+  async deleteProduct(restId: string, prodId: string): Promise<void> {
+    return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
+      const prodRepo = manager.getRepository(Product);
+      const product = await prodRepo
+        .createQueryBuilder('p')
+        .where('p.rest_id = :restId AND p.prod_id = :prodId', {
+          restId,
+          prodId,
+        })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!product) {
+        throw new ApiError(404, 'NOT_FOUND', 'Product not found.');
+      }
+
+      if (product.cat_id !== null) {
+        throw new ApiError(
+          409,
+          'CONFLICT',
+          'Cannot delete a product while it is linked to a category. Unlink it from its category first.',
+        );
+      }
+
+      const existingLinks = await manager.getRepository(ProductAddon).find({
+        select: { addon_id: true },
+        where: { rest_id: restId, prod_id: prodId },
+      });
+      const affectedAddonIds = [
+        ...new Set(existingLinks.map((link) => link.addon_id)),
+      ];
+
+      await prodRepo.delete({ rest_id: restId, prod_id: prodId });
+
+      if (affectedAddonIds.length > 0) {
+        await manager.query(
+          `UPDATE addons a
+           SET is_active = false, updated_at = NOW()
+           WHERE a.rest_id = $1
+             AND a.addon_id = ANY($2::bigint[])
+             AND a.is_active = true
+             AND NOT EXISTS (
+               SELECT 1
+               FROM product_addons pa
+               WHERE pa.rest_id = a.rest_id
+                 AND pa.addon_id = a.addon_id
+                 AND pa.is_active = true
+             )`,
+          [restId, affectedAddonIds],
+        );
+      }
+    });
+  }
+
   // --- Feature 07: Addons and Product Links ---
 
   async listAddons(
     restId: string,
-    pagination: { skip: number; take: number },
-  ): Promise<{ items: Addon[]; total: number }> {
+    query: { unlinked?: 'true' | 'false'; skip: number; take: number },
+  ): Promise<{
+    items: Addon[];
+    total: number;
+    linkedProductIds: Map<string, string[]>;
+  }> {
     const qb = this.dataSource
       .getRepository(Addon)
       .createQueryBuilder('a')
-      .where('a.rest_id = :restId', { restId })
-      .orderBy('a.addon_id', 'ASC')
-      .skip(pagination.skip)
-      .take(pagination.take);
+      .where('a.rest_id = :restId', { restId });
+
+    if (query.unlinked === 'true') {
+      qb.andWhere(
+        'NOT EXISTS (SELECT 1 FROM product_addons pa WHERE pa.rest_id = a.rest_id AND pa.addon_id = a.addon_id AND pa.is_active = true)',
+      );
+    } else if (query.unlinked === 'false') {
+      qb.andWhere(
+        'EXISTS (SELECT 1 FROM product_addons pa WHERE pa.rest_id = a.rest_id AND pa.addon_id = a.addon_id AND pa.is_active = true)',
+      );
+    }
+
+    qb.orderBy('a.addon_id', 'ASC').skip(query.skip).take(query.take);
 
     const [items, total] = await qb.getManyAndCount();
-    return { items, total };
+    const linkedProductIds = await this.getAddonLinkedProductIds(
+      restId,
+      items.map((a) => a.addon_id),
+    );
+    return { items, total, linkedProductIds };
   }
 
   async createAddon(restId: string, dto: CreateAddonDto): Promise<Addon> {
     return this.dataSource.transaction(async (manager) => {
       await this.restaurants.assertCatalogWritable(restId, manager);
+      if (dto.is_active === true) {
+        throw new ApiError(
+          422,
+          'VALIDATION_ERROR',
+          'An addon cannot be active until it is linked to at least one product.',
+          {
+            is_active: [
+              'Link this addon to at least one product before activating it.',
+            ],
+          },
+        );
+      }
       const repo = manager.getRepository(Addon);
       const addon = repo.create({
         rest_id: restId,
         addon_name: dto.addon_name.trim(),
         addon_price: moneyAmount(dto.addon_price),
-        is_active: dto.is_active ?? true,
+        is_active: false,
       });
 
       return repo.save(addon);
@@ -470,7 +747,7 @@ export class CatalogService {
     restId: string,
     addonId: string,
     dto: UpdateAddonDto,
-  ): Promise<Addon> {
+  ): Promise<{ addon: Addon; linkedProductIds: string[] }> {
     return this.dataSource.transaction(async (manager) => {
       await this.restaurants.assertCatalogWritable(restId, manager);
       const repo = manager.getRepository(Addon);
@@ -487,6 +764,13 @@ export class CatalogService {
         throw new ApiError(404, 'NOT_FOUND', 'Addon not found.');
       }
 
+      const linkedMap = await this.getAddonLinkedProductIds(
+        restId,
+        [addonId],
+        manager,
+      );
+      const linkedProductIds = linkedMap.get(addonId.toString()) ?? [];
+
       if (dto.addon_name !== undefined) {
         addon.addon_name = dto.addon_name.trim();
       }
@@ -496,17 +780,64 @@ export class CatalogService {
       }
 
       if (dto.is_active !== undefined) {
+        if (dto.is_active === true && linkedProductIds.length === 0) {
+          throw new ApiError(
+            422,
+            'VALIDATION_ERROR',
+            'An addon cannot be active until it is linked to at least one product.',
+            {
+              is_active: [
+                'Link this addon to at least one product before activating it.',
+              ],
+            },
+          );
+        }
         addon.is_active = dto.is_active;
       }
 
-      return repo.save(addon);
+      const saved = await repo.save(addon);
+      return { addon: saved, linkedProductIds };
+    });
+  }
+
+  async deleteAddon(restId: string, addonId: string): Promise<void> {
+    return this.dataSource.transaction(async (manager) => {
+      await this.restaurants.assertCatalogWritable(restId, manager);
+      const repo = manager.getRepository(Addon);
+      const addon = await repo
+        .createQueryBuilder('a')
+        .where('a.rest_id = :restId AND a.addon_id = :addonId', {
+          restId,
+          addonId,
+        })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!addon) {
+        throw new ApiError(404, 'NOT_FOUND', 'Addon not found.');
+      }
+
+      const activeLinkCount = await manager.getRepository(ProductAddon).count({
+        where: { rest_id: restId, addon_id: addonId, is_active: true },
+      });
+      if (activeLinkCount > 0) {
+        throw new ApiError(
+          409,
+          'CONFLICT',
+          `Cannot delete addon while it is linked to ${activeLinkCount} product(s). Unlink it from all products first.`,
+        );
+      }
+
+      await repo.delete({ rest_id: restId, addon_id: addonId });
     });
   }
 
   async listProductAddons(
     restId: string,
     prodId: string,
-  ): Promise<Array<{ link: ProductAddon; addon: Addon }>> {
+  ): Promise<
+    Array<{ link: ProductAddon; addon: Addon; linkedProductIds: string[] }>
+  > {
     const prod = await this.dataSource.getRepository(Product).findOneBy({
       rest_id: restId,
       prod_id: prodId,
@@ -525,15 +856,19 @@ export class CatalogService {
     }
 
     const addonIds = links.map((l) => l.addon_id);
-    const addons = await this.dataSource.getRepository(Addon).findBy({
-      rest_id: restId,
-      addon_id: In(addonIds),
-    });
+    const [addons, linkedMap] = await Promise.all([
+      this.dataSource.getRepository(Addon).findBy({
+        rest_id: restId,
+        addon_id: In(addonIds),
+      }),
+      this.getAddonLinkedProductIds(restId, addonIds),
+    ]);
     const addonMap = new Map(addons.map((a) => [a.addon_id, a]));
 
     return links.map((link) => ({
       link,
       addon: addonMap.get(link.addon_id)!,
+      linkedProductIds: linkedMap.get(link.addon_id.toString()) ?? [],
     }));
   }
 
@@ -542,7 +877,11 @@ export class CatalogService {
     prodId: string,
     addonId: string,
     dto: SetProductAddonDto,
-  ): Promise<{ link: ProductAddon; addon: Addon }> {
+  ): Promise<{
+    link: ProductAddon;
+    addon: Addon;
+    linkedProductIds: string[];
+  }> {
     return this.dataSource.transaction(async (manager) => {
       await this.restaurants.assertCatalogWritable(restId, manager);
       const prod = await manager
@@ -558,15 +897,24 @@ export class CatalogService {
         throw new ApiError(404, 'NOT_FOUND', 'Product not found.');
       }
 
-      const addon = await manager.getRepository(Addon).findOneBy({
-        rest_id: restId,
-        addon_id: addonId,
-      });
+      const addonRepo = manager.getRepository(Addon);
+      const addon = await addonRepo
+        .createQueryBuilder('a')
+        .where('a.rest_id = :restId AND a.addon_id = :addonId', {
+          restId,
+          addonId,
+        })
+        .setLock('pessimistic_write')
+        .getOne();
       if (!addon) {
         throw new ApiError(404, 'NOT_FOUND', 'Addon not found.');
       }
 
       const repo = manager.getRepository(ProductAddon);
+      const beforeActiveCount = await repo.count({
+        where: { rest_id: restId, addon_id: addonId, is_active: true },
+      });
+
       let link = await repo.findOneBy({
         rest_id: restId,
         prod_id: prodId,
@@ -585,7 +933,26 @@ export class CatalogService {
       }
 
       const saved = await repo.save(link);
-      return { link: saved, addon };
+      const afterMap = await this.getAddonLinkedProductIds(
+        restId,
+        [addonId],
+        manager,
+      );
+      const linkedProductIds = afterMap.get(addonId.toString()) ?? [];
+
+      if (
+        beforeActiveCount === 0 &&
+        linkedProductIds.length > 0 &&
+        !addon.is_active
+      ) {
+        addon.is_active = true;
+        await addonRepo.save(addon);
+      } else if (linkedProductIds.length === 0 && addon.is_active) {
+        addon.is_active = false;
+        await addonRepo.save(addon);
+      }
+
+      return { link: saved, addon, linkedProductIds };
     });
   }
 
@@ -840,6 +1207,7 @@ export class CatalogService {
     });
     if (
       !product ||
+      !product.cat_id ||
       !(await this.dataSource
         .getRepository(Category)
         .existsBy({ cat_id: product.cat_id, rest_id: restId, is_active: true }))
@@ -921,7 +1289,7 @@ export class CatalogService {
     products: Array<{
       prod_id: string;
       prod_name: string;
-      cat_id: string;
+      cat_id: string | null;
       cat_title: string;
       price: string;
       is_active: boolean;
@@ -996,7 +1364,9 @@ export class CatalogService {
         prod_id: prod.prod_id,
         prod_name: prod.prod_name,
         cat_id: prod.cat_id,
-        cat_title: catTitleById.get(prod.cat_id) ?? 'أصناف أخرى',
+        cat_title: prod.cat_id
+          ? (catTitleById.get(prod.cat_id) ?? 'أصناف أخرى')
+          : 'غير مصنّف',
         price: prod.price,
         is_active: prod.is_active,
       })),

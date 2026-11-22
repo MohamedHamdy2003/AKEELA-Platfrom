@@ -30,7 +30,7 @@ import {
   ['rest_id', 'prod_id', 'addon_id'],
   {
     name: 'fk_cart_item_addons_link',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'RESTRICT',
   },
 )

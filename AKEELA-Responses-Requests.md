@@ -140,30 +140,33 @@ Customers may save at most 2 addresses. Attempting to create a third address ret
 
 | Method | Route | Purpose | Request | Response data |
 |---|---|---|---|---|
-| GET | `/restaurant/categories` | List owned categories, including inactive ones. | Query: `page=1&per_page=20` | `200` · List<Category> |
-| POST | `/restaurant/categories` | Create a menu category. | Body: `{"cat_title":"Sandwiches","display_order":0,"is_active":true}` | `201` · Category |
-| PATCH | `/restaurant/categories/{cat_id}` | Update title, display order, or activity. | Body: `{"cat_title":"Sandwiches","display_order":0,"is_active":true}` | `200` · Category |
+| GET | `/restaurant/categories` | List owned categories, including inactive ones and product counts. | Query: `page=1&per_page=20` | `200` · List<Category> |
+| POST | `/restaurant/categories` | Create a menu category with automatic sequential display order. | Body: `{"cat_title":"Sandwiches","is_active":true}` | `201` · Category |
+| PATCH | `/restaurant/categories/{cat_id}` | Update title, activity, or swap display order with an existing category. | Body: `{"cat_title":"Sandwiches","display_order":1,"is_active":true}` | `200` · Category |
+| DELETE | `/restaurant/categories/{cat_id}` | Delete an empty owned category and compact display orders. | No body | `200` · Message |
 
 ## 06. Products
 
 | Method | Route | Purpose | Request | Response data |
 |---|---|---|---|---|
-| GET | `/restaurant/products` | List owned products; optionally filter by category. | Query: `page=1&per_page=20&cat_id=100` | `200` · List<Product> |
+| GET | `/restaurant/products` | List owned products; optionally filter by category or unlinked status. | Query: `page=1&per_page=20&cat_id=100&unlinked=false` | `200` · List<Product> |
 | GET | `/restaurant/products/{prod_id}` | Read product details for editing. | No body | `200` · Product |
-| POST | `/restaurant/products` | Create a product in an owned category. | Body: `{"cat_id":"100","prod_name":"Burger","prod_description":"Grilled beef burger","prod_image_url":"https://example.com/burger.jpg","price":"100.00","is_active":true}` | `201` · Product |
-| PATCH | `/restaurant/products/{prod_id}` | Update product details, price, category, or activity. | Body: `{"cat_id":"100","prod_name":"Burger","prod_description":"Grilled beef burger","prod_image_url":"https://example.com/burger.jpg","price":"100.00","is_active":true}` | `200` · Product |
+| POST | `/restaurant/products` | Create a product in an owned category or as an unlinked inactive product. | Body: `{"cat_id":"100","prod_name":"Burger","prod_description":"Grilled beef burger","prod_image_url":"https://example.com/burger.jpg","price":"100.00","is_active":true}` | `201` · Product |
+| PATCH | `/restaurant/products/{prod_id}` | Update product details, price, category link (or unlink with null), or activity. | Body: `{"cat_id":"100","prod_name":"Burger","prod_description":"Grilled beef burger","prod_image_url":"https://example.com/burger.jpg","price":"100.00","is_active":true}` | `200` · Product |
+| DELETE | `/restaurant/products/{prod_id}` | Permanently delete an unlinked owned product. | No body | `200` · Message |
 
 ## 07. Addons and Product Links
 
 | Method | Route | Purpose | Request | Response data |
 |---|---|---|---|---|
-| GET | `/restaurant/addons` | List owned addons. | Query: `page=1&per_page=20` | `200` · List<Addon> |
-| POST | `/restaurant/addons` | Create an addon and its price. | Body: `{"addon_name":"Cheese","addon_price":"10.00","is_active":true}` | `201` · Addon |
-| PATCH | `/restaurant/addons/{addon_id}` | Update addon name, price, or activity. | Body: `{"addon_name":"Cheese","addon_price":"10.00","is_active":true}` | `200` · Addon |
+| GET | `/restaurant/addons` | List owned addons; optionally filter by unlinked status. | Query: `page=1&per_page=20&unlinked=false` | `200` · List<Addon> |
+| POST | `/restaurant/addons` | Create an unlinked inactive addon and its price. | Body: `{"addon_name":"Cheese","addon_price":"10.00"}` | `201` · Addon |
+| PATCH | `/restaurant/addons/{addon_id}` | Update addon name, price, or activity (when linked). | Body: `{"addon_name":"Cheese","addon_price":"10.00","is_active":true}` | `200` · Addon |
 | GET | `/restaurant/products/{prod_id}/addons` | List the product's addon links, including inactive links. | No body | `200` · List<ProductAddon> |
 | PUT | `/restaurant/products/{prod_id}/addons/{addon_id}` | Create a link or enable/disable an existing link. | Body: `{"is_active":true}` | `200` · ProductAddon |
+| DELETE | `/restaurant/addons/{addon_id}` | Permanently delete an unlinked owned addon. | No body | `200` · Message |
 
-Product-addon PUT returns `200` for both a new link and an update.
+Product-addon PUT returns `200` for both a new link and an update. Linking an unlinked addon to its first product auto-activates the addon; unlinking its last active product auto-deactivates it.
 
 ## 08. Offers
 
@@ -433,8 +436,9 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "cat_id": "100",
   "rest_id": "10",
   "cat_title": "Sandwiches",
-  "display_order": 0,
+  "display_order": 1,
   "is_active": true,
+  "product_count": 2,
   "created_at": "2026-11-12T12:00:00.000+02:00",
   "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
@@ -466,6 +470,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
   "addon_name": "Cheese",
   "addon_price": "10.00",
   "is_active": true,
+  "linked_product_ids": ["200"],
   "created_at": "2026-11-12T12:00:00.000+02:00",
   "updated_at": "2026-11-12T12:00:00.000+02:00"
 }
@@ -485,6 +490,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
     "addon_name": "Cheese",
     "addon_price": "10.00",
     "is_active": true,
+    "linked_product_ids": ["200"],
     "created_at": "2026-11-12T12:00:00.000+02:00",
     "updated_at": "2026-11-12T12:00:00.000+02:00"
   },

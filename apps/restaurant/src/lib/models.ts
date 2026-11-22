@@ -50,10 +50,11 @@ export interface Category {
   cat_title: string;
   display_order: number;
   is_active: boolean;
+  product_count?: number;
 }
 export interface Product {
   prod_id: string;
-  cat_id: string;
+  cat_id: string | null;
   prod_name: string;
   prod_description: string | null;
   prod_image_url: string | null;
@@ -65,6 +66,7 @@ export interface Addon {
   addon_name: string;
   addon_price: string;
   is_active: boolean;
+  linked_product_ids?: string[];
 }
 export interface ProductAddon {
   addon_id: string;

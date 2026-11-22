@@ -25,7 +25,7 @@ import {
 })
 @ForeignKey('products', ['rest_id', 'prod_id'], ['rest_id', 'prod_id'], {
   name: 'fk_cart_items_product',
-  onDelete: 'RESTRICT',
+  onDelete: 'CASCADE',
   onUpdate: 'RESTRICT',
 })
 @ForeignKey('offers', ['rest_id', 'offer_id'], ['rest_id', 'offer_id'], {

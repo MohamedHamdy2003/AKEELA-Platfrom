@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -40,7 +41,7 @@ export class RestaurantCategoriesController {
     this.assertRestaurant(actor);
     const profile = await this.catalog.assertActiveRestaurant(actor.userId);
     const pagination = resolvePagination(query);
-    const { items, total } = await this.catalog.listCategories(
+    const { items, total, productCounts } = await this.catalog.listCategories(
       profile.rest_id,
       {
         skip: pagination.skip,
@@ -50,7 +51,9 @@ export class RestaurantCategoriesController {
     return {
       success: true,
       message: 'Records returned.',
-      data: items.map(serializeCategory),
+      data: items.map((c) =>
+        serializeCategory(c, productCounts.get(c.cat_id.toString()) ?? 0),
+      ),
       meta: paginationMeta(total, pagination.page, pagination.per_page),
     };
   }
@@ -63,7 +66,7 @@ export class RestaurantCategoriesController {
     this.assertRestaurant(actor);
     const profile = await this.catalog.assertActiveRestaurant(actor.userId);
     const category = await this.catalog.createCategory(profile.rest_id, body);
-    return reply(serializeCategory(category), 'Category created.');
+    return reply(serializeCategory(category, 0), 'Category created.');
   }
 
   @Patch(':cat_id')
@@ -75,11 +78,26 @@ export class RestaurantCategoriesController {
   ) {
     this.assertRestaurant(actor);
     const profile = await this.catalog.assertActiveRestaurant(actor.userId);
-    const category = await this.catalog.updateCategory(
+    const { category, productCount } = await this.catalog.updateCategory(
       profile.rest_id,
       catId,
       body,
     );
-    return reply(serializeCategory(category), 'Category updated.');
+    return reply(
+      serializeCategory(category, productCount),
+      'Category updated.',
+    );
+  }
+
+  @Delete(':cat_id')
+  @HttpCode(200)
+  async remove(
+    @CurrentActor() actor: AuthActor,
+    @Param('cat_id') catId: string,
+  ) {
+    this.assertRestaurant(actor);
+    const profile = await this.catalog.assertActiveRestaurant(actor.userId);
+    await this.catalog.deleteCategory(profile.rest_id, catId);
+    return reply(null, 'Category deleted.');
   }
 }

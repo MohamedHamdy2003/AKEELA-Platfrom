@@ -32,7 +32,14 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
-- **Delivery & Restaurant Visual De-flash Refinement (2026-11-22, dev-only)**:
+- **Restaurant Catalog Linking, Swap Reordering & Unlinked Deletion Architecture (2026-11-22, dev-only)**:
+  - **PostgreSQL 17 Migration (`1794700000000-CatalogLinkingAndDeletions.ts`, 10 migrations)**: Normalizes `categories.display_order` to contiguous `1..N` per restaurant with deferrable unique index `uq_categories_rest_display_order`, makes `products.cat_id` nullable with `ck_products_unlinked_inactive` (`cat_id IS NOT NULL OR is_active = false`), cascades `product_addons`/`cart_items`/`cart_item_addons` on unlinked product/addon deletion, and preserves historical `order_items`/`order_item_addons` snapshots via `ON DELETE SET NULL (prod_id)` and `ON DELETE SET NULL (addon_id)`.
+  - **Catalog API (89 routes / 42 Restaurant Swagger operations)**: Added `DELETE /restaurant/categories/{cat_id}` (empty-only, compacts remaining orders to `1..N`), `DELETE /restaurant/products/{prod_id}` (unlinked-only, auto-deactivates addons left with 0 links), and `DELETE /restaurant/addons/{addon_id}` (unlinked-only). Creating a category auto-assigns `max(display_order) + 1`; editing `display_order` performs an atomic swap with an existing category; `Category` responses include `product_count`; `Addon` responses include `linked_product_ids`; `GET /restaurant/products` and `GET /restaurant/addons` accept `unlinked=true|false`; linking unlinked products/addons auto-activates them and unlinking forces `is_active = false`. Updated root specs, Swagger, Bruno folders 05–07, and PostgreSQL integration tests.
+  - **Restaurant Portal UX (`apps/restaurant/src/features/catalog.tsx`, `catalog.css`)**: Added Category Details view with always-visible disabled-until-empty Delete button, move/unlink product dialog modals, swap-only order selector on Category Edit, segmented linked/unlinked filters & management dialogs for Products and Addons, and Playwright E2E coverage. Kept on `dev` only per owner policy.
+
+- **Production release: Clean Restaurant-Grade Light Aesthetic for Delivery & Restaurant Analytics (2026-11-22)**: [Release 45014381875](https://github.com/MohamedHamdy2003/AKEELA-Platfrom/actions/runs/45014381875) deployed `main` commit `74e26db` via PR #57. Live HTTPS endpoints verified HTTP 200. Work returned to dev-only policy.
+
+- **Delivery & Restaurant Visual De-flash Refinement (2026-11-22, released)**:
   - Replaced Delivery's flashy dark cyan/teal gradient banners, glowing dots, frosted glass pills, and dark gradient sidebar with a restrained, airy Restaurant-grade light design: clean white sidebar (`#ffffff`) showing the original full-color AKEELA logo, flat sapphire-slate (`#1b5ca8`) active navigation with warm edge indicator (`#e88446`), understated uppercase centered company identity in the topbar, open light Home heading paired with a flat soft-tinted company info strip, clean white Company Identity card on `بيانات الشركة`, flat driver side-sheet banner, and sapphire/terracotta charts.
   - Replaced Restaurant Analytics' dark gradient hero banner with Restaurant's native open Fresh Kitchen page header and clean white segmented time-range controls.
   - Kept Delivery's login brand panel in a controlled deep sapphire gradient with white original AKEELA logo (`visual-polish.spec.ts` intact). Kept on `dev` only per owner policy.
@@ -148,9 +155,9 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 | 11-14: Cart, checkout/history, restaurant order handling/delivery     | Implemented                                                                                            |
 | 15: Customer/restaurant/product/offer images and public URLs          | Implemented                                                                                            |
 | 16: Public liveness/readiness                                         | Implemented                                                                                            |
-| PostgreSQL                                                            | Twenty table mappings, one history view, nine reversible migrations (including 13 performance indexes) |
+| PostgreSQL                                                            | Twenty table mappings, one history view, ten reversible migrations (including 13 performance indexes)  |
 | Restaurant frontend                                                   | React/Vite/TypeScript, Arabic RTL, tab-scoped sessionStorage sessions, Leaflet location picker         |
-| API collection                                                        | 86 routes in specifications and matching Bruno folders                                                 |
+| API collection                                                        | 89 routes in specifications and matching Bruno folders                                                 |
 | Docker/Caddy                                                          | Persistent images/database/certificates, private API/database; local TLS smoke verified                |
 | CI/CD                                                                 | PR checks, main GHCR publication, optional pinned-SSH deployment; deployment disabled until configured |
 
