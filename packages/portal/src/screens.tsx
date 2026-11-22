@@ -13,6 +13,7 @@ import {
   CheckCheck,
   CheckCircle,
   Clock,
+  RefreshCw,
   Truck,
   XCircle,
 } from 'lucide-react';
@@ -78,7 +79,8 @@ export function OrdersBoard({
       date_to: '',
     }),
     [id, setId] = useState<string | null>(null),
-    [tick, setTick] = useState(0);
+    [tick, setTick] = useState(0),
+    [resetSpin, setResetSpin] = useState(0);
   useEffect(() => {
     if (initialStatus !== undefined && initialStatus !== '') {
       setFilters((current) => ({ ...current, status: initialStatus }));
@@ -86,9 +88,15 @@ export function OrdersBoard({
       onInitialStatusConsumed?.();
     }
   }, [initialStatus, onInitialStatusConsumed]);
+  const hasCompleteDateRange = Boolean(filters.date_from && filters.date_to);
+  const requestFilters = {
+    status: filters.status,
+    date_from: hasCompleteDateRange ? filters.date_from : '',
+    date_to: hasCompleteDateRange ? filters.date_to : '',
+  };
   const list = useResource<OrderSummary[]>(
     api,
-    prefix + '/orders' + query({ page, per_page: 10, ...filters }),
+    prefix + '/orders' + query({ page, per_page: 10, ...requestFilters }),
     revision + tick,
   );
   useEffect(() => {
@@ -263,7 +271,7 @@ export function OrdersBoard({
           }
         />
         <Metrics items={metricItems} />
-        <div className="filters">
+        <div className="filters orders-filter-bar">
           <Field label="حالة الطلب">
             <select
               value={filters.status}
@@ -281,13 +289,15 @@ export function OrdersBoard({
             </select>
           </Field>
           {dateFields ? (
-            dateFields(
-              { date_from: filters.date_from, date_to: filters.date_to },
-              (dates) => {
-                setFilters((current) => ({ ...current, ...dates }));
-                setPage(1);
-              },
-            )
+            <div key={resetSpin} style={{ display: 'contents' }}>
+              {dateFields(
+                { date_from: filters.date_from, date_to: filters.date_to },
+                (dates) => {
+                  setFilters((current) => ({ ...current, ...dates }));
+                  setPage(1);
+                },
+              )}
+            </div>
           ) : (
             <>
               <Field label="من تاريخ">
@@ -315,13 +325,20 @@ export function OrdersBoard({
           )}
           <button
             type="button"
-            className="button filters-reset"
+            className="filters-reset-icon"
+            aria-label="إعادة ضبط الفلاتر"
+            title="إعادة ضبط الفلاتر"
             onClick={() => {
+              setResetSpin((n) => n + 1);
               setFilters({ status: '', date_from: '', date_to: '' });
               setPage(1);
             }}
           >
-            إعادة ضبط الفلاتر
+            <RefreshCw
+              size={16}
+              aria-hidden="true"
+              style={{ transform: `rotate(${resetSpin * 180}deg)` }}
+            />
           </button>
         </div>
         <ResourceState

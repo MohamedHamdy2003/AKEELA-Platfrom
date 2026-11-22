@@ -82,7 +82,6 @@ function ArabicDate({
     ? monthDays(Number(draft.month), Number(year) || 2024)
     : 31;
   const complete = dateValue(draft.day, draft.month, year);
-  const incomplete = !!(draft.day || draft.month || draft.year) && !complete;
   const invalidDate =
     !!draft.day && !!draft.month && year.length === 4 && !complete;
   const rangeError = !!complete && !!min && complete < min;
@@ -159,11 +158,9 @@ function ArabicDate({
             ? 'اختر تاريخًا مساويًا لتاريخ البداية أو بعده.'
             : invalidDate
               ? 'اختر تاريخًا ميلاديًا صحيحًا.'
-              : incomplete
-                ? 'أكمل اليوم والشهر والسنة لتطبيق التاريخ.'
-                : complete
-                  ? `التاريخ: ${arabicDigits(draft.day)} ${months[Number(draft.month) - 1]} ${arabicDigits(year)}`
-                  : ''}
+              : complete
+                ? `التاريخ: ${arabicDigits(draft.day)} ${months[Number(draft.month) - 1]} ${arabicDigits(year)}`
+                : ''}
         </small>
         {(draft.day || draft.month || draft.year) && (
           <button

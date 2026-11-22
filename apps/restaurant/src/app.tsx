@@ -115,7 +115,6 @@ function Workspace() {
   const [mobile, setMobile] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [topHover, setTopHover] = useState(false);
   useEffect(() => {
     const onFullscreenChange = () => {
       setFullscreen(Boolean(document.fullscreenElement));
@@ -124,42 +123,13 @@ function Workspace() {
     return () =>
       document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
-  useEffect(() => {
-    if (!fullscreen) {
-      setTopHover(false);
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.querySelector('dialog[open]')) {
-        setFullscreen(false);
-        if (document.fullscreenElement) {
-          void document.exitFullscreen?.().catch(() => undefined);
-        }
-      }
-    };
-    const onMouseMove = (event: MouseEvent) => {
-      setTopHover(event.clientY <= 58);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('mousemove', onMouseMove);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('mousemove', onMouseMove);
-    };
-  }, [fullscreen]);
   const toggleFullscreen = () => {
-    if (!fullscreen) {
-      setFullscreen(true);
-      setTopHover(false);
+    if (!document.fullscreenElement) {
       void document.documentElement
         .requestFullscreen?.()
         .catch(() => undefined);
     } else {
-      setFullscreen(false);
-      setTopHover(false);
-      if (document.fullscreenElement) {
-        void document.exitFullscreen?.().catch(() => undefined);
-      }
+      void document.exitFullscreen?.().catch(() => undefined);
     }
   };
   useEffect(() => {
@@ -396,7 +366,6 @@ function Workspace() {
       className="app-shell"
       data-sidebar-collapsed={collapsed}
       data-fullscreen={fullscreen || undefined}
-      data-top-hover={topHover || undefined}
     >
       <a className="skip-link" href="#main-content" inert={mobile}>
         انتقل إلى المحتوى
@@ -536,22 +505,7 @@ function Workspace() {
         className="workspace"
         inert={mobile}
       >
-        {fullscreen && (
-          <div
-            className="fullscreen-top-sensor"
-            onMouseEnter={() => setTopHover(true)}
-            aria-hidden="true"
-          />
-        )}
-        <header
-          className="topbar"
-          onMouseEnter={() => {
-            if (fullscreen) setTopHover(true);
-          }}
-          onMouseLeave={(event) => {
-            if (fullscreen && event.clientY > 58) setTopHover(false);
-          }}
-        >
+        <header className="topbar">
           <div className="topbar-start">
             <button
               type="button"
