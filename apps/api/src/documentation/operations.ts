@@ -803,7 +803,8 @@ export const operations: OperationDoc[] = [
     method: 'put',
     path: '/api/v1/delivery-company/orders/{order_id}/driver',
     tag: '14. Order Assignment and Delivery',
-    summary: 'Assign or change an owned active driver before pickup.',
+    summary:
+      'Assign or reassign an owned active driver while Accepted or Picked_Up (transitions Accepted to Picked_Up).',
     status: 200,
     model: 'OrderState',
     bodyExample: { driver_id: '30' },
@@ -812,7 +813,8 @@ export const operations: OperationDoc[] = [
     method: 'post',
     path: '/api/v1/delivery-company/orders/{order_id}/pickup',
     tag: '14. Order Assignment and Delivery',
-    summary: 'Mark an assigned Accepted order as Picked_Up.',
+    summary:
+      'Confirm pickup of an assigned Accepted or Picked_Up order (idempotent).',
     status: 200,
     model: 'OrderState',
   },

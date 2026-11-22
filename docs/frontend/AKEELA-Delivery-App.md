@@ -7,7 +7,7 @@ This application is implemented for the company/dispatcher, not drivers. Product
 
 Read root [AGENTS.md](../../AGENTS.md) and [this app's instructions](../../apps/delivery/AGENTS.md) for the scoped reading path. Use this guide for screens and permissions; consult only the matching canonical API sections/models for the feature in progress. Do not read other app guides or the full backend for orientation. Existing root specifications remain authoritative; this guide adds no backend features.
 
-API paths omit `/api/v1`. Configure the full API base URL; the backend domain is undecided. This frontend shares the existing backend/database.
+API paths omit `/api/v1`. Configure the full API base URL; the production API domain is `api.akeelaonline.tech`. This frontend shares the existing backend/database.
 
 ## Screens and Features
 
@@ -55,7 +55,7 @@ API paths omit `/api/v1`. Configure the full API base URL; the backend domain is
 - Driver fields: `driver_name`, `driver_phone`, optional `driver_email`, `is_active`. No password, login role or company selector. Server derives company ownership.
 - Edit a driver from list data; no driver detail GET or driver DELETE route exists. Disable instead of deleting. Never move drivers between companies.
 - Driver activity does not mean Available/Busy or live online status; no capacity/location API exists. Active drivers may be chosen for dispatch, subject to server validation.
-- Before disabling an assigned driver, explain that pickup/delivery requires active drivers. An Accepted order can use another active driver; after pickup, driver changes are forbidden, so an inactive assigned driver must be reactivated to finish delivery. Do not imply automatic reassignment.
+- Before disabling an assigned driver, explain that pickup/delivery requires active drivers. An Accepted or Picked_Up order can be reassigned to another active driver, or the inactive assigned driver can be reactivated to finish delivery. Do not imply automatic reassignment.
 - No company logo/avatar/image upload API exists for this role.
 
 ## 03. Assigned Orders and History

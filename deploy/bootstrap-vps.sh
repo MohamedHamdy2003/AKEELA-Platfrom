@@ -16,6 +16,7 @@ if ! command -v docker >/dev/null; then
  apt-get update
  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 fi
+apt-get update
 apt-get install -y curl util-linux
 timedatectl set-timezone Africa/Cairo
 id "$user" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$user"

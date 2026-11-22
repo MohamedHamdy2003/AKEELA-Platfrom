@@ -8,6 +8,8 @@ test('frontend-only and documentation changes do not rebuild the API', () => {
       'apps/admin/README.md',
       'apps/restaurant/README.md',
       'apps/delivery/README.md',
+      'packages/portal/src/ui.tsx',
+      'packages/brand/tokens.css',
       'docs/frontend/AKEELA-Admin-App.md',
       'AKEELA-Features.md',
       'bruno/AKEELA/bruno.json',

@@ -1,6 +1,6 @@
 # Swagger API Reference
 
-Swagger documents all 81 implemented REST endpoints for mobile and web clients. It uses real controller/DTO metadata and the approved request/response contract. No business behavior or database schema changes are part of this addition.
+Swagger documents all 89 implemented REST endpoints for mobile and web clients. It uses real controller/DTO metadata and the approved request/response contract. No business behavior or database schema changes are part of this addition.
 
 ## Open the reference
 
@@ -18,13 +18,13 @@ The main `/api/v1/docs` page starts with Customer. Use the top role selector to 
 | Role             | UI path                         | JSON path                            | Operations |
 | ---------------- | ------------------------------- | ------------------------------------ | ---------- |
 | Customer         | `/api/v1/docs/customer`         | `/api/v1/docs/customer-json`         | 36         |
-| Restaurant       | `/api/v1/docs/restaurant`       | `/api/v1/docs/restaurant-json`       | 38         |
-| Admin            | `/api/v1/docs/admin`            | `/api/v1/docs/admin-json`            | 21         |
-| Delivery Company | `/api/v1/docs/delivery-company` | `/api/v1/docs/delivery-company-json` | 22         |
+| Restaurant       | `/api/v1/docs/restaurant`       | `/api/v1/docs/restaurant-json`       | 42         |
+| Admin            | `/api/v1/docs/admin`            | `/api/v1/docs/admin-json`            | 23         |
+| Delivery Company | `/api/v1/docs/delivery-company` | `/api/v1/docs/delivery-company-json` | 24         |
 
 Each role has its own feature groups, such as Authentication, My Profile, Products, Cart, Orders or Drivers. Only features implemented for that client appear. Customer product browsing and Restaurant product management are separate. Admin has no product-management API. Authentication, own-account and health operations are shared, so they appear in all four views. Public registration appears only for Customer and Restaurant. Admin setup uses CLI; Admin creates Delivery Company accounts.
 
-These are documentation paths and groups; actual API URLs and authorization rules do not change. Documentation is not an access-control boundary. The full `/api/v1/docs-json` remains available for existing imports and contains all 81 unique operations. Role JSON removes unrelated input models while retaining referenced shared response models, including role profiles needed by Admin account management. Login and own-account examples match the selected role. Non-Customer PATCH `/me` omits the Customer-only avatar field and its example.
+These are documentation paths and groups; actual API URLs and authorization rules do not change. Documentation is not an access-control boundary. The full `/api/v1/docs-json` remains available for existing imports and contains all 89 unique operations. Role JSON removes unrelated input models while retaining referenced shared response models, including role profiles needed by Admin account management. Login and own-account examples match the selected role. Non-Customer PATCH `/me` omits the Customer-only avatar field and its example.
 
 With Swagger enabled on the VPS, the mobile reference is `https://api.akeelaonline.tech/api/v1/docs` and JSON is `https://api.akeelaonline.tech/api/v1/docs-json`. Caddy's existing API proxy supports these paths; no new domain, service or public port is required. Deployment must still be verified after release.
 
@@ -69,6 +69,6 @@ Examples are independent and may use placeholder tokens or dates that are no lon
 
 Follow root specifications first; update the relevant contract, Bruno request and Swagger in the same feature when behavior changes. Swagger is the interactive rendering of the contract, not permission to invent requirements. The API image includes these TypeScript definitions; it does not read root Markdown at runtime.
 
-`npm test` checks controller/spec/Swagger route parity, operation IDs, access documentation, DTO/schema field parity, examples against actual validators, OpenAPI validity/local references, pagination, conditional cart/checkout shapes, uploads and served UI/JSON/assets. Role tests check visibility, registration, feature tags, schema references, field scoping, complete 81-operation coverage and disabled role routes. These tests use mocked dependencies only; no PostgreSQL or SMTP access. Business changes still need normal integration tests.
+`npm test` checks controller/spec/Swagger route parity, operation IDs, access documentation, DTO/schema field parity, examples against actual validators, OpenAPI validity/local references, pagination, conditional cart/checkout shapes, uploads and served UI/JSON/assets. Role tests check visibility, registration, feature tags, schema references, field scoping, complete 89-operation coverage and disabled role routes. These tests use mocked dependencies only; no PostgreSQL or SMTP access. Business changes still need normal integration tests.
 
 See [NestJS OpenAPI](https://docs.nestjs.com/openapi/introduction), [operations](https://docs.nestjs.com/openapi/operations) and [multiple specifications](https://docs.nestjs.com/openapi/other-features).

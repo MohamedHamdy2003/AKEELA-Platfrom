@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -14,9 +14,12 @@ const { isEmail } = require('class-validator');
 try {
   const target = new URL('../.env.production.local', import.meta.url);
   const values = parsePrivateEnvironment(readFileSync(target, 'utf8'), parse);
-  const local = parse(
-    readFileSync(new URL('../apps/api/.env', import.meta.url)),
-  );
+  let local = {};
+  try {
+    local = parse(readFileSync(new URL('../apps/api/.env', import.meta.url)));
+  } catch {
+    local = {};
+  }
   for (const key of [
     'SMTP_HOST',
     'SMTP_PORT',
@@ -82,6 +85,11 @@ try {
   // Compose single quotes prevent $ expansion. Escape apostrophes; retain literal backslashes.
   const content = renderPrivateEnvironment(values);
   writeFileSync(target, content, { mode: 0o600 });
+  try {
+    chmodSync(target, 0o600);
+  } catch {
+    // Windows filesystems ignore POSIX mode bits.
+  }
   const result = spawnSync(
     'docker',
     [

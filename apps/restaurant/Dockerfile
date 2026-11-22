@@ -19,8 +19,8 @@ ENV VITE_MAP_TILE_URL=$VITE_MAP_TILE_URL
 ENV VITE_MAP_ATTRIBUTION=$VITE_MAP_ATTRIBUTION
 RUN npm run build --workspace @akeela/restaurant
 
-FROM nginx:stable-alpine
+FROM nginxinc/nginx-unprivileged:stable-alpine
 COPY apps/restaurant/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/restaurant/dist /usr/share/nginx/html
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1
+HEALTHCHECK --interval=10s --timeout=3s --start-period=3s --start-interval=2s CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1

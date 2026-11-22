@@ -1,15 +1,25 @@
 {
 	email {$ACME_EMAIL}
 }
+(access_log) {
+	log {
+		output stdout
+		format json
+	}
+}
 {$APP_DOMAIN} {
+	import access_log
 	import /etc/caddy/routes.caddy
 }
 {$ADMIN_DOMAIN} {
+	import access_log
 	import /etc/caddy/frontend-routes.caddy admin
 }
 {$VENDOR_DOMAIN} {
+	import access_log
 	import /etc/caddy/frontend-routes.caddy restaurant
 }
 {$DELIVERY_DOMAIN} {
+	import access_log
 	import /etc/caddy/frontend-routes.caddy delivery
 }

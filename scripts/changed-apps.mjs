@@ -10,6 +10,7 @@ export function apiAffected(paths) {
     return !(
       path.startsWith('docs/') ||
       /^apps\/(admin|restaurant|delivery)\//.test(path) ||
+      /^packages\/(portal|brand)\//.test(path) ||
       /^AKEELA-[^/]+\.md$/.test(path) ||
       path === 'README.md' ||
       path.startsWith('bruno/')
@@ -19,12 +20,14 @@ export function apiAffected(paths) {
 export function frontendsAffected(paths) {
   return (
     apiAffected(paths) ||
-    paths.some(
-      (file) =>
-        /^apps\/(admin|restaurant|delivery)\//.test(
-          file.replaceAll('\\', '/'),
-        ) && !file.endsWith('.md'),
-    )
+    paths.some((file) => {
+      const normalized = file.replaceAll('\\', '/');
+      return (
+        (/^apps\/(admin|restaurant|delivery)\//.test(normalized) ||
+          /^packages\/(portal|brand)\//.test(normalized)) &&
+        !normalized.endsWith('.md')
+      );
+    })
   );
 }
 

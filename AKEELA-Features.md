@@ -271,11 +271,11 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 - Lock the order, change its status to Accepted, and save `company_id` in one transaction. Leave `driver_id` NULL until the assigned company selects an active driver.
 - Retrying acceptance of an already Accepted order returns its current result without changing the company. Reject acceptance from any other state.
 - When more companies are added, replace the company-selection rule with routing rules. Keep the same accept API and preserve the company already saved on existing orders.
-- Driver assignment, pickup, and delivery require an active owned driver. If a driver is disabled, reactivate it or select another driver while the order is still Accepted.
+- Driver assignment, pickup, and delivery require an active owned driver. Assigning a driver immediately transitions the order to `Picked_Up`; if a driver is disabled, reactivate it or select another active driver while the order is `Accepted` or `Picked_Up`.
 - Driver and company must match. Only the assigned company may report pickup or delivery; drivers have no login.
-- `Accepted → Picked_Up` requires a company and driver. `Picked_Up → Delivered` completes delivery.
+- Explicit pickup (`POST /delivery-company/orders/{order_id}/pickup`) is idempotent across `Accepted` and `Picked_Up` and requires an assigned active driver. `Picked_Up → Delivered` completes delivery, and `Picked_Up` orders not delivered within 90 minutes are automatically marked `Delivered`.
 - Admin may mark an Accepted or Picked_Up order as Failed. Final states cannot be changed.
-- For the first version, do not reassign an order to another company after company assignment. A company may change its driver before pickup.
+- For the first version, do not reassign an order to another company after company assignment. A company may change its driver while `Accepted` or `Picked_Up`.
 - Lock the order for assignment and status changes. No generic client-controlled status update route.
 
 | Method | Route | Purpose |
@@ -285,8 +285,8 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 | POST | `/admin/orders/{order_id}/fail` | Mark an eligible order as Failed. |
 | GET | `/delivery-company/orders` | List orders assigned to the company. |
 | GET | `/delivery-company/orders/{order_id}` | Read assigned order details, pickup location, and delivery address. |
-| PUT | `/delivery-company/orders/{order_id}/driver` | Assign or change an owned active driver before pickup. |
-| POST | `/delivery-company/orders/{order_id}/pickup` | Mark an assigned Accepted order as Picked_Up. |
+| PUT | `/delivery-company/orders/{order_id}/driver` | Assign or reassign an owned active driver while Accepted or Picked_Up (transitions Accepted to Picked_Up). |
+| POST | `/delivery-company/orders/{order_id}/pickup` | Confirm pickup of an assigned Accepted or Picked_Up order (idempotent). |
 | POST | `/delivery-company/orders/{order_id}/deliver` | Mark a Picked_Up order as Delivered. |
 | GET | `/admin/orders/counts` | Return order counts grouped by status across the platform. |
 | GET | `/delivery-company/orders/counts` | Return assigned order counts grouped by status for the company. |

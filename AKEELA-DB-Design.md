@@ -1,4 +1,4 @@
-# Rico — Database Design
+# AKEELA — Database Design
 
 > `PK` = primary key, `FK` = foreign key, `UQ` = unique, `NN` = required, `NULL` = optional. All fields are required unless marked `NULL`. SQL syntax depends on the database engine and version.
 
