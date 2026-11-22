@@ -35,6 +35,11 @@ export function RestaurantProfile({
 }) {
   const resource = useResource<Profile>('/restaurant/profile');
   const [savedNotice, setSavedNotice] = useState('');
+  useEffect(() => {
+    if (!savedNotice) return;
+    const timer = window.setTimeout(() => setSavedNotice(''), 5000);
+    return () => window.clearTimeout(timer);
+  }, [savedNotice]);
   return (
     <>
       <PageHeading title="ملف المطعم" subtitle="هوية مطعمك، ومواعيد يومك." />
@@ -319,6 +324,12 @@ export function Account({
     setFullName(user.full_name);
     setPhone(user.phone);
   }, [user.full_name, user.phone]);
+
+  useEffect(() => {
+    if (!profileMessage) return;
+    const timer = window.setTimeout(() => setProfileMessage(''), 5000);
+    return () => window.clearTimeout(timer);
+  }, [profileMessage]);
 
   const profileFieldError = (name: string) =>
     profileError instanceof ApiError

@@ -1,3 +1,50 @@
+.driver-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.driver-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid var(--p-line);
+  box-shadow: 0 4px 18px rgb(18 41 35 / 4%);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.driver-seg button {
+  padding: 7px 16px;
+  border-radius: 9px;
+  border: 0;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--p-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out);
+}
+
+.driver-seg button:hover {
+  color: var(--p-text);
+  background: var(--p-bg);
+}
+
+.driver-seg button[aria-pressed='true'] {
+  background: var(--p-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
 .driver-sheet-body {
   display: grid;
   gap: 16px;

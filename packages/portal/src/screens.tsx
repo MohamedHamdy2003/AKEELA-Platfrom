@@ -313,18 +313,16 @@ export function OrdersBoard({
               </Field>
             </>
           )}
-          {(filters.status || filters.date_from || filters.date_to) && (
-            <button
-              type="button"
-              className="button filters-reset"
-              onClick={() => {
-                setFilters({ status: '', date_from: '', date_to: '' });
-                setPage(1);
-              }}
-            >
-              إعادة ضبط الفلاتر
-            </button>
-          )}
+          <button
+            type="button"
+            className="button filters-reset"
+            onClick={() => {
+              setFilters({ status: '', date_from: '', date_to: '' });
+              setPage(1);
+            }}
+          >
+            إعادة ضبط الفلاتر
+          </button>
         </div>
         <ResourceState
           resource={list}

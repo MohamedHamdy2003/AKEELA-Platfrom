@@ -8,7 +8,6 @@ import {
   MapPin,
   PackageCheck,
   Phone,
-  RefreshCw,
   ShieldAlert,
   ShieldCheck,
   Store,
@@ -24,7 +23,7 @@ import type {
   Company,
   DeliveryAnalytics,
 } from '@akeela/portal/models';
-import { Failure, dateTime, money, useResource } from '@akeela/portal/ui';
+import { Failure, money, useResource } from '@akeela/portal/ui';
 import { api } from '../lib/api';
 import {
   DeliveryPeakHoursChart,
@@ -221,22 +220,6 @@ export function Home({
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className={
-              'del-refresh-btn' + (analytics.loading ? ' spinning' : '')
-            }
-            aria-label="تحديث التحليلات"
-            title={
-              data
-                ? `آخر تحديث: ${dateTime(data.generated_at)}`
-                : 'تحديث التحليلات'
-            }
-            onClick={analytics.reload}
-            disabled={analytics.loading}
-          >
-            <RefreshCw size={16} aria-hidden="true" />
-          </button>
         </div>
       </header>
 

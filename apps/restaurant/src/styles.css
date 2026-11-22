@@ -597,6 +597,68 @@ fieldset {
   font-weight: 600;
   font-size: 14px;
 }
+.topbar-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.fullscreen-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--brand-border);
+  background: #ffffff;
+  color: var(--brand-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out);
+}
+.fullscreen-toggle:hover {
+  border-color: var(--brand-primary);
+  background: var(--brand-secondary);
+  color: var(--brand-primary);
+}
+.fullscreen-top-sensor {
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  height: 16px;
+  z-index: 45;
+}
+.app-shell[data-fullscreen='true'] .topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 248px;
+  z-index: 44;
+  padding-inline: 32px;
+  background: rgb(255 255 255 / 95%);
+  backdrop-filter: blur(8px);
+  transform: translateY(-105%);
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 8%);
+  transition:
+    transform 180ms var(--ease-out),
+    opacity 180ms var(--ease-out);
+}
+.app-shell[data-fullscreen='true'][data-sidebar-collapsed='true'] .topbar {
+  right: 84px;
+}
+.app-shell[data-fullscreen='true'][data-top-hover='true'] .topbar,
+.app-shell[data-fullscreen='true'] .topbar:focus-within {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.app-shell[data-fullscreen='true'] .workspace-body {
+  min-height: 100dvh;
+}
 .topbar-meta {
   display: inline-flex;
   align-items: center;
@@ -638,19 +700,21 @@ fieldset {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .filter-bar .arabic-date {
-  flex: 1 1 260px;
+  flex: 1 1 240px;
 }
 .filter-bar .arabic-date legend {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 .filter-bar .arabic-date-parts select,
 .filter-bar .arabic-date-parts input {
-  min-height: 44px;
+  min-height: 38px;
+  padding: 5px 10px;
+  font-size: 13.5px;
 }
 .workspace-body {
   padding-top: 30px;
@@ -844,17 +908,27 @@ td .numeric {
 .filter-bar {
   display: flex;
   align-items: end;
-  gap: 20px;
+  gap: 14px;
   background: #f1fcf6;
-  padding: 24px;
+  padding: 16px 18px;
   border-radius: 12px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 .filter-bar .field {
   flex: 1;
+  font-size: 13px;
+  gap: 5px;
+}
+.filter-bar .field select,
+.filter-bar .field input {
+  min-height: 38px;
+  padding: 5px 11px;
+  font-size: 13.5px;
 }
 .filter-bar .button {
-  min-height: 49px;
+  min-height: 38px;
+  padding: 6px 16px;
+  font-size: 13.5px;
 }
 .pager {
   display: flex;
