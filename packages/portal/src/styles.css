@@ -768,9 +768,18 @@ bdi,
 .filters .arabic-date-parts input {
   min-height: 33px;
   height: 33px;
-  padding: 4px 8px;
+  padding-block: 4px;
+  padding-inline-start: 10px;
   font-size: 12px;
   border-radius: 6px;
+}
+.filters .field input,
+.filters .arabic-date-parts input {
+  padding-inline-end: 10px;
+}
+.filters .field select,
+.filters .arabic-date-parts select {
+  padding-inline-end: 36px;
 }
 .filters .filters-reset {
   min-height: 33px;
@@ -1748,8 +1757,15 @@ dialog p {
 .portal[data-portal='delivery'] .filters .arabic-date-parts input {
   min-height: 33px;
   height: 33px;
-  padding: 4px 8px;
+  padding-block: 4px;
+  padding-inline-start: 10px;
   font-size: 12px;
+}
+.portal[data-portal='admin'] .filters .field select,
+.portal[data-portal='delivery'] .filters .field select,
+.portal[data-portal='admin'] .filters .arabic-date-parts select,
+.portal[data-portal='delivery'] .filters .arabic-date-parts select {
+  padding-inline-end: 36px;
 }
 .portal[data-portal='admin'] .filters .filters-reset,
 .portal[data-portal='delivery'] .filters .filters-reset {

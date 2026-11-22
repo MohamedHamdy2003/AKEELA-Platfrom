@@ -14,7 +14,6 @@ import {
   Info,
   Link2,
   Plus,
-  RefreshCw,
   SlidersHorizontal,
   Trash2,
   Unlink,
@@ -488,8 +487,8 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
         }
       />
 
-      <div className="cat-toolbar">
-        {(kind === 'products' || kind === 'addons') && (
+      {(kind === 'products' || kind === 'addons') && (
+        <div className="cat-toolbar">
           <div
             className="cat-seg"
             role="group"
@@ -531,38 +530,27 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
               غير مربوطة (غير مفعّلة)
             </button>
           </div>
-        )}
 
-        {kind === 'products' && pool !== 'unlinked' && (
-          <Select
-            label="التصنيف"
-            hideLabel
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">كل التصنيفات</option>
-            {categories.map((c) => (
-              <option key={c.cat_id} value={c.cat_id}>
-                {c.cat_title}
-              </option>
-            ))}
-          </Select>
-        )}
-
-        <button
-          className="button secondary cat-toolbar-refresh"
-          onClick={() => refreshAll()}
-        >
-          <RefreshCw
-            size={17}
-            className={resource.loading ? 'spin' : undefined}
-          />
-          تحديث
-        </button>
-      </div>
+          {kind === 'products' && pool !== 'unlinked' && (
+            <Select
+              label="التصنيف"
+              hideLabel
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">كل التصنيفات</option>
+              {categories.map((c) => (
+                <option key={c.cat_id} value={c.cat_id}>
+                  {c.cat_title}
+                </option>
+              ))}
+            </Select>
+          )}
+        </div>
+      )}
 
       <Notice error={pickerError} />
       <Notice>{feedback}</Notice>

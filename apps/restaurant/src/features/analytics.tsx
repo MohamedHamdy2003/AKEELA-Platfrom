@@ -7,7 +7,6 @@ import {
   Layers,
   Package,
   Receipt,
-  RefreshCw,
   Repeat,
   ShoppingBag,
   Sparkles,
@@ -21,7 +20,7 @@ import type {
   Profile,
   RestaurantAnalytics,
 } from '../lib/models';
-import { dateTime, money } from '../lib/format';
+import { money } from '../lib/format';
 import { useResource } from '../lib/use-resource';
 import { Failure } from '../components/ui';
 import {
@@ -182,22 +181,6 @@ export function RestaurantAnalyticsScreen({
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className={
-              'rst-refresh-btn' + (analytics.loading ? ' spinning' : '')
-            }
-            aria-label="تحديث تحليلات المطعم"
-            title={
-              data
-                ? `آخر تحديث: ${dateTime(data.generated_at)}`
-                : 'تحديث التحليلات'
-            }
-            onClick={analytics.reload}
-            disabled={analytics.loading}
-          >
-            <RefreshCw size={16} aria-hidden="true" />
-          </button>
         </div>
       </section>
 

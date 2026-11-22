@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, MapPin, X } from 'lucide-react';
 import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import { api, query } from '../lib/api';
@@ -92,12 +92,6 @@ export function Orders({
     date_from: '',
     date_to: '',
   });
-  const [draft, setDraft] = useState({
-    status: initialStatus ?? '',
-    date_from: '',
-    date_to: '',
-  });
-  const [filterError, setFilterError] = useState('');
   const [selected, setSelected] = useState<string | null>(initialId ?? null);
   useEffect(() => {
     if (initialId) {
@@ -108,7 +102,6 @@ export function Orders({
   useEffect(() => {
     if (initialStatus) {
       setFilters((current) => ({ ...current, status: initialStatus }));
-      setDraft((current) => ({ ...current, status: initialStatus }));
       setPage(1);
       onInitialStatusConsumed?.();
     }
@@ -120,30 +113,24 @@ export function Orders({
     const last = resource.result?.meta?.last_page;
     if (last && page > last) setPage(Math.max(1, last));
   }, [resource.result?.meta?.last_page, page]);
-  function filter(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (draft.date_from && draft.date_to && draft.date_from > draft.date_to) {
-      setFilterError('تاريخ البداية يجب أن يسبق تاريخ النهاية.');
-      return;
-    }
-    setFilterError('');
-    setPage(1);
-    setFilters(draft);
-  }
   return (
     <>
       <PageHeading
         title="الطلبات"
         subtitle="تابع الطلبات وتفاصيلها، خطوة بخطوة."
       />
-      <form className="filter-bar" onSubmit={filter}>
+      <div className="filter-bar">
         <Select
           label="الحالة"
           name="status"
-          value={draft.status}
-          onChange={(event) =>
-            setDraft((current) => ({ ...current, status: event.target.value }))
-          }
+          value={filters.status}
+          onChange={(event) => {
+            setFilters((current) => ({
+              ...current,
+              status: event.target.value,
+            }));
+            setPage(1);
+          }}
         >
           <option value="">كل الحالات</option>
           {Object.entries(statuses).map(([value, label]) => (
@@ -153,27 +140,26 @@ export function Orders({
           ))}
         </Select>
         <ArabicDateFields
-          value={{ date_from: draft.date_from, date_to: draft.date_to }}
-          change={(dates) => setDraft((current) => ({ ...current, ...dates }))}
+          value={{ date_from: filters.date_from, date_to: filters.date_to }}
+          change={(dates) => {
+            setFilters((current) => ({ ...current, ...dates }));
+            setPage(1);
+          }}
         />
         <div className="filter-bar-actions">
-          <button className="button primary">تطبيق الفلاتر</button>
           <button
             type="button"
             className="button secondary"
             onClick={() => {
               const empty = { status: '', date_from: '', date_to: '' };
-              setDraft(empty);
               setFilters(empty);
-              setFilterError('');
               setPage(1);
             }}
           >
             إعادة ضبط الفلاتر
           </button>
         </div>
-      </form>
-      {filterError && <Notice error={new Error(filterError)} />}
+      </div>
       <div className="panel table-panel">
         {!resource.result && resource.loading ? (
           <TableSkeleton />

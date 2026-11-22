@@ -23,9 +23,9 @@
 .arabic-date-parts input {
   width: 100%;
   min-width: 0;
-  padding-inline: 7px;
 }
 .arabic-date-parts input {
+  padding-inline: 7px;
   text-align: center;
 }
 .arabic-date-foot {

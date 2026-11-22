@@ -249,7 +249,6 @@ test('offers use Cairo dates and decimal strings; orders filter only supported s
   await page
     .getByRole('combobox', { name: 'الحالة', exact: true })
     .selectOption('Accepted');
-  await page.getByRole('button', { name: 'تطبيق الفلاتر' }).click();
   await expect(page.getByRole('row')).toHaveCount(2);
   await expect(
     page.getByRole('cell', { name: '#1083', exact: true }),

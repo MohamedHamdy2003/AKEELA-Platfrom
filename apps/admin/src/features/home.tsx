@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Clock,
   Receipt,
-  RefreshCw,
   ShieldAlert,
   ShoppingBag,
   Store,
@@ -15,13 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 import type { AdminAnalytics, AnalyticsRange } from '@akeela/portal/models';
-import {
-  Failure,
-  PageTitle,
-  dateTime,
-  money,
-  useResource,
-} from '@akeela/portal/ui';
+import { Failure, PageTitle, money, useResource } from '@akeela/portal/ui';
 import { api } from '../lib/api';
 import { navigation } from '../lib/navigation';
 import {
@@ -165,22 +158,6 @@ export function Home({
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className={
-              'adm-refresh-btn' + (analytics.loading ? ' spinning' : '')
-            }
-            aria-label="تحديث التحليلات"
-            title={
-              data
-                ? `آخر تحديث: ${dateTime(data.generated_at)}`
-                : 'تحديث التحليلات'
-            }
-            onClick={analytics.reload}
-            disabled={analytics.loading}
-          >
-            <RefreshCw size={16} aria-hidden="true" />
-          </button>
         </div>
       </div>
 
