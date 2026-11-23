@@ -594,6 +594,7 @@ export const responseModels: Record<string, SchemaObject> = {
   ),
   RestaurantAnalyticsKpis: object({
     food_revenue: money,
+    delivery_fees_total: money,
     gross_gmv: money,
     addons_revenue: money,
     avg_order_value: money,
@@ -630,6 +631,8 @@ export const responseModels: Record<string, SchemaObject> = {
     orders: integer,
     delivered: integer,
     food_revenue: money,
+    delivery_fees: money,
+    gross_gmv: money,
   }),
   RestaurantAnalyticsHourPoint: object({
     hour: { type: 'integer', minimum: 0, maximum: 23 },
@@ -669,7 +672,10 @@ export const responseModels: Record<string, SchemaObject> = {
   }),
   RestaurantAnalytics: object(
     {
-      range: { type: 'string', enum: ['today', '7d', '30d', '90d', 'all'] },
+      range: {
+        type: 'string',
+        enum: ['today', '7d', '30d', '90d', 'all', 'custom'],
+      },
       generated_at: time,
       kpis: ref('RestaurantAnalyticsKpis'),
       previous_kpis: {

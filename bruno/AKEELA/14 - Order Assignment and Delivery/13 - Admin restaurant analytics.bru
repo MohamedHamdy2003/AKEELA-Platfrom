@@ -1,0 +1,15 @@
+meta {
+  name: Admin restaurant analytics
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{base_url}}/admin/restaurants/{{rest_id}}/analytics?range=30d
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

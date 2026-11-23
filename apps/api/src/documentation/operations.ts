@@ -861,6 +861,15 @@ export const operations: OperationDoc[] = [
     model: 'DeliveryAnalytics',
   },
   {
+    method: 'get',
+    path: '/api/v1/admin/restaurants/{rest_id}/analytics',
+    tag: '14. Order Assignment and Delivery',
+    summary:
+      'Return Admin-scoped earnings, order quality, daily breakdown, peak hours, menu performance, and live alerts for a specific restaurant across a preset or custom Cairo date range.',
+    status: 200,
+    model: 'RestaurantAnalytics',
+  },
+  {
     method: 'put',
     path: '/api/v1/customer/avatar',
     tag: '15. Image Uploads',

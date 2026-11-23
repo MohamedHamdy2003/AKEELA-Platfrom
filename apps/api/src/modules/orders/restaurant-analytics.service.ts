@@ -9,11 +9,13 @@ import { CatalogService } from '../catalog/catalog.service';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderItemAddon } from './entities/order-item-addon.entity';
-import { AnalyticsRange } from './orders.dto';
+import { AdminRestaurantAnalyticsQuery, AnalyticsRange } from './orders.dto';
 import {
   addDaysIso,
   AnalyticsCache,
+  type AnalyticsWindow,
   resolveCairoAnalyticsWindow,
+  resolveCustomCairoWindow,
 } from './analytics-cache';
 
 function roundRate(part: number, total: number): number {
@@ -83,8 +85,80 @@ export class RestaurantAnalyticsService {
     );
   }
 
-  private async computeOverview(restId: string, range: AnalyticsRange) {
-    const window = await resolveCairoAnalyticsWindow(this.db, range);
+  private async assertActiveAdmin(actor: AuthActor): Promise<void> {
+    if (actor.role !== 'Admin') {
+      throw new ApiError(403, 'FORBIDDEN', 'Admin access required.');
+    }
+    const account = await this.users.byId(actor.userId);
+    if (
+      !account ||
+      account.role !== 'Admin' ||
+      !account.is_active ||
+      !account.email_verified_at
+    ) {
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        'An active verified admin account is required.',
+      );
+    }
+  }
+
+  async adminOverview(
+    actor: AuthActor,
+    restId: string,
+    query: AdminRestaurantAnalyticsQuery,
+  ) {
+    await this.assertActiveAdmin(actor);
+    if (!/^[1-9]\d{0,18}$/.test(restId)) {
+      throw new ApiError(404, 'NOT_FOUND', 'Restaurant not found.');
+    }
+    const profile = await this.restaurants.profileById(restId);
+    if (!profile) {
+      throw new ApiError(404, 'NOT_FOUND', 'Restaurant not found.');
+    }
+    const hasFrom = Boolean(query.date_from);
+    const hasTo = Boolean(query.date_to);
+    if (hasFrom !== hasTo) {
+      throw new ApiError(
+        422,
+        'VALIDATION_ERROR',
+        'Provide both date_from and date_to for a custom date range.',
+      );
+    }
+    if (query.date_from && query.date_to) {
+      if (query.date_from > query.date_to) {
+        throw new ApiError(
+          422,
+          'VALIDATION_ERROR',
+          'Start date must not be after end date.',
+        );
+      }
+      const cacheKey = `admin-rest:${restId}:custom:${query.date_from}:${query.date_to}`;
+      return this.cache.getOrLoad(cacheKey, async () => {
+        const customWindow = await resolveCustomCairoWindow(
+          this.db,
+          query.date_from!,
+          query.date_to!,
+        );
+        return this.computeOverview(restId, 'all', customWindow, 'custom');
+      });
+    }
+    const range: AnalyticsRange = query.range ?? '30d';
+    return this.cache.getOrLoad(`admin-rest:${restId}:${range}`, () =>
+      this.computeOverview(restId, range),
+    );
+  }
+
+  private async computeOverview(
+    restId: string,
+    range: AnalyticsRange,
+    overrideWindow?: AnalyticsWindow,
+    rangeLabel?: AnalyticsRange | 'custom',
+  ) {
+    const window =
+      overrideWindow ?? (await resolveCairoAnalyticsWindow(this.db, range));
+    const until = window.until ?? null;
     const ordersRepo = this.db.getRepository(Order);
 
     const kpiQuery = (start: Date | null, end: Date | null) => {
@@ -112,6 +186,10 @@ export class RestaurantAnalyticsService {
           'food_revenue',
         )
         .addSelect(
+          "COALESCE(SUM(o.delivery_fee) FILTER (WHERE o.status = 'Delivered'), 0)::numeric(14,2)",
+          'delivery_fees_total',
+        )
+        .addSelect(
           "COALESCE(SUM(o.total_price) FILTER (WHERE o.status = 'Delivered'), 0)::numeric(14,2)",
           'gross_gmv',
         )
@@ -133,6 +211,7 @@ export class RestaurantAnalyticsService {
         cancelled_orders: number;
         accepted_orders: number;
         food_revenue: string;
+        delivery_fees_total: string;
         gross_gmv: string;
         avg_order_value: string;
         avg_fulfillment_minutes: string | null;
@@ -160,12 +239,15 @@ export class RestaurantAnalyticsService {
       repeat_customers: number;
     }> => {
       const params: unknown[] = [restId];
-      const sinceClause = window.since
-        ? (() => {
-            params.push(window.since);
-            return 'AND o.created_at >= $2';
-          })()
-        : '';
+      const clauses: string[] = [];
+      if (window.since) {
+        params.push(window.since);
+        clauses.push(`AND o.created_at >= $${params.length}`);
+      }
+      if (until) {
+        params.push(until);
+        clauses.push(`AND o.created_at < $${params.length}`);
+      }
       const [row] = (await this.db.query(
         `SELECT
           COUNT(*)::int AS unique_customers,
@@ -173,7 +255,7 @@ export class RestaurantAnalyticsService {
         FROM (
           SELECT o.customer_id, COUNT(*) AS orders_count
           FROM orders o
-          WHERE o.rest_id = $1 AND o.status = 'Delivered' ${sinceClause}
+          WHERE o.rest_id = $1 AND o.status = 'Delivered' ${clauses.join(' ')}
           GROUP BY o.customer_id
         ) sub`,
         params,
@@ -193,6 +275,9 @@ export class RestaurantAnalyticsService {
     if (window.since) {
       statusQb.andWhere('o.created_at >= :since', { since: window.since });
     }
+    if (until) {
+      statusQb.andWhere('o.created_at < :until', { until });
+    }
 
     const dailyQb = ordersRepo
       .createQueryBuilder('o')
@@ -209,6 +294,14 @@ export class RestaurantAnalyticsService {
         "COALESCE(SUM(o.total_price - o.delivery_fee) FILTER (WHERE o.status = 'Delivered'), 0)::numeric(14,2)",
         'food_revenue',
       )
+      .addSelect(
+        "COALESCE(SUM(o.delivery_fee) FILTER (WHERE o.status = 'Delivered'), 0)::numeric(14,2)",
+        'delivery_fees',
+      )
+      .addSelect(
+        "COALESCE(SUM(o.total_price) FILTER (WHERE o.status = 'Delivered'), 0)::numeric(14,2)",
+        'gross_gmv',
+      )
       .where('o.rest_id = :restId', { restId })
       .groupBy(
         "to_char((o.created_at AT TIME ZONE 'Africa/Cairo')::date, 'YYYY-MM-DD')",
@@ -219,6 +312,9 @@ export class RestaurantAnalyticsService {
         .orderBy('date', 'ASC');
     } else {
       dailyQb.orderBy('date', 'DESC').limit(90);
+    }
+    if (until) {
+      dailyQb.andWhere('o.created_at < :until', { until });
     }
 
     const hoursQb = ordersRepo
@@ -234,6 +330,9 @@ export class RestaurantAnalyticsService {
       );
     if (window.since) {
       hoursQb.andWhere('o.created_at >= :since', { since: window.since });
+    }
+    if (until) {
+      hoursQb.andWhere('o.created_at < :until', { until });
     }
 
     const itemsQb = this.db
@@ -252,6 +351,9 @@ export class RestaurantAnalyticsService {
     if (window.since) {
       itemsQb.andWhere('o.created_at >= :since', { since: window.since });
     }
+    if (until) {
+      itemsQb.andWhere('o.created_at < :until', { until });
+    }
 
     const topAddonsQb = this.db
       .getRepository(OrderItemAddon)
@@ -268,6 +370,9 @@ export class RestaurantAnalyticsService {
       .limit(6);
     if (window.since) {
       topAddonsQb.andWhere('o.created_at >= :since', { since: window.since });
+    }
+    if (until) {
+      topAddonsQb.andWhere('o.created_at < :until', { until });
     }
 
     const stalePendingCutoff = new Date(Date.now() - 10 * 60 * 1000);
@@ -293,11 +398,11 @@ export class RestaurantAnalyticsService {
     // Execute in small bounded batches (<= 4 concurrent queries) to avoid exhausting the pool.
     const [currentRow, prevRow, addonsRevRow, prevAddonsRevRow] =
       await Promise.all([
-        kpiQuery(window.since, null),
+        kpiQuery(window.since, until),
         window.since && window.prevSince
           ? kpiQuery(window.prevSince, window.since)
           : Promise.resolve(null),
-        addonsRevenueQuery(window.since, null),
+        addonsRevenueQuery(window.since, until),
         window.since && window.prevSince
           ? addonsRevenueQuery(window.prevSince, window.since)
           : Promise.resolve(null),
@@ -311,6 +416,8 @@ export class RestaurantAnalyticsService {
         orders: number;
         delivered: number;
         food_revenue: string;
+        delivery_fees: string;
+        gross_gmv: string;
       }>(),
       hoursQb.getRawMany<{ hour: number; orders: number }>(),
     ]);
@@ -361,6 +468,8 @@ export class RestaurantAnalyticsService {
           orders: Number(row.orders),
           delivered: Number(row.delivered),
           food_revenue: row.food_revenue,
+          delivery_fees: row.delivery_fees,
+          gross_gmv: row.gross_gmv,
         },
       ]),
     );
@@ -369,8 +478,10 @@ export class RestaurantAnalyticsService {
       orders: number;
       delivered: number;
       food_revenue: string;
+      delivery_fees: string;
+      gross_gmv: string;
     }> = [];
-    if (window.startIso && window.days) {
+    if (window.startIso && window.days && window.days <= 366) {
       for (let i = 0; i < window.days; i += 1) {
         const date = addDaysIso(window.startIso, i);
         daily_series.push(
@@ -379,6 +490,8 @@ export class RestaurantAnalyticsService {
             orders: 0,
             delivered: 0,
             food_revenue: '0.00',
+            delivery_fees: '0.00',
+            gross_gmv: '0.00',
           },
         );
       }
@@ -389,6 +502,8 @@ export class RestaurantAnalyticsService {
           orders: Number(row.orders),
           delivered: Number(row.delivered),
           food_revenue: row.food_revenue,
+          delivery_fees: row.delivery_fees,
+          gross_gmv: row.gross_gmv,
         });
       }
     }
@@ -511,10 +626,14 @@ export class RestaurantAnalyticsService {
     const decidedOrders = acceptedOrders + rejectedOrders;
 
     return {
-      range,
+      range: rangeLabel ?? range,
+      ...(window.endIso
+        ? { date_from: window.startIso, date_to: window.endIso }
+        : {}),
       generated_at: new Date(),
       kpis: {
         food_revenue: currentRow?.food_revenue ?? '0.00',
+        delivery_fees_total: currentRow?.delivery_fees_total ?? '0.00',
         gross_gmv: currentRow?.gross_gmv ?? '0.00',
         addons_revenue: addonsRevRow?.addons_revenue ?? '0.00',
         avg_order_value: currentRow?.avg_order_value ?? '0.00',

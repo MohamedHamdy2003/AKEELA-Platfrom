@@ -149,6 +149,7 @@ function AdminWorkspace() {
         )}
         {route === 'restaurants' && (
           <Restaurants
+            revision={revision}
             initialStatus={restaurantsStatus}
             onInitialStatusConsumed={() => setRestaurantsStatus('')}
           />

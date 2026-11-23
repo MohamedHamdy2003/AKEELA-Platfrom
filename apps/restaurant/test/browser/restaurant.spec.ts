@@ -231,6 +231,25 @@ test('offers use Cairo dates and decimal strings; orders filter only supported s
   await login(page);
   await page.getByRole('button', { name: 'العروض', exact: true }).click();
   await page.getByRole('button', { name: 'إضافة عرض', exact: true }).click();
+  await expect(
+    page.getByRole('dialog').getByRole('group', { name: 'حالة العرض' }),
+  ).toBeVisible();
+  await page
+    .getByRole('dialog')
+    .getByRole('group', { name: 'حالة العرض' })
+    .getByRole('button', { name: 'غير مفعّل', exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole('dialog')
+      .getByRole('group', { name: 'حالة العرض' })
+      .getByRole('button', { name: 'غير مفعّل', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await page
+    .getByRole('dialog')
+    .getByRole('group', { name: 'حالة العرض' })
+    .getByRole('button', { name: 'مفعّل', exact: true })
+    .click();
   await page.getByLabel('اسم العرض').fill('غداء الصيف');
   await page.getByLabel('السعر الأصلي (ج.م)').fill('150.00');
   await page.getByLabel('سعر العرض (ج.م)').fill('130.00');

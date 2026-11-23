@@ -3,6 +3,7 @@ import { OrderEventsGateway } from './order-events.gateway';
 import { OrdersAutoDeliverService } from './orders-auto-deliver.service';
 import { AdminAnalyticsService } from './admin-analytics.service';
 import { AdminAnalyticsController } from './admin-analytics.controller';
+import { AdminRestaurantAnalyticsController } from './admin-restaurant-analytics.controller';
 import { DeliveryAnalyticsService } from './delivery-analytics.service';
 import { DeliveryAnalyticsController } from './delivery-analytics.controller';
 import { RestaurantAnalyticsService } from './restaurant-analytics.service';
@@ -41,6 +42,7 @@ import { CustomerOrdersController } from './customer-orders.controller';
     RestaurantAnalyticsController,
     AdminOrdersController,
     AdminAnalyticsController,
+    AdminRestaurantAnalyticsController,
     DeliveryOrdersController,
     DeliveryAnalyticsController,
   ],

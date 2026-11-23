@@ -240,3 +240,65 @@
   gap: 12px;
   margin-top: 10px;
 }
+
+/* Search Bar in Restaurants Filters */
+.restaurants-filters {
+  align-items: flex-end;
+}
+
+.restaurants-filters .field:first-child {
+  flex: 1 1 280px;
+  max-width: 420px;
+}
+
+.restaurant-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.restaurant-search-ico {
+  position: absolute;
+  inset-inline-start: 12px;
+  color: var(--p-muted, #62736e);
+  pointer-events: none;
+}
+
+.restaurant-search-input {
+  width: 100%;
+  padding-inline-start: 36px !important;
+  padding-inline-end: 34px !important;
+}
+
+.restaurant-search-clear {
+  position: absolute;
+  inset-inline-end: 8px;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--p-muted, #62736e);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.restaurant-search-clear:hover {
+  background: var(--p-bg, #f1f5f4);
+  color: var(--p-text, #132a26);
+}
+
+.restaurant-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.restaurant-goto-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}

@@ -106,6 +106,19 @@ export class OperationalOrdersQuery extends PaginationQuery {
   })
   @IsDateString({ strict: true }, { message: 'Enter a valid end date.' })
   date_to?: string;
+
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Optional restaurant ID filter (applied only on Admin operational order listing).',
+    nullable: true,
+    pattern: '^[1-9]\\d{0,18}$',
+    example: '10',
+    required: false,
+  })
+  @IsOptional()
+  @Matches(/^[1-9]\d{0,18}$/, { message: 'Enter a valid restaurant ID.' })
+  rest_id?: string;
 }
 export class AssignDriverDto {
   @ApiProperty({
@@ -173,4 +186,38 @@ export class RestaurantAnalyticsQuery {
     message: 'Choose today, 7d, 30d, 90d, or all.',
   })
   range?: AnalyticsRange;
+}
+
+export class AdminRestaurantAnalyticsQuery extends RestaurantAnalyticsQuery {
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Optional inclusive custom start calendar day in Africa/Cairo (YYYY-MM-DD). Must be provided together with date_to.',
+    nullable: true,
+    format: 'date',
+    example: '2026-11-01',
+    required: false,
+  })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Use YYYY-MM-DD for the start date.',
+  })
+  @IsDateString({ strict: true }, { message: 'Enter a valid start date.' })
+  date_from?: string;
+
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Optional inclusive custom end calendar day in Africa/Cairo (YYYY-MM-DD). Must be provided together with date_from.',
+    nullable: true,
+    format: 'date',
+    example: '2026-11-30',
+    required: false,
+  })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Use YYYY-MM-DD for the end date.',
+  })
+  @IsDateString({ strict: true }, { message: 'Enter a valid end date.' })
+  date_to?: string;
 }

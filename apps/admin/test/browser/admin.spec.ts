@@ -238,3 +238,84 @@ test('admin executive analytics dashboard supports time ranges, chart toggles, l
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
+test('admin searches restaurants after 1s debounce, opens restaurant workspace tabs, custom period and exports Excel', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const fixture = await portalFixture(page, 'Admin');
+  await login(page);
+
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'المطاعم', exact: true })
+    .click();
+  await expect(page.getByText('مطعم بيت الشواية')).toBeVisible();
+
+  const initialRestCalls = fixture.calls.filter(
+    (c) => c.path === '/admin/restaurants',
+  ).length;
+  const searchInput = page.getByLabel('بحث باسم المطعم أو اسم المالك');
+  await searchInput.fill('الشواية');
+  // Must NOT immediately fire before 1 second debounce
+  await page.waitForTimeout(350);
+  expect(
+    fixture.calls.filter((c) => c.path === '/admin/restaurants').length,
+  ).toBe(initialRestCalls);
+
+  // Fires after 1 second debounce
+  await expect
+    .poll(
+      () => fixture.calls.filter((c) => c.path === '/admin/restaurants').length,
+      { timeout: 2500 },
+    )
+    .toBeGreaterThan(initialRestCalls);
+
+  await page.getByRole('button', { name: 'مراجعة المطعم' }).click();
+  await page.getByRole('button', { name: 'الانتقال إلى المطعم' }).click();
+
+  await expect(
+    page.getByRole('heading', { name: 'مطعم بيت الشواية', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'مؤشرات مكاسب المطعم' })
+      .getByText('صافي مبيعات الطعام'),
+  ).toBeVisible();
+  await expect(page.getByText('جدول المكاسب اليومية')).toBeVisible();
+
+  // Apply custom date range
+  await page.getByLabel('من تاريخ').fill('2026-11-01');
+  await page.getByLabel('إلى تاريخ').fill('2026-11-15');
+  await page.getByRole('button', { name: 'عرض الفترة' }).click();
+  await expect(
+    page.getByText('من 2026-11-01 إلى 2026-11-15').first(),
+  ).toBeVisible();
+
+  // Trigger Excel export download
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'تصدير تقرير المكاسب (Excel)' }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(
+    /^akeela-restaurant-7-earnings-2026-11-01_to_2026-11-15\.xlsx$/,
+  );
+
+  // Switch to Orders tab
+  await page.getByRole('tab', { name: 'طلبات المطعم' }).click();
+  await expect(
+    page.getByRole('cell', { name: '#1248', exact: true }),
+  ).toBeVisible();
+
+  // Switch to Profile & Menu tab
+  await page.getByRole('tab', { name: 'بيانات المطعم والمنيو' }).click();
+  await expect(page.getByText('ملخص قائمة الطعام والتشغيل الحي')).toBeVisible();
+
+  // Go back to restaurants list
+  await page.getByRole('button', { name: 'العودة إلى المطاعم' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'المطاعم', exact: true }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+});

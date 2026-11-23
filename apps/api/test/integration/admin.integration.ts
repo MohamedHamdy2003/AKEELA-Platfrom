@@ -354,6 +354,70 @@ test('Feature 02 — Admin Accounts, Roles, Activation & Boundaries', async (t) 
       assert.equal(reactivateRes.status, 200);
       assert.equal(reactivateRes.body.data.activation_status, 'Active');
 
+      // Search restaurants by restaurant title and owner full name
+      const byTitle = await api()
+        .get('/api/v1/admin/restaurants?search=Grill')
+        .set('Authorization', bearer(adminToken));
+      assert.equal(byTitle.status, 200);
+      assert.ok(
+        byTitle.body.data.some(
+          (r: { profile: { rest_id: string } }) =>
+            r.profile.rest_id === restaurantId,
+        ),
+      );
+
+      const byOwner = await api()
+        .get('/api/v1/admin/restaurants?search=Restaurant%20Owner')
+        .set('Authorization', bearer(adminToken));
+      assert.equal(byOwner.status, 200);
+      assert.ok(
+        byOwner.body.data.some(
+          (r: { profile: { rest_id: string } }) =>
+            r.profile.rest_id === restaurantId,
+        ),
+      );
+
+      const byMiss = await api()
+        .get('/api/v1/admin/restaurants?search=__no_such_restaurant__')
+        .set('Authorization', bearer(adminToken));
+      assert.equal(byMiss.status, 200);
+      assert.equal(byMiss.body.data.length, 0);
+
+      // Admin restaurant-scoped analytics (preset and custom date range)
+      const analyticsRes = await api()
+        .get(`/api/v1/admin/restaurants/${restaurantId}/analytics?range=30d`)
+        .set('Authorization', bearer(adminToken));
+      assert.equal(analyticsRes.status, 200);
+      assert.equal(analyticsRes.body.data.range, '30d');
+      assert.equal(typeof analyticsRes.body.data.kpis.food_revenue, 'string');
+      assert.equal(
+        typeof analyticsRes.body.data.kpis.delivery_fees_total,
+        'string',
+      );
+
+      const customAnalyticsRes = await api()
+        .get(
+          `/api/v1/admin/restaurants/${restaurantId}/analytics?date_from=2026-11-01&date_to=2026-11-05`,
+        )
+        .set('Authorization', bearer(adminToken));
+      assert.equal(customAnalyticsRes.status, 200);
+      assert.equal(customAnalyticsRes.body.data.range, 'custom');
+      assert.equal(customAnalyticsRes.body.data.daily_series.length, 5);
+
+      const badRangeRes = await api()
+        .get(
+          `/api/v1/admin/restaurants/${restaurantId}/analytics?date_from=2026-11-10&date_to=2026-11-01`,
+        )
+        .set('Authorization', bearer(adminToken));
+      assert.equal(badRangeRes.status, 422);
+
+      // Admin orders filter by rest_id
+      const restOrdersRes = await api()
+        .get(`/api/v1/admin/orders?rest_id=${restaurantId}`)
+        .set('Authorization', bearer(adminToken));
+      assert.equal(restOrdersRes.status, 200);
+      assert.ok(Array.isArray(restOrdersRes.body.data));
+
       // 404 on unknown restaurant
       const notFound = await api()
         .patch('/api/v1/admin/restaurants/999999999/activation')

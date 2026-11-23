@@ -1732,7 +1732,38 @@ export function CatalogEditor({
         <form onSubmit={save}>
           <fieldset disabled={busy}>
             <div className="form-grid">
-              {input(cfg.name, 'اسم ال' + cfg.singular)}
+              {kind === 'offers' ? (
+                <div className="offer-head-row full">
+                  <div className="offer-head-name">
+                    {input(cfg.name, 'اسم ال' + cfg.singular)}
+                  </div>
+                  <div className="offer-active-field">
+                    <span className="offer-active-label">حالة العرض</span>
+                    <div
+                      className="cat-seg offer-active-seg"
+                      role="group"
+                      aria-label="حالة العرض"
+                    >
+                      <button
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setActive(true)}
+                      >
+                        مفعّل
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={!active}
+                        onClick={() => setActive(false)}
+                      >
+                        غير مفعّل
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                input(cfg.name, 'اسم ال' + cfg.singular)
+              )}
 
               {kind === 'categories' && editingCategory && (
                 <div className="cat-swap-field">
@@ -1857,16 +1888,18 @@ export function CatalogEditor({
                 </>
               )}
 
-              <div className="full">
-                <Check
-                  label={kind === 'products' ? 'متاح للطلب' : 'مفعّل'}
-                  checked={
-                    isProductUnlinked || isAddonUnlinked ? false : active
-                  }
-                  disabled={isProductUnlinked || isAddonUnlinked}
-                  onChange={(e) => setActive(e.target.checked)}
-                />
-              </div>
+              {kind !== 'offers' && (
+                <div className="full">
+                  <Check
+                    label={kind === 'products' ? 'متاح للطلب' : 'مفعّل'}
+                    checked={
+                      isProductUnlinked || isAddonUnlinked ? false : active
+                    }
+                    disabled={isProductUnlinked || isAddonUnlinked}
+                    onChange={(e) => setActive(e.target.checked)}
+                  />
+                </div>
+              )}
 
               {isProductUnlinked && (
                 <div className="full">
