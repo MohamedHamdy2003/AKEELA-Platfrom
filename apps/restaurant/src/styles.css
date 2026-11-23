@@ -668,20 +668,28 @@ fieldset {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  margin-top: 26px;
 }
 .filter-bar .arabic-date {
   flex: 1 1 240px;
+  gap: 0;
 }
 .filter-bar .arabic-date legend {
+  display: block;
+  height: 20px;
+  line-height: 20px;
   font-size: 13px;
   font-weight: 500;
-  margin-bottom: 5px;
+  margin: 0 0 6px;
+  padding: 0;
 }
 .filter-bar .arabic-date-parts select,
 .filter-bar .arabic-date-parts input {
+  height: 38px;
   min-height: 38px;
   padding: 5px 10px;
   font-size: 13.5px;
+  line-height: 1.4;
 }
 .workspace-body {
   padding-top: 30px;
@@ -874,23 +882,32 @@ td .numeric {
 }
 .filter-bar {
   display: flex;
-  align-items: end;
+  align-items: flex-start;
   gap: 14px;
   background: #f1fcf6;
-  padding: 16px 18px 0;
+  padding: 16px 18px;
   border-radius: 12px;
   margin-bottom: 24px;
 }
 .filter-bar .field {
   flex: 1;
   font-size: 13px;
-  gap: 5px;
+  gap: 6px;
+}
+.filter-bar .field > span {
+  display: block;
+  height: 20px;
+  line-height: 20px;
+  margin: 0;
+  font-size: 13px;
 }
 .filter-bar .field select,
 .filter-bar .field input {
+  height: 38px;
   min-height: 38px;
   padding: 5px 11px;
   font-size: 13.5px;
+  line-height: 1.4;
 }
 .filter-bar .button {
   min-height: 38px;
@@ -969,6 +986,13 @@ td .numeric {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.row-actions .icon-button {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
 }
 .cell-subtitle {
   display: block;
@@ -1421,11 +1445,14 @@ td .numeric {
     justify-content: space-between;
   }
   .filter-bar {
-    padding: 16px 18px 0;
-    gap: 16px;
+    padding: 16px 18px;
+    gap: 14px;
   }
   .filter-bar .field {
     flex-basis: 100%;
+  }
+  .filter-bar-actions {
+    margin-top: 0;
   }
   .filter-bar .button {
     width: 100%;
@@ -2154,6 +2181,17 @@ small,
 .auth-form .field input,
 .auth-form.registration .field input {
   font-size: var(--dashboard-type-control);
+}
+.filter-bar .field,
+.filter-bar .field > span,
+.filter-bar .arabic-date legend {
+  font-size: 13px;
+}
+.filter-bar .field select,
+.filter-bar .field input,
+.filter-bar .arabic-date-parts select,
+.filter-bar .arabic-date-parts input {
+  font-size: 13.5px;
 }
 @media (max-width: 680px) {
   h1,

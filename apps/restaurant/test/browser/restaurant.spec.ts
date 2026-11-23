@@ -246,6 +246,24 @@ test('offers use Cairo dates and decimal strings; orders filter only supported s
     expires_at: '2027-07-02T09:00:00.000Z',
   });
   await page.getByRole('button', { name: 'الطلبات', exact: true }).click();
+  const [rstStatusBox, rstDayBox, rstResetBox, rstFilterPadBottom] =
+    await Promise.all([
+      page.getByRole('combobox', { name: 'الحالة', exact: true }).boundingBox(),
+      page.getByLabel('من تاريخ — اليوم', { exact: true }).boundingBox(),
+      page
+        .getByRole('button', { name: 'إعادة ضبط الفلاتر', exact: true })
+        .boundingBox(),
+      page
+        .locator('.filter-bar')
+        .evaluate((el) => parseFloat(getComputedStyle(el).paddingBottom)),
+    ]);
+  expect(rstFilterPadBottom).toBeGreaterThanOrEqual(14);
+  expect(rstStatusBox && rstDayBox && rstResetBox).toBeTruthy();
+  expect(Math.abs(rstStatusBox!.y - rstDayBox!.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(rstResetBox!.y - rstDayBox!.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(rstResetBox!.height - rstDayBox!.height)).toBeLessThanOrEqual(
+    1,
+  );
   await page
     .getByRole('combobox', { name: 'الحالة', exact: true })
     .selectOption('Accepted');
