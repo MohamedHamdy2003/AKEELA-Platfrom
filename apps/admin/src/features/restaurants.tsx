@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import {
+  CheckCircle2,
+  AlertTriangle,
+  ExternalLink,
+  Search,
+  X,
+} from 'lucide-react';
 import { query } from '@akeela/portal/api';
 import type { RestaurantReview } from '@akeela/portal/models';
 import {
@@ -15,18 +21,24 @@ import {
 import { api } from '../lib/api';
 import { DetailWorkspace } from '../components/detail-workspace';
 import { EmailVerification } from '../components/email-verification';
+import { RestaurantWorkspace } from './restaurant-workspace';
 import './restaurants.css';
 
 export function Restaurants({
+  revision = 0,
   initialStatus,
   onInitialStatusConsumed,
 }: {
+  revision?: number;
   initialStatus?: string;
   onInitialStatusConsumed?: () => void;
 } = {}) {
   const [page, setPage] = useState(1),
     [filter, setFilter] = useState(initialStatus ?? ''),
+    [searchInput, setSearchInput] = useState(''),
+    [debouncedSearch, setDebouncedSearch] = useState(''),
     [selected, setSelected] = useState<string | null>(null),
+    [workspaceRest, setWorkspaceRest] = useState<RestaurantReview | null>(null),
     [confirmAction, setConfirmAction] = useState<'Active' | 'Suspended' | null>(
       null,
     ),
@@ -36,10 +48,22 @@ export function Restaurants({
   const confirmDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (trimmed === debouncedSearch) return;
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(trimmed);
+      setPage(1);
+      setSelected(null);
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [searchInput, debouncedSearch]);
+
+  useEffect(() => {
     if (initialStatus !== undefined && initialStatus !== '') {
       setFilter(initialStatus);
       setPage(1);
       setSelected(null);
+      setWorkspaceRest(null);
       onInitialStatusConsumed?.();
     }
   }, [initialStatus, onInitialStatusConsumed]);
@@ -47,7 +71,12 @@ export function Restaurants({
   const resource = useResource<RestaurantReview[]>(
     api,
     '/admin/restaurants' +
-      query({ page, per_page: 10, activation_status: filter }),
+      query({
+        page,
+        per_page: 10,
+        activation_status: filter,
+        search: debouncedSearch,
+      }),
   );
 
   useEffect(() => {
@@ -58,6 +87,12 @@ export function Restaurants({
   const item = resource.result?.data.find(
     (row) => row.profile.rest_id === selected,
   );
+  const activeWorkspaceRest = workspaceRest
+    ? (resource.result?.data.find(
+        (row) => row.profile.rest_id === workspaceRest.profile.rest_id,
+      ) ?? workspaceRest)
+    : null;
+  const confirmTarget = activeWorkspaceRest ?? item ?? null;
 
   useEffect(() => {
     if (selected && resource.result && !item) {
@@ -86,17 +121,29 @@ export function Restaurants({
   }, [confirmAction]);
 
   const executeStatusChange = async () => {
-    if (!confirmAction || !item) return;
+    if (!confirmAction || !confirmTarget) return;
     setActionBusy(true);
     setActionError(null);
     try {
       await api.request(
-        '/admin/restaurants/' + item.profile.rest_id + '/activation',
+        '/admin/restaurants/' + confirmTarget.profile.rest_id + '/activation',
         {
           method: 'PATCH',
           body: { activation_status: confirmAction },
         },
       );
+      if (
+        workspaceRest &&
+        workspaceRest.profile.rest_id === confirmTarget.profile.rest_id
+      ) {
+        setWorkspaceRest({
+          ...confirmTarget,
+          profile: {
+            ...confirmTarget.profile,
+            activation_status: confirmAction,
+          },
+        });
+      }
       setConfirmAction(null);
       resource.reload();
     } catch (cause) {
@@ -108,200 +155,255 @@ export function Restaurants({
 
   return (
     <>
-      <DetailWorkspace
-        selectedKey={item ? selected : null}
-        title="مراجعة المطعم"
-        onClose={() => setSelected(null)}
-        details={
-          item && (
-            <>
-              <div className="restaurant-detail-title-wrap">
-                <h2>{item.profile.rest_title}</h2>
-                <span
-                  className={`status-pill activation-${item.profile.activation_status.toLowerCase()}`}
-                >
-                  <i className="status-dot" aria-hidden="true" />
-                  {labels[item.profile.activation_status]}
-                </span>
-              </div>
-              <div className="form-grid">
-                <div>
-                  <h3>بيانات المطعم</h3>
-                  <p>{item.profile.rest_description}</p>
-                  <p>{item.profile.rest_address}</p>
-                  <p>
-                    <bdi>
-                      {item.profile.latitude}, {item.profile.longitude}
-                    </bdi>
-                  </p>
-                  <p>
-                    <bdi>
-                      {item.profile.opens_at} – {item.profile.closes_at}
-                    </bdi>{' '}
-                    · بتوقيت مصر
-                  </p>
-                  {item.profile.rest_image_url_mobile && (
-                    <img
-                      className="restaurant-thumbnail"
-                      src={item.profile.rest_image_url_mobile}
-                      alt={item.profile.rest_title}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  )}
+      {activeWorkspaceRest ? (
+        <RestaurantWorkspace
+          restaurant={activeWorkspaceRest}
+          revision={revision}
+          onBack={() => setWorkspaceRest(null)}
+          onRequestActivation={(action) => setConfirmAction(action)}
+        />
+      ) : (
+        <DetailWorkspace
+          selectedKey={item ? selected : null}
+          title="مراجعة المطعم"
+          onClose={() => setSelected(null)}
+          details={
+            item && (
+              <>
+                <div className="restaurant-detail-title-wrap">
+                  <h2>{item.profile.rest_title}</h2>
+                  <span
+                    className={`status-pill activation-${item.profile.activation_status.toLowerCase()}`}
+                  >
+                    <i className="status-dot" aria-hidden="true" />
+                    {labels[item.profile.activation_status]}
+                  </span>
                 </div>
-                <div>
-                  <h3>بيانات المالك</h3>
-                  <p>{item.owner?.full_name}</p>
-                  <p className="email-cell">
-                    <bdi>{item.owner?.email}</bdi>
-                    {item.owner && (
-                      <EmailVerification
-                        verified={!!item.owner.email_verified_at}
+                <div className="form-grid">
+                  <div>
+                    <h3>بيانات المطعم</h3>
+                    <p>{item.profile.rest_description}</p>
+                    <p>{item.profile.rest_address}</p>
+                    <p>
+                      <bdi>
+                        {item.profile.latitude}, {item.profile.longitude}
+                      </bdi>
+                    </p>
+                    <p>
+                      <bdi>
+                        {item.profile.opens_at} – {item.profile.closes_at}
+                      </bdi>{' '}
+                      · بتوقيت مصر
+                    </p>
+                    {item.profile.rest_image_url_mobile && (
+                      <img
+                        className="restaurant-thumbnail"
+                        src={item.profile.rest_image_url_mobile}
+                        alt={item.profile.rest_title}
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
-                  </p>
-                  <p>
-                    <bdi>{item.owner?.phone}</bdi>
-                  </p>
-                  <div className="account-meta">
-                    <span>
-                      الحساب <ActivityBadge active={!!item.owner?.is_active} />
-                    </span>
+                  </div>
+                  <div>
+                    <h3>بيانات المالك</h3>
+                    <p>{item.owner?.full_name}</p>
+                    <p className="email-cell">
+                      <bdi>{item.owner?.email}</bdi>
+                      {item.owner && (
+                        <EmailVerification
+                          verified={!!item.owner.email_verified_at}
+                        />
+                      )}
+                    </p>
+                    <p>
+                      <bdi>{item.owner?.phone}</bdi>
+                    </p>
+                    <div className="account-meta">
+                      <span>
+                        الحساب{' '}
+                        <ActivityBadge active={!!item.owner?.is_active} />
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="actions">
-                {item.profile.activation_status !== 'Active' && (
+                <div className="actions restaurant-detail-actions">
                   <button
                     type="button"
-                    className="button primary"
-                    onClick={() => setConfirmAction('Active')}
+                    className="button primary restaurant-goto-btn"
+                    onClick={() => {
+                      setWorkspaceRest(item);
+                      setSelected(null);
+                    }}
                   >
-                    تفعيل المطعم
+                    <ExternalLink size={16} aria-hidden="true" />
+                    الانتقال إلى المطعم
                   </button>
-                )}
-                {item.profile.activation_status !== 'Suspended' && (
-                  <button
-                    type="button"
-                    className="button danger"
-                    onClick={() => setConfirmAction('Suspended')}
-                  >
-                    تعليق المطعم
-                  </button>
-                )}
-              </div>
-            </>
-          )
-        }
-      >
-        <PageTitle
-          title="المطاعم"
-          description="راجع بيانات المطعم ثم فعّل حسابه أو علّقه."
-        />
-        <div className="filters">
-          <Field label="حالة التفعيل">
-            <select
-              value={filter}
-              onChange={(event) => {
-                setFilter(event.target.value);
-                setPage(1);
-                setSelected(null);
-              }}
-            >
-              <option value="">جميع المطاعم</option>
-              {Object.entries(labels).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          {filter && (
-            <button
-              type="button"
-              className="button filters-reset"
-              onClick={() => {
-                setFilter('');
-                setPage(1);
-                setSelected(null);
-              }}
-            >
-              إعادة ضبط
-            </button>
-          )}
-        </div>
-        <ResourceState
-          resource={resource}
-          empty={!!resource.result && !resource.result.data.length}
-          skeleton={<TableSkeleton columns={6} />}
-        >
-          <section className="panel">
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>رقم المطعم</th>
-                    <th>المطعم</th>
-                    <th>المالك</th>
-                    <th>حالة التفعيل</th>
-                    <th>استقبال الطلبات</th>
-                    <th>المراجعة</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resource.result?.data.map((row) => (
-                    <tr
-                      key={row.profile.rest_id}
-                      data-selected={selected === row.profile.rest_id}
+                  {item.profile.activation_status !== 'Active' && (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={() => setConfirmAction('Active')}
                     >
-                      <td>
-                        <bdi>#{row.profile.rest_id}</bdi>
-                      </td>
-                      <td>
-                        <strong>{row.profile.rest_title}</strong>
-                      </td>
-                      <td>{row.owner?.full_name ?? 'غير متاح'}</td>
-                      <td>
-                        <span
-                          className={`status-pill activation-${row.profile.activation_status.toLowerCase()}`}
-                        >
-                          <i className="status-dot" aria-hidden="true" />
-                          {labels[row.profile.activation_status]}
-                        </span>
-                      </td>
-                      <td>
-                        <ActivityBadge
-                          active={row.profile.is_active}
-                          activeLabel="مفتوح"
-                          inactiveLabel="متوقف"
-                        />
-                      </td>
-                      <td>
-                        <button
-                          className="button compact"
-                          aria-expanded={selected === row.profile.rest_id}
-                          data-detail-record={row.profile.rest_id}
-                          onClick={() => setSelected(row.profile.rest_id)}
-                        >
-                          مراجعة المطعم
-                        </button>
-                      </td>
+                      تفعيل المطعم
+                    </button>
+                  )}
+                  {item.profile.activation_status !== 'Suspended' && (
+                    <button
+                      type="button"
+                      className="button danger"
+                      onClick={() => setConfirmAction('Suspended')}
+                    >
+                      تعليق المطعم
+                    </button>
+                  )}
+                </div>
+              </>
+            )
+          }
+        >
+          <PageTitle
+            title="المطاعم"
+            description="راجع بيانات المطعم ثم فعّل حسابه أو علّقه، أو انتقل إلى ملفه لمتابعة طلباته ومكاسبه."
+          />
+          <div className="filters restaurants-filters">
+            <Field label="بحث باسم المطعم أو المالك">
+              <div className="restaurant-search-wrap">
+                <Search
+                  size={16}
+                  className="restaurant-search-ico"
+                  aria-hidden="true"
+                />
+                <input
+                  type="search"
+                  className="restaurant-search-input"
+                  value={searchInput}
+                  placeholder="ابحث باسم المطعم أو اسم المالك..."
+                  aria-label="بحث باسم المطعم أو اسم المالك"
+                  onChange={(event) => setSearchInput(event.target.value)}
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    className="restaurant-search-clear"
+                    aria-label="مسح البحث"
+                    onClick={() => {
+                      setSearchInput('');
+                      setDebouncedSearch('');
+                      setPage(1);
+                      setSelected(null);
+                    }}
+                  >
+                    <X size={14} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            </Field>
+            <Field label="حالة التفعيل">
+              <select
+                value={filter}
+                onChange={(event) => {
+                  setFilter(event.target.value);
+                  setPage(1);
+                  setSelected(null);
+                }}
+              >
+                <option value="">جميع المطاعم</option>
+                {Object.entries(labels).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {(filter || searchInput) && (
+              <button
+                type="button"
+                className="button filters-reset"
+                onClick={() => {
+                  setFilter('');
+                  setSearchInput('');
+                  setDebouncedSearch('');
+                  setPage(1);
+                  setSelected(null);
+                }}
+              >
+                إعادة ضبط
+              </button>
+            )}
+          </div>
+          <ResourceState
+            resource={resource}
+            empty={!!resource.result && !resource.result.data.length}
+            skeleton={<TableSkeleton columns={6} />}
+          >
+            <section className="panel">
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>رقم المطعم</th>
+                      <th>المطعم</th>
+                      <th>المالك</th>
+                      <th>حالة التفعيل</th>
+                      <th>استقبال الطلبات</th>
+                      <th>المراجعة</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <Pager
-              meta={resource.result?.meta}
-              change={(nextPage) => {
-                setSelected(null);
-                setPage(nextPage);
-              }}
-            />
-          </section>
-        </ResourceState>
-      </DetailWorkspace>
+                  </thead>
+                  <tbody>
+                    {resource.result?.data.map((row) => (
+                      <tr
+                        key={row.profile.rest_id}
+                        data-selected={selected === row.profile.rest_id}
+                      >
+                        <td>
+                          <bdi>#{row.profile.rest_id}</bdi>
+                        </td>
+                        <td>
+                          <strong>{row.profile.rest_title}</strong>
+                        </td>
+                        <td>{row.owner?.full_name ?? 'غير متاح'}</td>
+                        <td>
+                          <span
+                            className={`status-pill activation-${row.profile.activation_status.toLowerCase()}`}
+                          >
+                            <i className="status-dot" aria-hidden="true" />
+                            {labels[row.profile.activation_status]}
+                          </span>
+                        </td>
+                        <td>
+                          <ActivityBadge
+                            active={row.profile.is_active}
+                            activeLabel="مفتوح"
+                            inactiveLabel="متوقف"
+                          />
+                        </td>
+                        <td>
+                          <button
+                            className="button compact"
+                            aria-expanded={selected === row.profile.rest_id}
+                            data-detail-record={row.profile.rest_id}
+                            onClick={() => setSelected(row.profile.rest_id)}
+                          >
+                            مراجعة المطعم
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pager
+                meta={resource.result?.meta}
+                change={(nextPage) => {
+                  setSelected(null);
+                  setPage(nextPage);
+                }}
+              />
+            </section>
+          </ResourceState>
+        </DetailWorkspace>
+      )}
 
       {/* Confirmation Dialog for Restaurant Activation / Suspension */}
       <dialog
@@ -315,7 +417,7 @@ export function Restaurants({
         }}
         aria-labelledby="confirm-dialog-title"
       >
-        {confirmAction && item && (
+        {confirmAction && confirmTarget && (
           <div className="confirm-dialog-content">
             <div className="dialog-head">
               <div className="dialog-title-group">
@@ -349,18 +451,20 @@ export function Restaurants({
               <div className="confirm-target-summary">
                 <div className="confirm-target-row">
                   <span className="label">اسم المطعم:</span>
-                  <span className="value">{item.profile.rest_title}</span>
+                  <span className="value">
+                    {confirmTarget.profile.rest_title}
+                  </span>
                 </div>
                 <div className="confirm-target-row">
                   <span className="label">رقم المطعم:</span>
                   <span className="value">
-                    <bdi>#{item.profile.rest_id}</bdi>
+                    <bdi>#{confirmTarget.profile.rest_id}</bdi>
                   </span>
                 </div>
                 <div className="confirm-target-row">
                   <span className="label">المالك:</span>
                   <span className="value">
-                    {item.owner?.full_name ?? 'غير متاح'}
+                    {confirmTarget.owner?.full_name ?? 'غير متاح'}
                   </span>
                 </div>
               </div>

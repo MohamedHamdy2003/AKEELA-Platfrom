@@ -266,6 +266,7 @@ Checkout calculates current server prices and creates a Pending order directly. 
 | GET | `/delivery-company/orders/counts` | Return assigned order counts grouped by status for the company. | No body | `200` · OrderStatusCounts |
 | GET | `/admin/analytics` | Return platform KPIs, trends, peak hours, restaurant rankings, top items, alerts, and totals. | Query: `range=30d` | `200` · AdminAnalytics |
 | GET | `/delivery-company/analytics` | Return company-scoped dispatch KPIs, live queue alerts, fleet utilization, driver leaderboard, trends, peak hours, and top pickup restaurants. | Query: `range=30d` | `200` · DeliveryAnalytics |
+| GET | `/admin/restaurants/{rest_id}/analytics` | Return restaurant-scoped earnings, daily series, order quality, peak hours, and menu analytics for Admin review. | Query: `range=30d` or `date_from=2026-11-01&date_to=2026-11-30` | `200` · RestaurantAnalytics |
 
 List date filters use valid `YYYY-MM-DD` dates in Africa/Cairo. Both bounds include their whole local day; `date_from` must not follow `date_to`. Delivery pickup details use the current restaurant address/coordinates; the customer delivery address and prices remain order snapshots. Acceptance retries from Accepted and pickup retries from Picked_Up are idempotent; other invalid/final-state transitions return `409 CONFLICT`.
 

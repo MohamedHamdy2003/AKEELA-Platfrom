@@ -26,6 +26,7 @@ import {
 import { ListDriversQuery } from '../modules/delivery/delivery.dto';
 import {
   AdminAnalyticsQuery,
+  AdminRestaurantAnalyticsQuery,
   DeliveryAnalyticsQuery,
   ListOrdersQuery,
   OperationalOrdersQuery,
@@ -453,6 +454,7 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
       ListOrdersQuery,
       OperationalOrdersQuery,
       AdminAnalyticsQuery,
+      AdminRestaurantAnalyticsQuery,
       DeliveryAnalyticsQuery,
       RestaurantAnalyticsQuery,
     ],

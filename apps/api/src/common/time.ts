@@ -16,6 +16,33 @@ const formatter = new Intl.DateTimeFormat('en-GB', {
   second: '2-digit',
   hourCycle: 'h23',
 });
+const cairoDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: APP_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+export function cairoDateString(date: Date = new Date()): string {
+  return cairoDateFormatter.format(date);
+}
+export function msUntilNextCairoMidnight(now: Date = new Date()): number {
+  const today = cairoDateString(now);
+  const [y, m, d] = today.split('-').map(Number);
+  const nextDay = new Date(Date.UTC(y!, m! - 1, d! + 1));
+  const nextDate = nextDay.toISOString().slice(0, 10);
+  // Check both Cairo winter (+02:00) and summer (+03:00) offsets for 00:00:05.
+  const naive = Date.parse(`${nextDate}T00:00:05Z`);
+  for (const offsetMinutes of [180, 120]) {
+    const candidate = new Date(naive - offsetMinutes * 60_000);
+    if (cairoDateString(candidate) === nextDate) {
+      const diff = candidate.getTime() - now.getTime();
+      if (diff > 0) {
+        return Math.min(Math.max(diff, 1_000), 26 * 3_600_000);
+      }
+    }
+  }
+  return 60 * 60 * 1_000;
+}
 export function cairoTimestamp(date: Date): string {
   const p = Object.fromEntries(
     formatter.formatToParts(date).map((part) => [part.type, part.value]),

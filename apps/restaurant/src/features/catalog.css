@@ -65,6 +65,47 @@
   font-weight: 600;
 }
 
+.offer-head-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.offer-head-name {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.offer-active-field {
+  display: grid;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.offer-active-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--brand-text);
+  line-height: 1.4;
+}
+
+.offer-active-seg {
+  min-height: 46px;
+  height: 46px;
+  box-shadow: none;
+}
+
+.offer-active-seg button {
+  padding: 7px 16px;
+}
+
+.offer-active-seg button[aria-pressed='true']:last-child {
+  background: #64748b;
+  color: #ffffff;
+}
+
 .cat-alert {
   display: flex;
   align-items: flex-start;

@@ -156,8 +156,17 @@ export function translateFieldReason(field: string, reason: string): string {
   if (lower.includes('less than or equal to the initial price')) {
     return 'يجب ألا يتجاوز سعر العرض السعر الأصلي.';
   }
-  if (lower.includes('after the start time')) {
-    return 'يجب أن يكون وقت النهاية بعد وقت البداية.';
+  if (lower.includes('earlier than today')) {
+    return 'بداية العرض لا يمكن أن تكون في تاريخ سابق لليوم.';
+  }
+  if (
+    lower.includes('after the start time') ||
+    lower.includes('on or after the start date')
+  ) {
+    return 'نهاية العرض يجب أن تكون في نفس يوم البداية أو بعده.';
+  }
+  if (lower.includes('cannot activate an expired offer')) {
+    return 'لا يمكن تفعيل عرض منتهي الصلاحية. مدّد تاريخ نهاية العرض أولاً.';
   }
   if (lower.includes('assign a category before activating')) {
     return 'اربط المنتج بتصنيف أولاً قبل تفعيله.';

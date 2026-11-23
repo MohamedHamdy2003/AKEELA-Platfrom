@@ -507,10 +507,12 @@ export async function portalFixture(
       }
       data = counts;
     } else if (path.endsWith('/orders')) {
+      const restIdFilter = url.searchParams.get('rest_id');
       const list = orders.filter(
         (order) =>
-          !url.searchParams.get('status') ||
-          order.status === url.searchParams.get('status'),
+          (!url.searchParams.get('status') ||
+            order.status === url.searchParams.get('status')) &&
+          (!restIdFilter || order.rest_id === restIdFilter),
       );
       data = list;
       total = list.length;
@@ -528,14 +530,136 @@ export async function portalFixture(
         order.status = 'Picked_Up';
       }
       data = order;
+    } else if (/^\/admin\/restaurants\/\d+\/analytics$/.test(path)) {
+      const dateFrom = url.searchParams.get('date_from');
+      const dateTo = url.searchParams.get('date_to');
+      const range =
+        dateFrom && dateTo ? 'custom' : url.searchParams.get('range') || '30d';
+      const daily_series = [
+        {
+          date: dateFrom || '2026-11-10',
+          orders: 6,
+          delivered: 5,
+          food_revenue: '1250.00',
+          delivery_fees: '150.00',
+          gross_gmv: '1400.00',
+        },
+        {
+          date: dateTo || '2026-11-11',
+          orders: 8,
+          delivered: 7,
+          food_revenue: '1750.00',
+          delivery_fees: '210.00',
+          gross_gmv: '1960.00',
+        },
+      ];
+      data = {
+        range,
+        ...(dateFrom && dateTo ? { date_from: dateFrom, date_to: dateTo } : {}),
+        generated_at: now,
+        kpis: {
+          food_revenue: '3000.00',
+          delivery_fees_total: '360.00',
+          gross_gmv: '3360.00',
+          addons_revenue: '240.00',
+          avg_order_value: '250.00',
+          total_orders: 14,
+          delivered_orders: 12,
+          rejected_orders: 1,
+          cancelled_orders: 1,
+          acceptance_rate: 92.3,
+          completion_rate: 85.7,
+          rejection_rate: 7.1,
+          cancellation_rate: 7.1,
+          unique_customers: 9,
+          repeat_customers: 3,
+          repeat_customer_rate: 33.3,
+          avg_fulfillment_minutes: 31.5,
+        },
+        previous_kpis:
+          range === 'all'
+            ? null
+            : {
+                food_revenue: '2600.00',
+                addons_revenue: '200.00',
+                avg_order_value: '240.00',
+                total_orders: 12,
+                delivered_orders: 10,
+                avg_fulfillment_minutes: 34.0,
+              },
+        live_alerts: {
+          pending_orders: 1,
+          stale_pending_orders: 0,
+          active_in_progress: 2,
+          inactive_products: 1,
+          expiring_offers: 0,
+        },
+        status_breakdown: {
+          Pending: 0,
+          Accepted: 0,
+          Picked_Up: 0,
+          Delivered: 12,
+          Rejected: 1,
+          Cancelled: 1,
+          Failed: 0,
+        },
+        daily_series,
+        peak_hours: Array.from({ length: 24 }, (_, hour) => ({
+          hour,
+          orders: hour === 20 ? 5 : hour === 21 ? 4 : 0,
+        })),
+        menu_totals: {
+          active_categories: 4,
+          active_products: 18,
+          inactive_products: 1,
+          active_addons: 6,
+          active_offers: 2,
+        },
+        top_items: [
+          {
+            item_name: 'وجبة دجاج مشوي',
+            item_type: 'product',
+            units_sold: 14,
+            revenue: '2100.00',
+            share_pct: 70,
+          },
+        ],
+        slow_items: [],
+        top_addons: [
+          {
+            addon_name: 'صوص ثومية',
+            units_sold: 12,
+            revenue: '240.00',
+          },
+        ],
+        category_breakdown: [
+          {
+            cat_title: 'المشويات',
+            units_sold: 14,
+            revenue: '2100.00',
+            share_pct: 70,
+          },
+        ],
+      };
     } else if (path === '/admin/restaurants') {
-      data = [
+      const allRows = [
         {
           owner: user,
           profile: restaurantProfile,
         },
       ];
-      total = 1;
+      const search = (url.searchParams.get('search') || '')
+        .trim()
+        .toLowerCase();
+      const filtered = search
+        ? allRows.filter(
+            (row) =>
+              row.profile.rest_title.toLowerCase().includes(search) ||
+              row.owner.full_name.toLowerCase().includes(search),
+          )
+        : allRows;
+      data = filtered;
+      total = filtered.length;
     } else if (path.includes('/activation')) data = {};
     else if (path === '/admin/users') {
       if (method === 'POST')

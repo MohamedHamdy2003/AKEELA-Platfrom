@@ -406,8 +406,8 @@ test('09-06: GET /restaurants/:rest_id/products/:prod_id — returns product wit
 });
 
 test('09-07: GET /restaurants/:rest_id/offers — only returns active offers within sale window', async () => {
-  // Create an offer that is currently active (started in the past, expires in the future)
-  const past = new Date(Date.now() - 3600_000).toISOString();
+  // Create an offer that is currently active (started earlier today, expires in the future)
+  const startedToday = new Date(Date.now() - 5_000).toISOString();
   const future = new Date(Date.now() + 3600_000).toISOString();
   await api()
     .post('/api/v1/restaurant/offers')
@@ -417,9 +417,10 @@ test('09-07: GET /restaurants/:rest_id/offers — only returns active offers wit
       initial_price: '100.00',
       real_price: '80.00',
       is_active: true,
-      starts_at: past,
+      starts_at: startedToday,
       expires_at: future,
-    });
+    })
+    .expect(201);
 
   // Create a future offer (not yet started)
   const farFuture = new Date(Date.now() + 7_200_000).toISOString();
@@ -547,4 +548,71 @@ test('Offer dates reject impossible dates and missing offsets', async () => {
     .set('Authorization', bearer(restaurantAToken))
     .send({ ...body, expires_at: '2027-01-01T00:00:00' })
     .expect(422);
+});
+
+test('Offers reject past start dates and automatically deactivate when expired', async () => {
+  const yesterday = new Date(Date.now() - 48 * 3600_000).toISOString();
+  const tomorrow = new Date(Date.now() + 48 * 3600_000).toISOString();
+  const dayAfter = new Date(Date.now() + 72 * 3600_000).toISOString();
+
+  // Reject creating an offer with starts_at before today
+  const pastCreate = await api()
+    .post('/api/v1/restaurant/offers')
+    .set('Authorization', bearer(restaurantAToken))
+    .send({
+      offer_title: 'Past Start Offer',
+      initial_price: '100.00',
+      real_price: '80.00',
+      starts_at: yesterday,
+      expires_at: tomorrow,
+    });
+  assert.equal(pastCreate.status, 422);
+  assert.ok(pastCreate.body.error.fields.starts_at);
+
+  // Create a valid future offer then reject editing starts_at to a past date
+  const validOffer = await api()
+    .post('/api/v1/restaurant/offers')
+    .set('Authorization', bearer(restaurantAToken))
+    .send({
+      offer_title: 'Valid Future Offer',
+      initial_price: '100.00',
+      real_price: '80.00',
+      starts_at: tomorrow,
+      expires_at: dayAfter,
+    })
+    .expect(201);
+
+  const pastEdit = await api()
+    .patch(`/api/v1/restaurant/offers/${validOffer.body.data.offer_id}`)
+    .set('Authorization', bearer(restaurantAToken))
+    .send({ starts_at: yesterday });
+  assert.equal(pastEdit.status, 422);
+  assert.ok(pastEdit.body.error.fields.starts_at);
+
+  // Seed an expired offer that still has is_active = true in DB
+  const [expiredRow] = await db.query(
+    `INSERT INTO offers (rest_id, offer_title, initial_price, real_price, is_active, starts_at, expires_at)
+     VALUES ($1, 'Expired Promo', '120.00', '90.00', true, NOW() - INTERVAL '3 days', NOW() - INTERVAL '1 hour')
+     RETURNING offer_id`,
+    [restaurantAId],
+  );
+
+  // Listing restaurant offers automatically deactivates the expired offer
+  const listed = await api()
+    .get('/api/v1/restaurant/offers')
+    .set('Authorization', bearer(restaurantAToken))
+    .expect(200);
+  const found = listed.body.data.find(
+    (o: { offer_id: string }) => o.offer_id === expiredRow.offer_id,
+  );
+  assert.ok(found);
+  assert.equal(found.is_active, false);
+
+  // Reactivating an expired offer without extending expires_at is rejected
+  const reactivate = await api()
+    .patch(`/api/v1/restaurant/offers/${expiredRow.offer_id}`)
+    .set('Authorization', bearer(restaurantAToken))
+    .send({ is_active: true });
+  assert.equal(reactivate.status, 422);
+  assert.ok(reactivate.body.error.fields.is_active);
 });

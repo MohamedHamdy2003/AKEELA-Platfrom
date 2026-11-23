@@ -162,6 +162,22 @@ export class ListRestaurantsQuery extends PaginationQuery {
     message: 'activation_status must be Pending, Active, or Suspended.',
   })
   activation_status?: 'Pending' | 'Active' | 'Suspended';
+
+  @ApiProperty({
+    type: 'string',
+    description:
+      'Optional case-insensitive search term matched against restaurant title or owner full name.',
+    nullable: true,
+    maxLength: 150,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(trim)
+  @IsString({ message: 'Enter the search term as text.' })
+  @MaxLength(150, {
+    message: 'Search term must be 150 characters or fewer.',
+  })
+  search?: string;
 }
 
 // ---- Delivery_Company profile inside POST /admin/users ----

@@ -3,7 +3,6 @@ import { api, ApiError } from '../lib/api';
 import type { Profile, User } from '../lib/models';
 import { useResource } from '../lib/use-resource';
 import {
-  Check,
   ButtonContent,
   Failure,
   Field,
@@ -35,24 +34,100 @@ export function RestaurantProfile({
 }) {
   const resource = useResource<Profile>('/restaurant/profile');
   const [savedNotice, setSavedNotice] = useState('');
+  const [toggleBusy, setToggleBusy] = useState(false);
+  const [toggleError, setToggleError] = useState<unknown>(null);
+
   useEffect(() => {
     if (!savedNotice) return;
     const timer = window.setTimeout(() => setSavedNotice(''), 5000);
     return () => window.clearTimeout(timer);
   }, [savedNotice]);
+
+  const profile = resource.result?.data ?? null;
+
+  async function setServiceActive(nextActive: boolean) {
+    if (
+      !profile ||
+      !canManage ||
+      toggleBusy ||
+      profile.is_active === nextActive
+    )
+      return;
+    setToggleBusy(true);
+    setToggleError(null);
+    setSavedNotice('');
+    try {
+      await api.request('/restaurant/profile', {
+        method: 'PATCH',
+        body: { is_active: nextActive },
+      });
+      setSavedNotice(
+        nextActive
+          ? 'تم تفعيل المطعم لاستقبال الطلبات الجديدة.'
+          : 'تم إيقاف استقبال الطلبات الجديدة. تظل الطلبات القائمة متاحة للمتابعة.',
+      );
+      resource.reload();
+      onSaved();
+    } catch (cause) {
+      setToggleError(cause);
+    } finally {
+      setToggleBusy(false);
+    }
+  }
+
   return (
     <>
-      <PageHeading title="ملف المطعم" subtitle="هوية مطعمك، ومواعيد يومك." />
+      <PageHeading
+        title="ملف المطعم"
+        subtitle="هوية مطعمك، ومواعيد يومك."
+        action={
+          profile && (
+            <div className="profile-status-control">
+              <div
+                className="profile-status-seg"
+                role="group"
+                aria-label="حالة استقبال الطلبات"
+              >
+                <button
+                  type="button"
+                  aria-pressed={profile.is_active}
+                  disabled={!canManage || toggleBusy}
+                  onClick={() => void setServiceActive(true)}
+                >
+                  <span
+                    className="profile-status-dot is-on"
+                    aria-hidden="true"
+                  />
+                  مفعّل
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={!profile.is_active}
+                  disabled={!canManage || toggleBusy}
+                  onClick={() => void setServiceActive(false)}
+                >
+                  <span
+                    className="profile-status-dot is-off"
+                    aria-hidden="true"
+                  />
+                  غير مفعّل
+                </button>
+              </div>
+            </div>
+          )
+        }
+      />
       {!resource.result && resource.loading ? (
         <Loading />
       ) : !resource.result && resource.error ? (
         <Failure error={resource.error} retry={resource.reload} />
       ) : (
-        resource.result && (
+        profile && (
           <ProfileForm
-            profile={resource.result.data}
+            profile={profile}
             canManage={canManage}
             message={savedNotice}
+            externalError={toggleError}
             onMessage={setSavedNotice}
             onSaved={() => {
               resource.reload();
@@ -68,12 +143,14 @@ function ProfileForm({
   profile,
   canManage,
   message,
+  externalError,
   onMessage,
   onSaved,
 }: {
   profile: Profile;
   canManage: boolean;
   message: string;
+  externalError?: unknown;
   onMessage: (value: string) => void;
   onSaved: () => void;
 }) {
@@ -88,7 +165,6 @@ function ProfileForm({
     longitude: profile.longitude,
     latitude: profile.latitude,
   });
-  const [active, setActive] = useState(profile.is_active);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -104,7 +180,6 @@ function ProfileForm({
       longitude: profile.longitude,
       latitude: profile.latitude,
     });
-    setActive(profile.is_active);
   }, [
     profile.rest_title,
     profile.rest_address,
@@ -113,7 +188,6 @@ function ProfileForm({
     profile.rest_description,
     profile.longitude,
     profile.latitude,
-    profile.is_active,
   ]);
 
   const err = (name: string) =>
@@ -139,7 +213,6 @@ function ProfileForm({
           opens_at: normalizedOpen,
           closes_at: normalizedClose,
           rest_description: description.trim() || null,
-          is_active: active,
         },
       });
       if (file) {
@@ -170,13 +243,13 @@ function ProfileForm({
     }
   }
   return (
-    <div className="panel settings-panel">
+    <div className="panel settings-panel profile-settings-panel">
       {!canManage && (
         <Notice>
           يمكنك الاطلاع على بيانات المطعم. التعديل متاح بعد التفعيل من الإدارة.
         </Notice>
       )}
-      <Notice error={error} />
+      <Notice error={externalError ?? error} />
       <Notice>{message}</Notice>
       <form onSubmit={save}>
         <fieldset disabled={busy || !canManage}>
@@ -269,16 +342,6 @@ function ProfileForm({
               required
               error={err('closes_at')}
             />
-            <div className="full">
-              <Check
-                label="استقبال مبيعات جديدة"
-                checked={active}
-                onChange={(e) => setActive(e.target.checked)}
-              />
-              <small className="muted">
-                إيقاف الخدمة لا يمنع التعامل مع الطلبات القائمة.
-              </small>
-            </div>
             <ImagePicker
               uploading={uploading}
               src={profile.rest_image_url_mobile}

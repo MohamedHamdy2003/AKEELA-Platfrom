@@ -4,6 +4,9 @@
   padding-bottom: 24px;
   transition: opacity 180ms var(--ease-out);
 }
+.rst-analytics .service-band {
+  margin-bottom: 0;
+}
 .rst-analytics[data-refreshing='true'] {
   opacity: 0.72;
 }

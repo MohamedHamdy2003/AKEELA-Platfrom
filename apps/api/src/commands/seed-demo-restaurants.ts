@@ -11,9 +11,14 @@ import { DataSource, EntityManager } from 'typeorm';
 import { Environment, validateEnvironment } from '../config/environment';
 import { databaseOptions } from '../database/database.options';
 import { AuthCryptoService } from '../modules/auth/auth-crypto.service';
+import { Addon } from '../modules/catalog/entities/addon.entity';
+import { Category } from '../modules/catalog/entities/category.entity';
+import { Offer } from '../modules/catalog/entities/offer.entity';
+import { ProductAddon } from '../modules/catalog/entities/product-addon.entity';
+import { Product } from '../modules/catalog/entities/product.entity';
 import { RestaurantProfile } from '../modules/restaurants/entities/restaurant-profile.entity';
 import { User } from '../modules/users/entities/user.entity';
-import { demoRestaurants } from './demo-restaurants';
+import { demoRestaurants, DemoRestaurantFixture } from './demo-restaurants';
 
 class DemoSetupError extends Error {}
 
@@ -32,6 +37,126 @@ function localSettings(): Environment {
     );
   }
   return settings;
+}
+
+async function seedRestaurantCatalog(
+  manager: EntityManager,
+  restId: string,
+  fixture: DemoRestaurantFixture,
+): Promise<void> {
+  const categoriesRepo = manager.getRepository(Category);
+  const productsRepo = manager.getRepository(Product);
+  const addonsRepo = manager.getRepository(Addon);
+  const linksRepo = manager.getRepository(ProductAddon);
+  const offersRepo = manager.getRepository(Offer);
+
+  const linkableProductIds: string[] = [];
+  const existingCats = await categoriesRepo.findBy({ rest_id: restId });
+  let nextOrder =
+    existingCats.reduce((max, c) => Math.max(max, c.display_order), 0) + 1;
+
+  for (const catSpec of fixture.categories) {
+    let category = await categoriesRepo.findOneBy({
+      rest_id: restId,
+      cat_title: catSpec.title,
+    });
+    if (!category) {
+      category = await categoriesRepo.save(
+        categoriesRepo.create({
+          rest_id: restId,
+          cat_title: catSpec.title,
+          display_order: nextOrder,
+          is_active: true,
+        }),
+      );
+      nextOrder += 1;
+    }
+    for (const prodSpec of catSpec.products) {
+      let product = await productsRepo.findOneBy({
+        rest_id: restId,
+        prod_name: prodSpec.name,
+      });
+      if (!product) {
+        product = await productsRepo.save(
+          productsRepo.create({
+            rest_id: restId,
+            cat_id: category.cat_id,
+            prod_name: prodSpec.name,
+            prod_description: prodSpec.description,
+            price: prodSpec.price,
+            is_active: true,
+          }),
+        );
+      }
+      if (catSpec.linkAddons) {
+        linkableProductIds.push(product.prod_id);
+      }
+    }
+  }
+
+  for (const addonSpec of fixture.addons) {
+    let addon = await addonsRepo.findOneBy({
+      rest_id: restId,
+      addon_name: addonSpec.name,
+    });
+    if (!addon) {
+      addon = await addonsRepo.save(
+        addonsRepo.create({
+          rest_id: restId,
+          addon_name: addonSpec.name,
+          addon_price: addonSpec.price,
+          is_active: true,
+        }),
+      );
+    }
+    for (const prodId of linkableProductIds) {
+      const exists = await linksRepo.existsBy({
+        rest_id: restId,
+        prod_id: prodId,
+        addon_id: addon.addon_id,
+      });
+      if (!exists) {
+        await linksRepo.save(
+          linksRepo.create({
+            rest_id: restId,
+            prod_id: prodId,
+            addon_id: addon.addon_id,
+            is_active: true,
+          }),
+        );
+      }
+    }
+  }
+
+  const now = new Date();
+  const startOfToday = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  for (const offerSpec of fixture.offers) {
+    const exists = await offersRepo.existsBy({
+      rest_id: restId,
+      offer_title: offerSpec.title,
+    });
+    if (!exists) {
+      const expiresAt = new Date(
+        startOfToday.getTime() +
+          offerSpec.durationDays * 24 * 60 * 60 * 1000 -
+          1000,
+      );
+      await offersRepo.save(
+        offersRepo.create({
+          rest_id: restId,
+          offer_title: offerSpec.title,
+          offer_description: offerSpec.description,
+          initial_price: offerSpec.initialPrice,
+          real_price: offerSpec.realPrice,
+          is_active: true,
+          starts_at: startOfToday,
+          expires_at: expiresAt,
+        }),
+      );
+    }
+  }
 }
 
 async function seedRestaurants(
@@ -60,6 +185,7 @@ async function seedRestaurants(
           'A demo login conflicts with an existing account.',
         );
       }
+      await seedRestaurantCatalog(manager, profile.rest_id, fixture);
       continue;
     }
     if (
@@ -82,7 +208,7 @@ async function seedRestaurants(
         email_verified_at: new Date(),
       }),
     );
-    await restaurants.save(
+    const createdProfile = await restaurants.save(
       restaurants.create({
         user_id: owner.user_id,
         rest_title: fixture.title,
@@ -96,6 +222,7 @@ async function seedRestaurants(
         is_active: true,
       }),
     );
+    await seedRestaurantCatalog(manager, createdProfile.rest_id, fixture);
     passwords.set(email, password);
   }
   return passwords;

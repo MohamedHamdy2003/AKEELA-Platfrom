@@ -4,7 +4,9 @@ import type { AnalyticsRange } from './orders.dto';
 export interface AnalyticsWindow {
   todayIso: string;
   startIso: string | null;
+  endIso?: string | null;
   since: Date | null;
+  until?: Date | null;
   prevSince: Date | null;
   days: number | null;
 }
@@ -13,6 +15,50 @@ export function addDaysIso(isoDate: string, deltaDays: number): string {
   const [y, m, d] = isoDate.split('-').map(Number);
   const dt = new Date(Date.UTC(y!, m! - 1, d! + deltaDays));
   return dt.toISOString().slice(0, 10);
+}
+
+/**
+ * Resolve an inclusive custom Africa/Cairo date range [dateFrom..dateTo].
+ */
+export async function resolveCustomCairoWindow(
+  db: DataSource,
+  dateFrom: string,
+  dateTo: string,
+): Promise<AnalyticsWindow> {
+  const [{ today_iso, since, until, prev_since, days }] = (await db.query(
+    `WITH bounds AS (
+      SELECT
+        (NOW() AT TIME ZONE 'Africa/Cairo')::date AS today_date,
+        CAST($1 AS date) AS start_date,
+        CAST($2 AS date) AS end_date
+    )
+    SELECT
+      to_char(today_date, 'YYYY-MM-DD') AS today_iso,
+      (start_date::timestamp AT TIME ZONE 'Africa/Cairo') AS since,
+      ((end_date + 1)::timestamp AT TIME ZONE 'Africa/Cairo') AS until,
+      ((start_date - ((end_date - start_date) + 1))::timestamp AT TIME ZONE 'Africa/Cairo') AS prev_since,
+      ((end_date - start_date) + 1)::int AS days
+    FROM bounds`,
+    [dateFrom, dateTo],
+  )) as [
+    {
+      today_iso: string;
+      since: Date;
+      until: Date;
+      prev_since: Date;
+      days: number;
+    },
+  ];
+
+  return {
+    todayIso: today_iso,
+    startIso: dateFrom,
+    endIso: dateTo,
+    since: new Date(since),
+    until: new Date(until),
+    prevSince: new Date(prev_since),
+    days: Number(days),
+  };
 }
 
 /**

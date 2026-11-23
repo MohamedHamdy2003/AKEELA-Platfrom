@@ -93,7 +93,9 @@ export async function smokePortals({ docker, port }) {
     ).toBeVisible();
     const vendor = await open('vendor', 'vendor-smoke@example.com');
     await expect(
-      vendor.getByRole('button', { name: 'الطلبات', exact: true }),
+      vendor
+        .getByRole('navigation')
+        .getByRole('button', { name: 'الطلبات', exact: true }),
     ).toBeVisible();
     await admin
       .getByRole('navigation')
@@ -103,7 +105,10 @@ export async function smokePortals({ docker, port }) {
       .getByRole('navigation')
       .getByRole('button', { name: 'طلبات الشركة', exact: true })
       .click();
-    await vendor.getByRole('button', { name: 'الطلبات', exact: true }).click();
+    await vendor
+      .getByRole('navigation')
+      .getByRole('button', { name: 'الطلبات', exact: true })
+      .click();
     await expect(admin.getByText('متصل لحظيًا', { exact: true })).toBeVisible();
     await expect(
       delivery.getByText('متصل لحظيًا', { exact: true }),

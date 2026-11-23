@@ -192,6 +192,89 @@ export interface DeliveryAnalytics {
   driver_leaderboard: DeliveryAnalyticsDriver[];
   top_pickup_restaurants: DeliveryAnalyticsRestaurant[];
 }
+export interface AdminRestaurantAnalyticsDailyPoint {
+  date: string;
+  orders: number;
+  delivered: number;
+  food_revenue: string;
+  delivery_fees: string;
+  gross_gmv: string;
+}
+export interface AdminRestaurantAnalytics {
+  range: AnalyticsRange | 'custom';
+  date_from?: string | null;
+  date_to?: string | null;
+  generated_at: string;
+  kpis: {
+    food_revenue: string;
+    delivery_fees_total: string;
+    gross_gmv: string;
+    addons_revenue: string;
+    avg_order_value: string;
+    total_orders: number;
+    delivered_orders: number;
+    rejected_orders: number;
+    cancelled_orders: number;
+    acceptance_rate: number;
+    completion_rate: number;
+    rejection_rate: number;
+    cancellation_rate: number;
+    unique_customers: number;
+    repeat_customers: number;
+    repeat_customer_rate: number;
+    avg_fulfillment_minutes: number | null;
+  };
+  previous_kpis: {
+    food_revenue: string;
+    addons_revenue: string;
+    avg_order_value: string;
+    total_orders: number;
+    delivered_orders: number;
+    avg_fulfillment_minutes: number | null;
+  } | null;
+  live_alerts: {
+    pending_orders: number;
+    stale_pending_orders: number;
+    active_in_progress: number;
+    inactive_products: number;
+    expiring_offers: number;
+  };
+  status_breakdown: OrderStatusCounts;
+  daily_series: AdminRestaurantAnalyticsDailyPoint[];
+  peak_hours: AdminAnalyticsHourPoint[];
+  menu_totals: {
+    active_categories: number;
+    active_products: number;
+    inactive_products: number;
+    active_addons: number;
+    active_offers: number;
+  };
+  top_items: Array<{
+    item_name: string;
+    item_type: 'product' | 'offer';
+    units_sold: number;
+    revenue: string;
+    share_pct: number;
+  }>;
+  slow_items: Array<{
+    prod_id: string;
+    prod_name: string;
+    cat_title: string;
+    price: string;
+    units_sold: number;
+  }>;
+  top_addons: Array<{
+    addon_name: string;
+    units_sold: number;
+    revenue: string;
+  }>;
+  category_breakdown: Array<{
+    cat_title: string;
+    units_sold: number;
+    revenue: string;
+    share_pct: number;
+  }>;
+}
 export const statuses: Record<OrderStatus, string> = {
   Pending: 'قيد الانتظار',
   Accepted: 'مقبول',

@@ -21,6 +21,7 @@ export interface RestaurantRegistration {
 
 export interface RestaurantListFilters {
   activation_status?: 'Pending' | 'Active' | 'Suspended';
+  search?: string;
   page?: number;
   per_page?: number;
   skip?: number;
@@ -241,6 +242,14 @@ export class RestaurantsService {
       qb.andWhere('r.activation_status = :activation_status', {
         activation_status: filters.activation_status,
       });
+    }
+    const search = filters.search?.trim();
+    if (search) {
+      const escaped = search.replace(/[\\%_]/g, '\\$&');
+      qb.leftJoin('users', 'u', 'u.user_id = r.user_id').andWhere(
+        "(r.rest_title ILIKE :search ESCAPE '\\' OR u.full_name ILIKE :search ESCAPE '\\')",
+        { search: `%${escaped}%` },
+      );
     }
     const take = filters.take ?? filters.per_page ?? 20;
     const skip = filters.skip ?? ((filters.page ?? 1) - 1) * take;

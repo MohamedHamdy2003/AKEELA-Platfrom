@@ -252,6 +252,8 @@ export class OrdersService {
         'Start date must not be after end date.',
       );
     const qb = this.scopedQuery(scope, this.db.manager);
+    if (actor.role === 'Admin' && query.rest_id)
+      qb.andWhere('o.rest_id = :filterRestId', { filterRestId: query.rest_id });
     if (query.status)
       qb.andWhere('o.status = :status', { status: query.status });
     if (query.date_from)

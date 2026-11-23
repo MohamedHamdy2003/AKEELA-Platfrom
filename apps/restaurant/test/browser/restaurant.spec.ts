@@ -23,15 +23,19 @@ test('desktop: identity, orders, details, acceptance and contract-safe category 
     path: join(tmpdir(), 'akeela-login.png'),
   });
   await login(page);
-  await expect(page).toHaveTitle('AKEELA - المطعم - الرئيسية');
+  await expect(page).toHaveTitle('AKEELA - المطعم - التحليلات');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-  await expect(
-    page.getByRole('cell', { name: '#1084', exact: true }),
-  ).toBeVisible();
   await page.screenshot({
     animations: 'disabled',
     path: join(tmpdir(), 'akeela-home.png'),
   });
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'الطلبات', exact: true })
+    .click();
+  await expect(
+    page.getByRole('cell', { name: '#1084', exact: true }),
+  ).toBeVisible();
   await page
     .getByRole('button', { name: 'عرض التفاصيل', exact: true })
     .first()
@@ -97,7 +101,7 @@ test('mobile RTL navigation and non-overflowing first screen', async ({
   await setup(page);
   await login(page);
   await expect(
-    page.getByRole('heading', { name: /^(صباح|مساء) الخير، مطبخ أكيلة$/ }),
+    page.getByRole('heading', { name: 'تحليلات المطعم', exact: true }),
   ).toBeVisible();
   await page.screenshot({
     animations: 'disabled',
@@ -227,11 +231,52 @@ test('offers use Cairo dates and decimal strings; orders filter only supported s
   await login(page);
   await page.getByRole('button', { name: 'العروض', exact: true }).click();
   await page.getByRole('button', { name: 'إضافة عرض', exact: true }).click();
+  await expect(
+    page.getByRole('dialog').getByRole('group', { name: 'حالة العرض' }),
+  ).toBeVisible();
+  await page
+    .getByRole('dialog')
+    .getByRole('group', { name: 'حالة العرض' })
+    .getByRole('button', { name: 'غير مفعّل', exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole('dialog')
+      .getByRole('group', { name: 'حالة العرض' })
+      .getByRole('button', { name: 'غير مفعّل', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await page
+    .getByRole('dialog')
+    .getByRole('group', { name: 'حالة العرض' })
+    .getByRole('button', { name: 'مفعّل', exact: true })
+    .click();
   await page.getByLabel('اسم العرض').fill('غداء الصيف');
   await page.getByLabel('السعر الأصلي (ج.م)').fill('150.00');
   await page.getByLabel('سعر العرض (ج.م)').fill('130.00');
-  await page.getByLabel('بداية العرض (القاهرة)').fill('2027-07-01T12:00');
-  await page.getByLabel('نهاية العرض (القاهرة)').fill('2027-07-02T12:00');
+
+  // Verify warning when StartDate is before today
+  await page.getByLabel('بداية العرض', { exact: true }).fill('2020-01-01');
+  await expect(
+    page
+      .getByRole('dialog')
+      .getByText('بداية العرض لا يمكن أن تكون في تاريخ سابق لليوم.'),
+  ).toBeVisible();
+
+  // Verify warning when EndDate is before StartDate
+  await page.getByLabel('بداية العرض', { exact: true }).fill('2027-07-05');
+  await page.getByLabel('نهاية العرض', { exact: true }).fill('2027-07-01');
+  await expect(
+    page
+      .getByRole('dialog')
+      .getByText('نهاية العرض يجب أن تكون في نفس يوم البداية أو بعده.'),
+  ).toBeVisible();
+
+  // Same-day 1-day offer is allowed and spans Cairo 00:00:00 -> 23:59:59
+  await page.getByLabel('بداية العرض', { exact: true }).fill('2027-07-01');
+  await page.getByLabel('نهاية العرض', { exact: true }).fill('2027-07-01');
+  await expect(
+    page.getByRole('dialog').getByText(/عرض لمدة يوم واحد/),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'حفظ العرض', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(
@@ -242,10 +287,13 @@ test('offers use Cairo dates and decimal strings; orders filter only supported s
     offer_description: null,
     initial_price: '150.00',
     real_price: '130.00',
-    starts_at: '2027-07-01T09:00:00.000Z',
-    expires_at: '2027-07-02T09:00:00.000Z',
+    starts_at: '2027-06-30T21:00:00.000Z',
+    expires_at: '2027-07-01T20:59:59.000Z',
   });
-  await page.getByRole('button', { name: 'الطلبات', exact: true }).click();
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'الطلبات', exact: true })
+    .click();
   const [rstStatusBox, rstDayBox, rstResetBox, rstFilterPadBottom] =
     await Promise.all([
       page.getByRole('combobox', { name: 'الحالة', exact: true }).boundingBox(),
@@ -294,7 +342,7 @@ test('tablet composition, password recovery and absence of framework overlay', a
   });
   await login(page);
   await expect(
-    page.getByRole('cell', { name: '#1084', exact: true }),
+    page.getByRole('heading', { name: 'تحليلات المطعم', exact: true }),
   ).toBeVisible();
   await page.screenshot({
     animations: 'disabled',
@@ -392,7 +440,10 @@ test('catalog swap ordering, category details with move/unlink/delete, and unlin
   await login(page);
 
   // 1. Categories: auto-order + atomic swap selector
-  await page.getByRole('button', { name: 'التصنيفات', exact: true }).click();
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'التصنيفات', exact: true })
+    .click();
   await page.getByRole('button', { name: 'إضافة تصنيف', exact: true }).click();
   await page.getByLabel('اسم التصنيف', { exact: true }).fill('المشويات');
   await page.getByRole('button', { name: 'حفظ التصنيف', exact: true }).click();
