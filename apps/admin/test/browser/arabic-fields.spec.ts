@@ -24,6 +24,21 @@ for (const width of [1536, 390])
       .getByRole('button', { name: 'الطلبات', exact: true })
       .click();
     await expect(page.locator('input[type=date]')).toHaveCount(0);
+    if (width === 1536) {
+      const [statusBox, dayBox, resetBox] = await Promise.all([
+        page.getByLabel('حالة الطلب', { exact: true }).boundingBox(),
+        page.getByLabel('من تاريخ — اليوم', { exact: true }).boundingBox(),
+        page
+          .getByRole('button', { name: 'إعادة ضبط الفلاتر', exact: true })
+          .boundingBox(),
+      ]);
+      expect(statusBox && dayBox && resetBox).toBeTruthy();
+      expect(Math.abs(statusBox!.y - dayBox!.y)).toBeLessThanOrEqual(1);
+      expect(Math.abs(resetBox!.y - dayBox!.y)).toBeLessThanOrEqual(1);
+      expect(Math.abs(resetBox!.height - dayBox!.height)).toBeLessThanOrEqual(
+        1,
+      );
+    }
     await page
       .getByLabel('من تاريخ — اليوم', { exact: true })
       .selectOption('29');
@@ -61,6 +76,22 @@ for (const width of [1536, 390])
         }),
       )
       .toBe(true);
+    if (width === 1536) {
+      const [statusBoxAfter, dayBoxAfter, resetBoxAfter] = await Promise.all([
+        page.getByLabel('حالة الطلب', { exact: true }).boundingBox(),
+        page.getByLabel('من تاريخ — اليوم', { exact: true }).boundingBox(),
+        page
+          .getByRole('button', { name: 'إعادة ضبط الفلاتر', exact: true })
+          .boundingBox(),
+      ]);
+      expect(statusBoxAfter && dayBoxAfter && resetBoxAfter).toBeTruthy();
+      expect(Math.abs(statusBoxAfter!.y - dayBoxAfter!.y)).toBeLessThanOrEqual(
+        1,
+      );
+      expect(Math.abs(resetBoxAfter!.y - dayBoxAfter!.y)).toBeLessThanOrEqual(
+        1,
+      );
+    }
     await page.getByLabel('من تاريخ — السنة', { exact: true }).fill('٢٠٢٥');
     await expect(
       page.getByLabel('من تاريخ — اليوم', { exact: true }),
