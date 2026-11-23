@@ -12,7 +12,6 @@ import {
   BellRing,
   SquarePlus,
   ConciergeBell,
-  House,
   Layers,
   LogOut,
   Maximize2,
@@ -32,7 +31,7 @@ import { api } from './lib/api';
 import type { CatalogKind, Dashboard, Profile, User } from './lib/models';
 import { today } from './lib/format';
 import { Auth } from './features/auth';
-import { Home } from './features/home';
+import { ActivationNotice } from './features/home';
 import { RestaurantAnalyticsScreen } from './features/analytics';
 import { Catalog } from './features/catalog';
 import { Orders } from './features/orders';
@@ -45,7 +44,6 @@ import brandIconWebp from '@akeela/brand/icon.webp';
 import { useSessionRestore } from '@akeela/portal/use-session-restore';
 
 const navigation = [
-  { key: 'home', label: 'الرئيسية', icon: House },
   { key: 'analytics', label: 'التحليلات', icon: BarChart3 },
   { key: 'orders', label: 'الطلبات', icon: ConciergeBell },
   { key: 'categories', label: 'التصنيفات', icon: Layers },
@@ -56,16 +54,19 @@ const navigation = [
   { key: 'account', label: 'حسابي', icon: UserRound },
 ];
 function currentRoute() {
-  if (typeof window === 'undefined') return 'home';
+  if (typeof window === 'undefined') return 'analytics';
   if (window.location.hash.startsWith('#/')) {
     const hashKey = window.location.hash.slice(2);
     if (hashKey) {
-      window.history.replaceState(null, '', '/' + hashKey);
-      return navigation.some((item) => item.key === hashKey) ? hashKey : 'home';
+      const normalized = hashKey === 'home' ? 'analytics' : hashKey;
+      window.history.replaceState(null, '', '/' + normalized);
+      return navigation.some((item) => item.key === normalized)
+        ? normalized
+        : 'analytics';
     }
   }
   const key = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/')[0];
-  return navigation.some((item) => item.key === key) ? key : 'home';
+  return navigation.some((item) => item.key === key) ? key : 'analytics';
 }
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -275,12 +276,12 @@ function Workspace() {
     await api.request('/auth/logout', { method: 'POST' });
     api.clearSession();
     window.history.replaceState(null, '', '/');
-    setRoute('home');
+    setRoute('analytics');
   }
   function forceLocalLogout() {
     api.clearSession();
     window.history.replaceState(null, '', '/');
-    setRoute('home');
+    setRoute('analytics');
   }
   if (restoring || restoreError)
     return (
@@ -301,12 +302,12 @@ function Workspace() {
           lastStatusRefreshAt.current = 0;
           setAuthNotice('');
           setUser(account);
-          navigate('home');
+          navigate('analytics');
         }}
       />
     );
   const manageable = !!dashboard?.can_manage;
-  const locked = !manageable && !['home', 'profile', 'account'].includes(route);
+  const locked = !manageable && !['profile', 'account'].includes(route);
   const body =
     !dashboard || !profile ? (
       busy ? (
@@ -318,26 +319,17 @@ function Workspace() {
         />
       )
     ) : locked ? (
-      <Home
+      <ActivationNotice
         dashboard={dashboard}
         profile={profile}
         navigate={navigate}
-        openOrder={() => undefined}
-        onProfileChanged={forceRefreshStatus}
-      />
-    ) : route === 'home' ? (
-      <Home
-        dashboard={dashboard}
-        profile={profile}
-        navigate={navigate}
-        openOrder={(id) => {
-          setInitialOrder(id);
-          navigate('orders');
-        }}
-        onProfileChanged={forceRefreshStatus}
       />
     ) : route === 'analytics' ? (
-      <RestaurantAnalyticsScreen profile={profile} navigate={navigate} />
+      <RestaurantAnalyticsScreen
+        profile={profile}
+        navigate={navigate}
+        onProfileChanged={forceRefreshStatus}
+      />
     ) : route === 'orders' ? (
       <Orders
         initialId={initialOrder}
@@ -459,7 +451,7 @@ function Workspace() {
               title={collapsed && !compactNavigation ? item.label : undefined}
               disabled={
                 !manageable &&
-                !['home', 'profile', 'account'].includes(item.key)
+                !['analytics', 'profile', 'account'].includes(item.key)
               }
               onClick={() => navigate(item.key)}
             >

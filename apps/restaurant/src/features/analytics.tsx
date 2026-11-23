@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   AlertTriangle,
   Banknote,
+  CircleCheck,
   CheckCircle2,
   Clock,
   Layers,
@@ -20,9 +21,10 @@ import type {
   Profile,
   RestaurantAnalytics,
 } from '../lib/models';
+import { api } from '../lib/api';
 import { money } from '../lib/format';
 import { useResource } from '../lib/use-resource';
-import { Failure } from '../components/ui';
+import { Activity, Failure, Notice } from '../components/ui';
 import {
   RestaurantPeakHoursChart,
   RestaurantStatusDonut,
@@ -98,13 +100,33 @@ function AnalyticsSkeleton() {
 export function RestaurantAnalyticsScreen({
   profile,
   navigate,
+  onProfileChanged,
 }: {
   profile: Profile;
   navigate: (route: string, filter?: string) => void;
+  onProfileChanged: () => void;
 }) {
   const [range, setRange] = useState<AnalyticsRange>('30d');
   const [itemsTab, setItemsTab] = useState<'top' | 'slow'>('top');
   const [mixTab, setMixTab] = useState<'addons' | 'categories'>('addons');
+  const [updatingService, setUpdatingService] = useState(false);
+  const [serviceError, setServiceError] = useState<unknown>(null);
+
+  async function toggleService() {
+    setUpdatingService(true);
+    setServiceError(null);
+    try {
+      await api.request('/restaurant/profile', {
+        method: 'PATCH',
+        body: { is_active: !profile.is_active },
+      });
+    } catch (cause) {
+      setServiceError(cause);
+    } finally {
+      onProfileChanged();
+      setUpdatingService(false);
+    }
+  }
   const analytics = useResource<RestaurantAnalytics>(
     `/restaurant/analytics?range=${range}`,
   );
@@ -183,6 +205,42 @@ export function RestaurantAnalyticsScreen({
           </div>
         </div>
       </section>
+
+      <section className="service-band" aria-label="حالة استقبال الطلبات">
+        <div>
+          <CircleCheck size={28} strokeWidth={1.6} />
+          <strong>
+            {profile.is_active
+              ? 'مطعمك جاهز لاستقبال الطلبات.'
+              : 'استقبال المبيعات الجديدة متوقف.'}
+          </strong>
+        </div>
+        <div>
+          <button
+            className={'service-switch ' + (profile.is_active ? 'on' : '')}
+            role="switch"
+            aria-checked={profile.is_active}
+            aria-busy={updatingService}
+            aria-label="استقبال مبيعات جديدة"
+            disabled={updatingService}
+            onClick={toggleService}
+          >
+            <span />
+          </button>
+          <span>
+            الخدمة{' '}
+            <Activity
+              active={profile.is_active}
+              activeLabel="مفعّلة"
+              inactiveLabel="متوقفة"
+            />
+          </span>
+          <button className="text-button" onClick={() => navigate('profile')}>
+            إدارة المطعم
+          </button>
+        </div>
+      </section>
+      <Notice error={serviceError} />
 
       {Boolean(analytics.error) && (
         <Failure error={analytics.error} retry={analytics.reload} />

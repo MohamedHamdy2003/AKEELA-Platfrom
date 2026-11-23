@@ -1,4 +1,5 @@
 import { moneyCents, moneyAmount } from '../../common/money';
+import { cairoDateString } from '../../common/time';
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager, In } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
@@ -994,10 +995,27 @@ export class CatalogService {
 
   // --- Feature 08: Offers ---
 
+  async deactivateExpiredOffers(restId?: string): Promise<number> {
+    const qb = this.dataSource
+      .createQueryBuilder()
+      .update(Offer)
+      .set({ is_active: false, updated_at: () => 'NOW()' })
+      .where('is_active = true AND expires_at <= NOW()');
+
+    if (restId !== undefined) {
+      qb.andWhere('rest_id = :restId', { restId });
+    }
+
+    const result = await qb.execute();
+    return result.affected ?? 0;
+  }
+
   async listOffers(
     restId: string,
     pagination: { skip: number; take: number },
   ): Promise<{ items: Offer[]; total: number }> {
+    await this.deactivateExpiredOffers(restId);
+
     const qb = this.dataSource
       .getRepository(Offer)
       .createQueryBuilder('o')
@@ -1018,6 +1036,8 @@ export class CatalogService {
       const realPrice = dto.real_price;
       const startsAt = new Date(dto.starts_at);
       const expiresAt = new Date(dto.expires_at);
+      const now = new Date();
+      const todayCairo = cairoDateString(now);
 
       if (moneyCents(realPrice) > moneyCents(initialPrice)) {
         throw new ApiError(
@@ -1031,12 +1051,33 @@ export class CatalogService {
           },
         );
       }
+      if (cairoDateString(startsAt) < todayCairo) {
+        throw new ApiError(
+          422,
+          'VALIDATION_ERROR',
+          'starts_at cannot be earlier than today.',
+          { starts_at: ['Start date cannot be earlier than today.'] },
+        );
+      }
       if (expiresAt <= startsAt) {
         throw new ApiError(
           422,
           'VALIDATION_ERROR',
           'expires_at must be after starts_at.',
-          { expires_at: ['Expiry time must be after the start time.'] },
+          { expires_at: ['Expiry date must be on or after the start date.'] },
+        );
+      }
+      const nextActive = dto.is_active ?? true;
+      if (nextActive && expiresAt <= now) {
+        throw new ApiError(
+          422,
+          'VALIDATION_ERROR',
+          'Cannot activate an expired offer.',
+          {
+            is_active: [
+              'Cannot activate an expired offer. Extend the end date first.',
+            ],
+          },
         );
       }
 
@@ -1048,7 +1089,7 @@ export class CatalogService {
         initial_price: moneyAmount(initialPrice),
         real_price: moneyAmount(realPrice),
         offer_image_url: dto.offer_image_url ?? null,
-        is_active: dto.is_active ?? true,
+        is_active: nextActive,
         starts_at: startsAt,
         expires_at: expiresAt,
       });
@@ -1078,6 +1119,14 @@ export class CatalogService {
         throw new ApiError(404, 'NOT_FOUND', 'Offer not found.');
       }
 
+      const now = new Date();
+      const todayCairo = cairoDateString(now);
+      const previousStarts =
+        offer.starts_at instanceof Date
+          ? offer.starts_at
+          : new Date(offer.starts_at);
+      const previousStartDate = cairoDateString(previousStarts);
+
       if (dto.offer_title !== undefined)
         offer.offer_title = dto.offer_title.trim();
       if (dto.offer_description !== undefined)
@@ -1085,8 +1134,19 @@ export class CatalogService {
       if (dto.offer_image_url !== undefined)
         offer.offer_image_url = dto.offer_image_url;
       if (dto.is_active !== undefined) offer.is_active = dto.is_active;
-      if (dto.starts_at !== undefined)
-        offer.starts_at = new Date(dto.starts_at);
+      if (dto.starts_at !== undefined) {
+        const nextStarts = new Date(dto.starts_at);
+        const nextStartDate = cairoDateString(nextStarts);
+        if (nextStartDate < todayCairo && nextStartDate !== previousStartDate) {
+          throw new ApiError(
+            422,
+            'VALIDATION_ERROR',
+            'starts_at cannot be earlier than today.',
+            { starts_at: ['Start date cannot be earlier than today.'] },
+          );
+        }
+        offer.starts_at = nextStarts;
+      }
       if (dto.expires_at !== undefined)
         offer.expires_at = new Date(dto.expires_at);
       if (dto.initial_price !== undefined)
@@ -1123,8 +1183,23 @@ export class CatalogService {
           422,
           'VALIDATION_ERROR',
           'expires_at must be after starts_at.',
-          { expires_at: ['Expiry time must be after the start time.'] },
+          { expires_at: ['Expiry date must be on or after the start date.'] },
         );
+      }
+      if (finalExpires <= now) {
+        if (dto.is_active === true) {
+          throw new ApiError(
+            422,
+            'VALIDATION_ERROR',
+            'Cannot activate an expired offer.',
+            {
+              is_active: [
+                'Cannot activate an expired offer. Extend the end date first.',
+              ],
+            },
+          );
+        }
+        offer.is_active = false;
       }
 
       return repo.save(offer);
@@ -1265,6 +1340,7 @@ export class CatalogService {
     pagination: { skip: number; take: number },
   ): Promise<{ items: Offer[]; total: number }> {
     await this.getPublicRestaurant(restId);
+    await this.deactivateExpiredOffers(restId);
 
     const now = new Date();
     const qb = this.dataSource
@@ -1326,6 +1402,7 @@ export class CatalogService {
   }> {
     const now = new Date();
     const soon = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    await this.deactivateExpiredOffers(restId);
     const [categories, products, activeAddons, offers] = await Promise.all([
       this.dataSource.getRepository(Category).find({
         select: { cat_id: true, cat_title: true, is_active: true },

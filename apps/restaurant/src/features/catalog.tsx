@@ -30,7 +30,13 @@ import type {
   Product,
   ProductAddon,
 } from '../lib/models';
-import { cairoISO, cairoLocal, dateTime, money } from '../lib/format';
+import {
+  cairoDate,
+  cairoEndOfDayISO,
+  cairoStartOfDayISO,
+  formatDate,
+  money,
+} from '../lib/format';
 import { useResource } from '../lib/use-resource';
 import { Presence } from '../components/presence';
 import {
@@ -716,9 +722,19 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
                       </td>
                       {kind === 'offers' && (
                         <td className="date-cell">
-                          {dateTime(value(record, 'starts_at'))}
-                          <br />
-                          {dateTime(value(record, 'expires_at'))}
+                          {cairoDate(value(record, 'starts_at')) ===
+                          cairoDate(value(record, 'expires_at')) ? (
+                            <>
+                              {formatDate(value(record, 'starts_at'))}
+                              <small className="cell-subtitle">يوم واحد</small>
+                            </>
+                          ) : (
+                            <>
+                              {formatDate(value(record, 'starts_at'))}
+                              <br />
+                              {formatDate(value(record, 'expires_at'))}
+                            </>
+                          )}
                         </td>
                       )}
                       <td>
@@ -1464,8 +1480,8 @@ export function CatalogEditor({
         seed[key] = val === null ? '' : String(val);
       });
     if (kind === 'offers' && record) {
-      seed.starts_at = cairoLocal((record as Offer).starts_at);
-      seed.expires_at = cairoLocal((record as Offer).expires_at);
+      seed.starts_at = cairoDate((record as Offer).starts_at);
+      seed.expires_at = cairoDate((record as Offer).expires_at);
     }
     return seed;
   });
@@ -1561,6 +1577,30 @@ export function CatalogEditor({
     ...categories,
   ].sort((a, b) => a.display_order - b.display_order);
 
+  const todayCairo = cairoDate();
+  const initialOfferStartDate =
+    kind === 'offers' && record ? cairoDate((record as Offer).starts_at) : '';
+  const offerStartInPast =
+    kind === 'offers' &&
+    Boolean(values.starts_at) &&
+    values.starts_at < todayCairo &&
+    (!record || values.starts_at !== initialOfferStartDate);
+  const offerEndBeforeStart =
+    kind === 'offers' &&
+    Boolean(values.starts_at && values.expires_at) &&
+    values.expires_at < values.starts_at;
+  const offerExpiredActive =
+    kind === 'offers' &&
+    Boolean(values.expires_at) &&
+    values.expires_at < todayCairo &&
+    active;
+  const offerOneDay =
+    kind === 'offers' &&
+    Boolean(values.starts_at && values.expires_at) &&
+    values.starts_at === values.expires_at &&
+    !offerStartInPast &&
+    values.expires_at >= todayCairo;
+
   const input = (
     name: string,
     label: string,
@@ -1619,10 +1659,18 @@ export function CatalogEditor({
         }
       }
       if (kind === 'offers') {
-        const start = cairoISO(values.starts_at);
-        const end = cairoISO(values.expires_at);
-        if (start >= end)
-          throw new Error('نهاية العرض يجب أن تكون بعد بدايته.');
+        if (offerStartInPast)
+          throw new Error('بداية العرض لا يمكن أن تكون في تاريخ سابق لليوم.');
+        if (offerEndBeforeStart)
+          throw new Error(
+            'نهاية العرض يجب أن تكون في نفس يوم البداية أو بعده.',
+          );
+        if (offerExpiredActive)
+          throw new Error(
+            'لا يمكن تفعيل عرض منتهي الصلاحية. مدّد تاريخ نهاية العرض أولاً.',
+          );
+        const start = cairoStartOfDayISO(values.starts_at);
+        const end = cairoEndOfDayISO(values.expires_at);
         const toCents = (v: string) => {
           const [a, b = ''] = v.split('.');
           return BigInt(a) * 100n + BigInt(b.padEnd(2, '0'));
@@ -1770,12 +1818,42 @@ export function CatalogEditor({
                     pattern: moneyPattern,
                     maxLength: 13,
                   })}
-                  {input('starts_at', 'بداية العرض (القاهرة)', {
-                    type: 'datetime-local',
+                  {input('starts_at', 'بداية العرض', {
+                    type: 'date',
                   })}
-                  {input('expires_at', 'نهاية العرض (القاهرة)', {
-                    type: 'datetime-local',
+                  {input('expires_at', 'نهاية العرض', {
+                    type: 'date',
                   })}
+                  {offerStartInPast && (
+                    <div className="full">
+                      <AlertBanner tone="warning">
+                        بداية العرض لا يمكن أن تكون في تاريخ سابق لليوم.
+                      </AlertBanner>
+                    </div>
+                  )}
+                  {offerEndBeforeStart && (
+                    <div className="full">
+                      <AlertBanner tone="warning">
+                        نهاية العرض يجب أن تكون في نفس يوم البداية أو بعده.
+                      </AlertBanner>
+                    </div>
+                  )}
+                  {offerExpiredActive && (
+                    <div className="full">
+                      <AlertBanner tone="warning">
+                        تاريخ نهاية العرض قد انتهى بالفعل؛ لا يمكن تفعيل عرض
+                        منتهٍ قبل تمديد تاريخ نهايته.
+                      </AlertBanner>
+                    </div>
+                  )}
+                  {offerOneDay && (
+                    <div className="full">
+                      <AlertBanner tone="info">
+                        عرض لمدة يوم واحد — ينتهي تلقائياً بنهاية هذا اليوم
+                        بتوقيت القاهرة.
+                      </AlertBanner>
+                    </div>
+                  )}
                 </>
               )}
 

@@ -8,6 +8,24 @@ export function dateTime(value: string) {
     minute: '2-digit',
   }).format(new Date(value));
 }
+export function formatDate(value: string) {
+  return new Intl.DateTimeFormat('ar-EG', {
+    timeZone: cairo,
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+export function cairoDate(value: string | Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: cairo,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(typeof value === 'string' ? new Date(value) : value);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
 export function today() {
   return new Intl.DateTimeFormat('ar-EG', {
     timeZone: cairo,
@@ -69,4 +87,29 @@ export function cairoISO(local: string): string {
       'هذا الوقت غير موجود أو مكرر بسبب تغيير التوقيت. اختر وقتًا آخر.',
     );
   return matches[0].toISOString();
+}
+export function cairoStartOfDayISO(dateStr: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr))
+    throw new Error('أدخل تاريخًا صالحًا بتوقيت القاهرة.');
+  try {
+    return cairoISO(dateStr + 'T00:00');
+  } catch {
+    // Handle Egypt DST spring-forward gap at 00:00 -> 01:00.
+    return cairoISO(dateStr + 'T01:00');
+  }
+}
+export function cairoEndOfDayISO(dateStr: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr))
+    throw new Error('أدخل تاريخًا صالحًا بتوقيت القاهرة.');
+  const naive = Date.parse(dateStr + 'T23:59:59Z');
+  const candidates = [120, 180].map(
+    (offset) => new Date(naive - offset * 60000),
+  );
+  const match = candidates.find(
+    (date) =>
+      Number.isFinite(date.getTime()) &&
+      cairoLocal(date.toISOString()) === dateStr + 'T23:59',
+  );
+  if (!match) throw new Error('أدخل تاريخًا صالحًا بتوقيت القاهرة.');
+  return match.toISOString();
 }

@@ -68,8 +68,23 @@ test('busy buttons keep size; genuine table loading has a skeleton; dialog exit 
   expect(pending!.height).toBeCloseTo(before!.height, 1);
   finishLogin();
   await expect(
-    page.getByRole('heading', { name: /^(صباح|مساء) الخير، مطبخ أكيلة$/ }),
+    page.getByRole('heading', { name: 'تحليلات المطعم', exact: true }),
   ).toBeVisible();
+  const service = page.getByRole('switch');
+  const serviceWidth = (await service.boundingBox())!.width;
+  await service.click();
+  await expect(service).toHaveAttribute('aria-checked', 'false');
+  await expect(service.locator('span')).toHaveCSS(
+    'transform',
+    'matrix(1, 0, 0, 1, -30, 0)',
+  );
+  expect((await service.boundingBox())!.width).toBe(serviceWidth);
+  await service.click();
+  await expect(service).toHaveAttribute('aria-checked', 'true');
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'الطلبات', exact: true })
+    .click();
   await expect(
     page.getByRole('status', { name: 'جارٍ تحميل البيانات' }),
   ).toBeVisible();
@@ -87,17 +102,6 @@ test('busy buttons keep size; genuine table loading has a skeleton; dialog exit 
     animations: 'disabled',
     path: join(tmpdir(), 'akeela-motion-home.png'),
   });
-  const service = page.getByRole('switch');
-  const serviceWidth = (await service.boundingBox())!.width;
-  await service.click();
-  await expect(service).toHaveAttribute('aria-checked', 'false');
-  await expect(service.locator('span')).toHaveCSS(
-    'transform',
-    'matrix(1, 0, 0, 1, -30, 0)',
-  );
-  expect((await service.boundingBox())!.width).toBe(serviceWidth);
-  await service.click();
-  await expect(service).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: 'التصنيفات', exact: true }).click();
   const opener = page.getByRole('button', { name: 'إضافة تصنيف', exact: true });
   await opener.click();
@@ -157,6 +161,10 @@ test('order confirmation stays guarded during a pending API action and success/s
 }) => {
   await setup(page);
   await login(page);
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'الطلبات', exact: true })
+    .click();
   await page
     .getByRole('button', { name: 'عرض التفاصيل', exact: true })
     .first()
@@ -236,7 +244,7 @@ test('inline feedback enters and exits without retaining an accessible stale ale
   await expect(page.locator('.notice')).toHaveCount(0);
   finish();
   await expect(
-    page.getByRole('heading', { name: /^(صباح|مساء) الخير، مطبخ أكيلة$/ }),
+    page.getByRole('heading', { name: 'تحليلات المطعم', exact: true }),
   ).toBeVisible();
 });
 
@@ -252,10 +260,6 @@ for (const viewport of [
     await setup(page);
     await login(page);
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.locator('.page-heading')).toHaveCSS(
-      'animation-name',
-      'none',
-    );
     await expect(page.getByRole('switch')).toHaveCSS(
       'transition-duration',
       '0s',
@@ -263,6 +267,17 @@ for (const viewport of [
     await expect(page.getByRole('switch').locator('span')).toHaveCSS(
       'transition-duration',
       '0s',
+    );
+    if (viewport.width === 390) {
+      await page.getByRole('button', { name: 'فتح القائمة' }).click();
+    }
+    await page
+      .getByRole('navigation')
+      .getByRole('button', { name: 'الطلبات', exact: true })
+      .click();
+    await expect(page.locator('.page-heading')).toHaveCSS(
+      'animation-name',
+      'none',
     );
     if (viewport.width < 960) {
       const open = page.getByRole('button', { name: 'فتح القائمة' });
@@ -312,6 +327,11 @@ test('fresh palette and compact typography retain contrast, visible motion and r
 }) => {
   await setup(page);
   await login(page);
+  await page
+    .getByRole('navigation')
+    .getByRole('button', { name: 'الطلبات', exact: true })
+    .click();
+  await page.mouse.move(0, 0);
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
     'rgb(255, 253, 249)',
@@ -352,14 +372,15 @@ test('fresh palette and compact typography retain contrast, visible motion and r
     );
   });
   expect(contrast).toBeGreaterThanOrEqual(4.5);
-  const cta = page.getByRole('button', { name: 'عرض الطلبات', exact: true });
-  await cta.hover();
-  await expect(cta).toHaveCSS('translate', '0px -2px');
-  await expect(cta.locator('svg')).toHaveCSS('translate', '-4px');
   await expect(page.locator('tbody tr').nth(1)).toHaveCSS(
     'animation-delay',
     '0.035s',
   );
+  await page.getByRole('button', { name: 'التصنيفات', exact: true }).click();
+  const cta = page.getByRole('button', { name: 'إضافة تصنيف', exact: true });
+  await cta.hover();
+  await expect(cta).toHaveCSS('translate', '0px -2px');
+  await expect(cta.locator('svg')).toHaveCSS('translate', '-4px');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(cta).toHaveCSS('translate', 'none');
   await expect(page.locator('tbody tr').first()).toHaveCSS(

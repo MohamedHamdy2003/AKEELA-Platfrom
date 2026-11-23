@@ -68,7 +68,7 @@ for (const width of [1536, 390]) {
       writes.find((write) => write.path === '/restaurant/profile')?.body,
     ).toMatchObject({ longitude, latitude });
     await expect(page.getByLabel('خط الطول')).toBeEnabled();
-    await navigate('الرئيسية');
+    await navigate('التحليلات');
     await navigate('ملف المطعم');
     await expect(page.getByLabel('خط الطول')).toHaveValue(longitude);
     await expect(page.getByLabel('خط العرض')).toHaveValue(latitude);
