@@ -96,10 +96,26 @@ export class ApiClient {
     return this.restoring;
   }
   async login(email: string, password: string): Promise<User> {
-    const result = await this.request<{ user: User; tokens: Tokens }>(
-      '/auth/login',
-      { method: 'POST', body: { email, password }, public: true },
-    );
+    let result: Envelope<{ user: User; tokens: Tokens }>;
+    try {
+      result = await this.request<{ user: User; tokens: Tokens }>(
+        '/auth/login',
+        { method: 'POST', body: { email, password }, public: true },
+      );
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        error.status === 401 &&
+        error.code === 'UNAUTHENTICATED'
+      ) {
+        throw new ApiError(
+          401,
+          'INVALID_CREDENTIALS',
+          'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+        );
+      }
+      throw error;
+    }
     if (result.data.user.role !== this.role) {
       await this.transport(this.base + '/auth/logout', {
         method: 'POST',
