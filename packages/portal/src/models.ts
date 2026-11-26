@@ -284,6 +284,10 @@ export const statuses: Record<OrderStatus, string> = {
   Cancelled: 'ملغي',
   Failed: 'متعثر',
 };
+export const deliveryStatuses: Record<OrderStatus, string> = {
+  ...statuses,
+  Accepted: 'بانتظار سائق',
+};
 export const statusDescriptions: Record<OrderStatus, string> = {
   Pending:
     'قيد الانتظار: تم إنشاء الطلب من العميل وفي انتظار مراجعة وقبول المطعم.',
@@ -294,6 +298,11 @@ export const statusDescriptions: Record<OrderStatus, string> = {
   Rejected: 'مرفوض: اعتذر المطعم عن قبول الطلب لعدم توفر الأصناف أو ضغط العمل.',
   Cancelled: 'ملغي: قام العميل بإلغاء الطلب قبل بدء المطعم في تحضيره.',
   Failed: 'متعثر: تعذر إكمال الطلب لعائق تشغيلي يستوجب تدخل الإدارة.',
+};
+export const deliveryStatusDescriptions: Record<OrderStatus, string> = {
+  ...statusDescriptions,
+  Accepted:
+    'بانتظار سائق: وافق المطعم على الطلب وهو جاهز لإسناد سائق لبدء التوصيل.',
 };
 export interface OrderSummary {
   order_id: string;

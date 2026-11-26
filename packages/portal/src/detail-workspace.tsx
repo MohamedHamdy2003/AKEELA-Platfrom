@@ -13,6 +13,7 @@ import './detail-workspace.css';
 export function DetailWorkspace({
   selectedKey,
   title,
+  titleBadge,
   onClose,
   children,
   details,
@@ -20,6 +21,7 @@ export function DetailWorkspace({
 }: {
   selectedKey: string | null;
   title: string;
+  titleBadge?: string;
   onClose: () => void;
   children: ReactNode;
   details: ReactNode;
@@ -111,11 +113,18 @@ export function DetailWorkspace({
             aria-labelledby={titleId}
           >
             <header className="detail-head">
-              <div>
+              <div className="detail-head-main">
                 {eyebrow && (
                   <span className="admin-detail-eyebrow">{eyebrow}</span>
                 )}
-                <h2 id={titleId}>{title}</h2>
+                <div className="detail-head-title-row">
+                  <h2 id={titleId}>{title}</h2>
+                  {titleBadge && (
+                    <span className="detail-head-id">
+                      <bdi>{titleBadge}</bdi>
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 ref={closeButton}

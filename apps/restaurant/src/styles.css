@@ -816,6 +816,7 @@ td .numeric {
   font-size: 15px;
 }
 .badge {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -828,7 +829,78 @@ td .numeric {
   background: var(--brand-secondary);
   color: var(--brand-primary);
   font-weight: 600;
+  cursor: default;
+  outline: none;
+}
+.badge[data-tooltip] {
   cursor: help;
+}
+.badge[data-tooltip]::before,
+.badge[data-tooltip]::after {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 45;
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+.badge[data-tooltip]::before {
+  content: '';
+  top: calc(100% + 4px);
+  inset-inline-start: 22px;
+  border: 6px solid transparent;
+  border-bottom-color: #132a24;
+  transform: translateY(-4px);
+}
+.badge[data-tooltip]::after {
+  content: attr(data-tooltip);
+  top: calc(100% + 14px);
+  inset-inline-start: 0;
+  width: max-content;
+  max-width: 270px;
+  padding: 9px 13px;
+  border-radius: 10px;
+  background: #132a24;
+  color: #f4faf7;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: normal;
+  text-align: right;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.2),
+    0 2px 6px rgba(15, 23, 42, 0.1);
+  transform: translateY(-4px);
+}
+.badge[data-tooltip]:hover::before,
+.badge[data-tooltip]:hover::after,
+.badge[data-tooltip]:focus-visible::before,
+.badge[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+.badge[data-tooltip]:focus-visible {
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--brand-primary) 40%, transparent);
+}
+tbody tr:last-child .badge[data-tooltip]::before {
+  top: auto;
+  bottom: calc(100% + 4px);
+  border-bottom-color: transparent;
+  border-top-color: #132a24;
+  transform: translateY(4px);
+}
+tbody tr:last-child .badge[data-tooltip]::after {
+  top: auto;
+  bottom: calc(100% + 14px);
+  transform: translateY(4px);
+}
+tbody tr:last-child .badge[data-tooltip]:hover::before,
+tbody tr:last-child .badge[data-tooltip]:hover::after,
+tbody tr:last-child .badge[data-tooltip]:focus-visible::before,
+tbody tr:last-child .badge[data-tooltip]:focus-visible::after {
+  transform: translateY(0);
 }
 .badge svg {
   flex-shrink: 0;
@@ -1022,8 +1094,27 @@ td .numeric {
   gap: 16px;
   margin-bottom: 28px;
 }
+.dialog-heading-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .dialog-heading h2 {
   margin: 0;
+}
+.dialog-heading-id {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  border-radius: 8px;
+  background: var(--brand-secondary);
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 20%, transparent);
+  color: var(--brand-primary);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
 }
 .drawer {
   position: fixed;
@@ -1063,7 +1154,6 @@ td .numeric {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 10px;
 }
 .order-summary-time {
   display: inline-flex;

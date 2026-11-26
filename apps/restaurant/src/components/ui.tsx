@@ -319,7 +319,8 @@ export function Badge({ status }: { status: OrderStatus }) {
   return (
     <span
       className={`badge status-${status}`}
-      title={statusDescriptions[status] ?? statuses[status]}
+      tabIndex={0}
+      data-tooltip={statusDescriptions[status] ?? statuses[status]}
     >
       {status === 'Delivered' ? (
         <svg
@@ -458,11 +459,13 @@ export function PageHeading({
 }
 export function Dialog({
   title,
+  titleBadge,
   children,
   onClose,
   drawer = false,
 }: {
   title: string;
+  titleBadge?: string;
   children: ReactNode;
   onClose: () => void;
   drawer?: boolean;
@@ -510,7 +513,14 @@ export function Dialog({
         }}
       >
         <header className="dialog-heading">
-          <h2 id={id}>{title}</h2>
+          <div className="dialog-heading-main">
+            <h2 id={id}>{title}</h2>
+            {titleBadge && (
+              <span className="dialog-heading-id">
+                <bdi>{titleBadge}</bdi>
+              </span>
+            )}
+          </div>
           <button className="icon-button" aria-label="إغلاق" onClick={onClose}>
             <X />
           </button>

@@ -52,6 +52,8 @@ import brandIconWebp from '@akeela/brand/icon.webp';
 import { ApiClient, ApiError, errorMessage } from './api';
 import { normalizeOtpDigits } from './error-messages';
 import {
+  deliveryStatusDescriptions,
+  deliveryStatuses,
   statuses,
   statusDescriptions,
   type Envelope,
@@ -168,12 +170,21 @@ export function Field({
     </label>
   );
 }
-export function Badge({ status }: { status: OrderStatus }) {
+export function Badge({
+  status,
+  delivery = false,
+}: {
+  status: OrderStatus;
+  delivery?: boolean;
+}) {
+  const label =
+    (delivery ? deliveryStatuses[status] : statuses[status]) ?? status;
+  const description =
+    (delivery
+      ? deliveryStatusDescriptions[status]
+      : statusDescriptions[status]) ?? label;
   return (
-    <span
-      className={'badge ' + status}
-      title={statusDescriptions[status] ?? statuses[status]}
-    >
+    <span className={'badge ' + status} tabIndex={0} data-tooltip={description}>
       {status === 'Delivered' ? (
         <svg
           width={12}
@@ -204,7 +215,7 @@ export function Badge({ status }: { status: OrderStatus }) {
       ) : (
         <Circle size={10} aria-hidden="true" />
       )}
-      {statuses[status]}
+      {label}
     </span>
   );
 }
@@ -690,37 +701,6 @@ export function Shell({
           </picture>
           <small className="brand-label">{appName}</small>
         </div>
-        {brandIdentity && (
-          <button
-            type="button"
-            className="sidebar-partner"
-            title={brandIdentity.name}
-            onClick={() => {
-              brandIdentity.onClick?.();
-              setDrawer(false);
-            }}
-          >
-            <span className="sidebar-partner-crest" aria-hidden="true">
-              {brandMonogram(brandIdentity.name)}
-            </span>
-            <span className="sidebar-partner-meta">
-              <strong
-                className={
-                  'sidebar-partner-name' +
-                  (isLatinName(brandIdentity.name) ? ' is-latin' : '')
-                }
-              >
-                <bdi>{brandIdentity.name}</bdi>
-              </strong>
-              {brandIdentity.code && (
-                <small className="sidebar-partner-code">
-                  <i aria-hidden="true" />
-                  {brandIdentity.code}
-                </small>
-              )}
-            </span>
-          </button>
-        )}
         <button
           className="drawer-close"
           aria-label="إغلاق القائمة"
@@ -871,7 +851,7 @@ export function Shell({
             <span className="avatar">{user.full_name.slice(0, 1)}</span>
             <span className="account-name">
               {user.full_name}
-              <small>{brandIdentity?.name ?? appName}</small>
+              {!brandIdentity && <small>{appName}</small>}
             </span>
           </div>
         </header>
@@ -1272,24 +1252,20 @@ export function OrderFacts({
     <div className="order-facts">
       <section className="order-hero-card">
         <div className="detail-status">
-          <strong className="order-hero-id">
-            <bdi>#{order.order_id}</bdi>
-          </strong>
-          <Badge status={order.status} />
-        </div>
-        <div className="order-hero-meta">
+          <Badge status={order.status} delivery={delivery} />
           <span className="order-hero-time">
             <Clock size={12} aria-hidden="true" />
             {dateTime(order.created_at)}
           </span>
-          {order.driver_id && (
+        </div>
+        {order.driver_id && (
+          <div className="order-hero-meta">
             <span className="order-driver-chip">
               <Truck size={12} aria-hidden="true" />
-              {driverName ?? `السائق #${order.driver_id}`}
+              {driverName ?? `السائق ${order.driver_id}`}
             </span>
-          )}
-        </div>
-        <p className="detail-status-desc">{statusDescriptions[order.status]}</p>
+          </div>
+        )}
       </section>
 
       <section className="order-card order-route-card">
@@ -1302,10 +1278,15 @@ export function OrderFacts({
               </div>
               <div className="route-body">
                 <div className="route-top">
-                  <span className="route-label">
-                    <Store size={12} aria-hidden="true" />
-                    الاستلام
-                  </span>
+                  <div className="route-inline-head">
+                    <span className="route-label">
+                      <Store size={12} aria-hidden="true" />
+                      المطعم
+                    </span>
+                    <strong className="route-title">
+                      {order.pickup.rest_title}
+                    </strong>
+                  </div>
                   <a
                     className="map-pill"
                     href={googleMapsUrl(
@@ -1314,16 +1295,13 @@ export function OrderFacts({
                     )}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="فتح نقطة الاستلام على خرائط جوجل"
+                    aria-label="فتح موقع المطعم على خرائط جوجل"
                     title="فتح على خرائط جوجل"
                   >
                     <MapPin size={12} aria-hidden="true" />
                     الخريطة
                   </a>
                 </div>
-                <strong className="route-title">
-                  {order.pickup.rest_title}
-                </strong>
                 <p className="route-address">{order.pickup.rest_address}</p>
               </div>
             </div>

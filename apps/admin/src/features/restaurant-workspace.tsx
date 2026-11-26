@@ -898,6 +898,7 @@ function RestaurantOrdersTab({
       <DetailWorkspace
         selectedKey={selectedOrderId}
         title="تفاصيل الطلب"
+        titleBadge={selectedOrderId ?? undefined}
         onClose={() => setSelectedOrderId(null)}
         details={
           <ResourceState resource={detail} skeleton={<DetailSkeleton />}>

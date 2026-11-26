@@ -665,6 +665,10 @@ bdi,
   background: #e0f7f6;
   color: #0a6c74;
 }
+.portal[data-portal='delivery'] .metric[data-status='Accepted'] .metric-icon {
+  background: #fef3c7;
+  color: #92400e;
+}
 .metric[data-status='Picked_Up'] .metric-icon {
   background: #e8f0fe;
   color: #1e40af;
@@ -948,14 +952,100 @@ tbody tr:hover {
   font-size: 10px;
 }
 .badge {
+  position: relative;
   font-size: 11px;
-  border-radius: 6px;
-  padding: 3px 9px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 3px 10px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   line-height: 1.7;
+  cursor: default;
+  outline: none;
+}
+.badge[data-tooltip] {
   cursor: help;
+}
+.badge[data-tooltip]::before,
+.badge[data-tooltip]::after {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 45;
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+.badge[data-tooltip]::before {
+  content: '';
+  top: calc(100% + 4px);
+  inset-inline-start: 16px;
+  border: 5px solid transparent;
+  border-bottom-color: #132a24;
+  transform: translateY(-4px);
+}
+.badge[data-tooltip]::after {
+  content: attr(data-tooltip);
+  top: calc(100% + 13px);
+  inset-inline-start: 0;
+  width: max-content;
+  max-width: 245px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  background: #132a24;
+  color: #f4faf7;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: normal;
+  text-align: right;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.2),
+    0 2px 6px rgba(15, 23, 42, 0.1);
+  transform: translateY(-4px);
+}
+.portal[data-portal='delivery'] .badge[data-tooltip]::before {
+  border-bottom-color: #0f2540;
+}
+.portal[data-portal='delivery'] .badge[data-tooltip]::after {
+  background: #0f2540;
+  color: #f3f7fe;
+}
+.badge[data-tooltip]:hover::before,
+.badge[data-tooltip]:hover::after,
+.badge[data-tooltip]:focus-visible::before,
+.badge[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+.badge[data-tooltip]:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--p-accent) 40%, transparent);
+}
+tbody tr:last-child .badge[data-tooltip]::before {
+  top: auto;
+  bottom: calc(100% + 4px);
+  border-bottom-color: transparent;
+  border-top-color: #132a24;
+  transform: translateY(4px);
+}
+tbody tr:last-child .badge[data-tooltip]::after {
+  top: auto;
+  bottom: calc(100% + 13px);
+  transform: translateY(4px);
+}
+.portal[data-portal='delivery']
+  tbody
+  tr:last-child
+  .badge[data-tooltip]::before {
+  border-bottom-color: transparent;
+  border-top-color: #0f2540;
+}
+tbody tr:last-child .badge[data-tooltip]:hover::before,
+tbody tr:last-child .badge[data-tooltip]:hover::after,
+tbody tr:last-child .badge[data-tooltip]:focus-visible::before,
+tbody tr:last-child .badge[data-tooltip]:focus-visible::after {
+  transform: translateY(0);
 }
 .badge svg {
   flex-shrink: 0;
@@ -967,6 +1057,10 @@ tbody tr:hover {
 .badge.Accepted {
   background: #e0f7f6;
   color: #0a6c74;
+}
+.portal[data-portal='delivery'] .badge.Accepted {
+  background: #fef3c7;
+  color: #92400e;
 }
 .badge.Picked_Up {
   background: #e8f0fe;
@@ -1030,14 +1124,37 @@ tbody tr:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   border-bottom: 1px solid var(--p-line);
   padding-bottom: 12px;
   margin-bottom: 14px;
+}
+.detail-head-main {
+  min-width: 0;
+}
+.detail-head-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .detail-head h2 {
   font-size: 16px;
   font-weight: 700;
   margin: 0;
+}
+.detail-head-id {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 7px;
+  background: var(--p-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--p-accent) 18%, transparent);
+  color: var(--p-accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
 }
 .order-facts {
   display: flex;
@@ -1052,7 +1169,7 @@ tbody tr:hover {
   );
   border: 1px solid color-mix(in srgb, var(--p-accent) 16%, var(--p-line));
   border-radius: 11px;
-  padding: 13px 14px;
+  padding: 12px 14px;
 }
 .portal[data-portal='delivery'] .order-hero-card {
   background: linear-gradient(180deg, #f3f7fe 0%, #fafcff 100%);
@@ -1062,21 +1179,15 @@ tbody tr:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.order-hero-id {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--p-text);
-  letter-spacing: -0.01em;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .order-hero-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-bottom: 7px;
+  margin-top: 8px;
 }
 .order-hero-time,
 .order-driver-chip {
@@ -1198,6 +1309,13 @@ tbody tr:hover {
   gap: 8px;
   margin-bottom: 4px;
 }
+.route-inline-head {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
 .route-label {
   display: inline-flex;
   align-items: center;
@@ -1205,6 +1323,7 @@ tbody tr:hover {
   font-size: 11px;
   font-weight: 700;
   color: var(--p-muted);
+  flex-shrink: 0;
 }
 .map-pill {
   display: inline-flex;
@@ -1228,11 +1347,9 @@ tbody tr:hover {
   border-color: color-mix(in srgb, var(--p-accent) 36%, transparent);
 }
 .route-title {
-  display: block;
   font-size: 13px;
   font-weight: 700;
   color: var(--p-text);
-  margin-bottom: 2px;
 }
 .route-address {
   font-size: 12px;

@@ -11,12 +11,7 @@ import {
 import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import { api, query } from '../lib/api';
 import { dateTime, money, sumMoney } from '../lib/format';
-import {
-  statuses,
-  statusDescriptions,
-  type Order,
-  type OrderSummary,
-} from '../lib/models';
+import { statuses, type Order, type OrderSummary } from '../lib/models';
 import { useResource } from '../lib/use-resource';
 import { Presence } from '../components/presence';
 import {
@@ -251,7 +246,8 @@ export function OrderDetails({
   }
   return (
     <Dialog
-      title={'الطلب #' + id}
+      title="تفاصيل الطلب"
+      titleBadge={id}
       onClose={() => {
         if (!busy) onClose();
       }}
@@ -274,9 +270,6 @@ export function OrderDetails({
                   {dateTime(order.created_at)}
                 </span>
               </div>
-              <p className="order-summary-desc">
-                {statusDescriptions[order.status]}
-              </p>
             </section>
 
             {order.notes && (
