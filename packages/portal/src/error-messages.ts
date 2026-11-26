@@ -10,6 +10,7 @@ export function normalizeOtpDigits(value: string): string {
 
 const CODE_MESSAGES: Record<string, string> = {
   UNAUTHENTICATED: 'انتهت الجلسة. سجّل الدخول مجددًا.',
+  INVALID_CREDENTIALS: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
   FORBIDDEN: 'لا يملك حسابك صلاحية تنفيذ هذا الإجراء.',
   WRONG_ROLE: 'هذا الحساب غير مخصص لهذه اللوحة.',
   EMAIL_NOT_VERIFIED: 'أكّد بريدك الإلكتروني قبل تسجيل الدخول.',

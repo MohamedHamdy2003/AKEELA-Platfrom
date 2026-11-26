@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ApiClient, ApiError } from '../src/lib/api.ts';
+import { ApiClient, ApiError, errorMessage } from '../src/lib/api.ts';
 import { cairoISO, cairoLocal, money, sumMoney } from '../src/lib/format.ts';
 
 const tokens = {
@@ -73,6 +73,16 @@ test('logout during refresh cannot restore revoked local session', async () => {
   client.clearSession();
   finish!(reply({ ...tokens, access_token: 'late' }));
   await assert.rejects(pending, ApiError);
+});
+test('wrong credentials on login reports invalid email or password instead of expired session', async () => {
+  const client = new ApiClient('/api/v1', async () => reply(null, 401));
+  await assert.rejects(
+    client.login('wrong@example.com', 'WrongPass1'),
+    (error: unknown) =>
+      error instanceof ApiError &&
+      error.code === 'INVALID_CREDENTIALS' &&
+      errorMessage(error) === 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+  );
 });
 test('wrong role never opens restaurant workspace and revokes returned session', async () => {
   const calls: string[] = [];
