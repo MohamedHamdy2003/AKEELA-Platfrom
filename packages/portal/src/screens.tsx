@@ -250,6 +250,7 @@ export function OrdersBoard({
           {detail.result && (
             <OrderFacts
               order={detail.result.data}
+              delivery={delivery}
               driverName={
                 detail.result.data.driver_id
                   ? driverNameById.get(detail.result.data.driver_id)

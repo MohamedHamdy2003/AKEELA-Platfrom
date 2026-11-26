@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Check, MapPin, RefreshCw, X } from 'lucide-react';
+import {
+  Check,
+  Clock,
+  MapPin,
+  MessageSquareText,
+  RefreshCw,
+  ShoppingBag,
+  X,
+} from 'lucide-react';
 import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import { api, query } from '../lib/api';
 import { dateTime, money, sumMoney } from '../lib/format';
@@ -257,47 +265,97 @@ export function OrderDetails({
         <Failure error={resource.error} retry={resource.reload} />
       ) : (
         order && (
-          <>
-            <Badge status={order.status} />
-            <p className="muted">{statusDescriptions[order.status]}</p>
-            <p className="muted">{dateTime(order.created_at)}</p>
-            <section className="detail-section">
-              <h3>تفاصيل الطلب</h3>
-              {order.items.map((item) => (
-                <div className="order-item" key={item.order_item_id}>
-                  <div>
-                    <strong>{item.item_name}</strong>
-                    <span>× {item.quantity}</span>
-                    <bdi>{money(item.subtotal)}</bdi>
-                  </div>
-                  <small>
-                    سعر الوحدة: <bdi>{money(item.unit_price)}</bdi>
-                  </small>
-                  {item.addons.map((addon) => (
-                    <div className="addon-line" key={addon.order_item_addon_id}>
-                      <span>
-                        {addon.addon_name} × {addon.quantity}
-                      </span>
-                      <bdi>{money(addon.subtotal)}</bdi>
-                    </div>
-                  ))}
-                </div>
-              ))}
+          <div className="order-drawer-stack">
+            <section className="order-summary-card">
+              <div className="order-summary-top">
+                <Badge status={order.status} />
+                <span className="order-summary-time">
+                  <Clock size={14} aria-hidden="true" />
+                  {dateTime(order.created_at)}
+                </span>
+              </div>
+              <p className="order-summary-desc">
+                {statusDescriptions[order.status]}
+              </p>
             </section>
-            <section className="detail-section">
-              <h3>
-                <MapPin size={19} />
-                عنوان التوصيل
-              </h3>
-              <p>{order.customer_address}</p>
-            </section>
+
             {order.notes && (
-              <section className="detail-section">
-                <h3>ملاحظات</h3>
-                <p>{order.notes}</p>
+              <section className="order-notes-card">
+                <MessageSquareText size={18} aria-hidden="true" />
+                <div>
+                  <h3>ملاحظات العميل</h3>
+                  <p>{order.notes}</p>
+                </div>
               </section>
             )}
-            <div className="totals">
+
+            <section className="order-card order-items-card">
+              <div className="order-card-head">
+                <h3>
+                  <ShoppingBag size={17} aria-hidden="true" />
+                  الأصناف المطلوبة
+                </h3>
+                <span className="order-count-pill">
+                  {(() => {
+                    const total = order.items.reduce(
+                      (sum, item) => sum + item.quantity,
+                      0,
+                    );
+                    if (total === 1) return 'صنف واحد';
+                    if (total === 2) return 'صنفان';
+                    return `${total.toLocaleString('ar-EG')} أصناف`;
+                  })()}
+                </span>
+              </div>
+
+              <div className="order-items-list">
+                {order.items.map((item) => (
+                  <div className="order-item" key={item.order_item_id}>
+                    <div className="order-item-row">
+                      <div className="order-item-info">
+                        <span className="order-qty-pill">×{item.quantity}</span>
+                        <div>
+                          <strong>{item.item_name}</strong>
+                          <small>
+                            سعر الوحدة: <bdi>{money(item.unit_price)}</bdi>
+                          </small>
+                        </div>
+                      </div>
+                      <bdi className="order-item-subtotal">
+                        {money(item.subtotal)}
+                      </bdi>
+                    </div>
+                    {item.addons.length > 0 && (
+                      <div className="order-addons-list">
+                        {item.addons.map((addon) => (
+                          <div
+                            className="addon-line"
+                            key={addon.order_item_addon_id}
+                          >
+                            <span>
+                              + {addon.addon_name} × {addon.quantity}
+                            </span>
+                            <bdi>{money(addon.subtotal)}</bdi>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="order-card order-address-card">
+              <div className="order-address-icon" aria-hidden="true">
+                <MapPin size={17} />
+              </div>
+              <div>
+                <h3>عنوان التوصيل</h3>
+                <p>{order.customer_address}</p>
+              </div>
+            </section>
+
+            <section className="totals">
               <div>
                 <span>المنتجات والإضافات</span>
                 <bdi>
@@ -312,7 +370,7 @@ export function OrderDetails({
                 </bdi>
               </div>
               <div>
-                <span>التوصيل</span>
+                <span>رسوم التوصيل</span>
                 <bdi>{money(order.delivery_fee)}</bdi>
               </div>
               <div className="grand-total">
@@ -321,9 +379,10 @@ export function OrderDetails({
                   <bdi>{money(order.total_price)}</bdi>
                 </strong>
               </div>
-            </div>
+            </section>
+
             {order.status === 'Pending' && !decision && (
-              <div className="actions">
+              <div className="actions order-drawer-actions">
                 <button
                   className="button primary"
                   disabled={busy}
@@ -342,6 +401,7 @@ export function OrderDetails({
                 </button>
               </div>
             )}
+
             {decision && (
               <div className="confirm-box" role="alert">
                 <h3>
@@ -374,10 +434,14 @@ export function OrderDetails({
                 </div>
               </div>
             )}
+
             {order.status !== 'Pending' && (
-              <p className="muted">تظهر تحديثات الطلب لحظيًا فور حدوثها.</p>
+              <div className="order-live-pill">
+                <i aria-hidden="true" />
+                <span>تظهر تحديثات الطلب لحظيًا فور حدوثها.</span>
+              </div>
             )}
-          </>
+          </div>
         )
       )}
     </Dialog>

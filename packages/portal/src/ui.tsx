@@ -21,6 +21,7 @@ import {
   Check,
   Circle,
   ClipboardList,
+  Clock,
   Building2,
   Eye,
   EyeOff,
@@ -31,8 +32,11 @@ import {
   MapPin,
   Maximize2,
   Menu,
+  MessageSquareText,
   Minimize2,
   RefreshCw,
+  ShoppingBag,
+  Store,
   Truck,
   Users,
   Utensils,
@@ -1246,129 +1250,195 @@ export function OrderFacts({
   order,
   actions,
   driverName,
+  delivery = false,
 }: {
   order: Order;
   actions?: ReactNode;
   driverName?: string;
+  delivery?: boolean;
 }) {
+  const totalQuantity = order.items.reduce(
+    (sum, item) => sum + item.quantity,
+    0,
+  );
+  const itemsLabel =
+    totalQuantity === 1
+      ? 'صنف واحد'
+      : totalQuantity === 2
+        ? 'صنفان'
+        : `${totalQuantity.toLocaleString('ar-EG')} أصناف`;
+
   return (
-    <>
-      <div className="detail-status">
-        <bdi>#{order.order_id}</bdi>
-        <Badge status={order.status} />
-      </div>
-      <p className="detail-status-desc">{statusDescriptions[order.status]}</p>
-      {order.pickup && (
-        <section className="detail-section">
-          <h3>نقطة الاستلام</h3>
-          <strong>{order.pickup.rest_title}</strong>
-          <p>{order.pickup.rest_address}</p>
-          <div className="coords-row">
-            <bdi>
-              {order.pickup.latitude}, {order.pickup.longitude}
-            </bdi>
-            <a
-              className="map-link"
-              href={googleMapsUrl(
-                order.pickup.latitude,
-                order.pickup.longitude,
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="فتح نقطة الاستلام على خرائط جوجل"
-              title="فتح على خرائط جوجل"
-            >
-              <MapPin size={13} aria-hidden="true" />
-              الخريطة
-            </a>
-          </div>
-        </section>
-      )}
-      <section className="detail-section">
-        <h3>الطلب</h3>
-        {order.items.map((item) => (
-          <div key={item.order_item_id} className="order-item">
-            <div>
-              <strong>
-                {item.item_name} × {item.quantity}
-              </strong>
-              <bdi>{money(item.subtotal)}</bdi>
+    <div className="order-facts">
+      <section className="order-hero-card">
+        <div className="detail-status">
+          <strong className="order-hero-id">
+            <bdi>#{order.order_id}</bdi>
+          </strong>
+          <Badge status={order.status} />
+        </div>
+        <div className="order-hero-meta">
+          <span className="order-hero-time">
+            <Clock size={12} aria-hidden="true" />
+            {dateTime(order.created_at)}
+          </span>
+          {order.driver_id && (
+            <span className="order-driver-chip">
+              <Truck size={12} aria-hidden="true" />
+              {driverName ?? `السائق #${order.driver_id}`}
+            </span>
+          )}
+        </div>
+        <p className="detail-status-desc">{statusDescriptions[order.status]}</p>
+      </section>
+
+      <section className="order-card order-route-card">
+        <div className="order-route-list">
+          {order.pickup && (
+            <div className="route-stop">
+              <div className="route-rail" aria-hidden="true">
+                <span className="route-dot pickup" />
+                <span className="route-line" />
+              </div>
+              <div className="route-body">
+                <div className="route-top">
+                  <span className="route-label">
+                    <Store size={12} aria-hidden="true" />
+                    الاستلام
+                  </span>
+                  <a
+                    className="map-pill"
+                    href={googleMapsUrl(
+                      order.pickup.latitude,
+                      order.pickup.longitude,
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="فتح نقطة الاستلام على خرائط جوجل"
+                    title="فتح على خرائط جوجل"
+                  >
+                    <MapPin size={12} aria-hidden="true" />
+                    الخريطة
+                  </a>
+                </div>
+                <strong className="route-title">
+                  {order.pickup.rest_title}
+                </strong>
+                <p className="route-address">{order.pickup.rest_address}</p>
+              </div>
             </div>
-            <small>
-              سعر الوحدة: <bdi>{money(item.unit_price)}</bdi>
-            </small>
-            {item.addons.map((addon) => (
-              <small key={addon.order_item_addon_id}>
-                {addon.addon_name} × {addon.quantity} ·{' '}
-                <bdi>{money(addon.subtotal)}</bdi> · سعر الوحدة:{' '}
-                <bdi>{money(addon.unit_price)}</bdi>
-              </small>
-            ))}
+          )}
+
+          <div className="route-stop">
+            <div className="route-rail" aria-hidden="true">
+              <span className="route-dot dropoff" />
+            </div>
+            <div className="route-body">
+              <div className="route-top">
+                <span className="route-label">
+                  <MapPin size={12} aria-hidden="true" />
+                  التوصيل
+                </span>
+                <a
+                  className="map-pill"
+                  href={googleMapsUrl(
+                    order.delivery_latitude,
+                    order.delivery_longitude,
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="فتح عنوان التوصيل على خرائط جوجل"
+                  title="فتح على خرائط جوجل"
+                >
+                  <MapPin size={12} aria-hidden="true" />
+                  الخريطة
+                </a>
+              </div>
+              <p className="route-address route-address-main">
+                {order.customer_address}
+              </p>
+            </div>
           </div>
-        ))}
-      </section>
-      <section className="detail-section">
-        <h3>عنوان التوصيل</h3>
-        <p>{order.customer_address}</p>
-        <div className="coords-row">
-          <bdi>
-            {order.delivery_latitude}, {order.delivery_longitude}
-          </bdi>
-          <a
-            className="map-link"
-            href={googleMapsUrl(
-              order.delivery_latitude,
-              order.delivery_longitude,
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="فتح عنوان التوصيل على خرائط جوجل"
-            title="فتح على خرائط جوجل"
-          >
-            <MapPin size={13} aria-hidden="true" />
-            الخريطة
-          </a>
         </div>
-        {order.notes && <p className="order-note">{order.notes}</p>}
+
+        {order.notes && (
+          <div className="order-note">
+            <MessageSquareText size={14} aria-hidden="true" />
+            <div>
+              <span>ملاحظات العميل</span>
+              <p>{order.notes}</p>
+            </div>
+          </div>
+        )}
       </section>
+
       {actions}
-      <section className="detail-section">
-        <div className="key-value">
-          <span>رسوم التوصيل</span>
-          <bdi>{money(order.delivery_fee)}</bdi>
+
+      <section className="order-card order-receipt-card">
+        <div className="order-card-head">
+          <h3>
+            <ShoppingBag size={14} aria-hidden="true" />
+            الأصناف والفاتورة
+          </h3>
+          <span className="order-count-pill">{itemsLabel}</span>
         </div>
-        <div className="order-total">
-          <strong>الإجمالي</strong>
-          <bdi>{money(order.total_price)}</bdi>
+
+        <div className="order-receipt-list">
+          {order.items.map((item) => (
+            <div key={item.order_item_id} className="order-item">
+              <div className="order-item-main">
+                <strong>
+                  {item.item_name} × {item.quantity}
+                </strong>
+                <bdi className="order-item-price">{money(item.subtotal)}</bdi>
+              </div>
+              <small className="order-item-unit">
+                سعر الوحدة: <bdi>{money(item.unit_price)}</bdi>
+              </small>
+              {item.addons.length > 0 && (
+                <div className="order-addons">
+                  {item.addons.map((addon) => (
+                    <div
+                      key={addon.order_item_addon_id}
+                      className="order-addon-row"
+                    >
+                      <span>
+                        + {addon.addon_name} × {addon.quantity}
+                      </span>
+                      <bdi>{money(addon.subtotal)}</bdi>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-        <small>تاريخ الطلب: {dateTime(order.created_at)}</small>
-        <br />
-        <small>آخر تحديث: {dateTime(order.updated_at)}</small>
-      </section>
-      <section className="detail-section">
-        <h3>مراجع الطلب</h3>
-        {(
-          [
-            ['معرّف العميل', order.customer_id ? '#' + order.customer_id : null],
-            ['معرّف المطعم', order.rest_id ? '#' + order.rest_id : null],
-            ['معرّف الشركة', order.company_id ? '#' + order.company_id : null],
-            [
-              'السائق',
-              order.driver_id
-                ? driverName
-                  ? `${driverName} (#${order.driver_id})`
-                  : '#' + order.driver_id
-                : null,
-            ],
-          ] as const
-        ).map(([label, value]) => (
-          <div className="key-value" key={label}>
-            <span>{label}</span>
-            <bdi>{value ?? 'لم يُسند'}</bdi>
+
+        <div className="order-receipt-summary">
+          <div className="key-value">
+            <span>رسوم التوصيل</span>
+            <bdi>{money(order.delivery_fee)}</bdi>
           </div>
-        ))}
+          <div className="order-total">
+            <strong>{delivery ? 'الإجمالي للتحصيل' : 'الإجمالي'}</strong>
+            <strong>
+              <bdi>{money(order.total_price)}</bdi>
+            </strong>
+          </div>
+        </div>
       </section>
-    </>
+
+      {!delivery && (
+        <footer className="order-meta-footer">
+          <span>آخر تحديث: {dateTime(order.updated_at)}</span>
+          {order.customer_id && (
+            <span>
+              معرّف العميل: <bdi>#{order.customer_id}</bdi>
+            </span>
+          )}
+        </footer>
+      )}
+    </div>
   );
 }
 export function Metrics({
