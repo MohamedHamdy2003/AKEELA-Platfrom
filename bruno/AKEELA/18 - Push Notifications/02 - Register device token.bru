@@ -1,0 +1,23 @@
+meta {
+  name: Register device token
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{base_url}}/me/device-tokens
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "fcm_token": "fcm_example_device_token_0123456789abcdefghijklmnopqrstuvwxyz",
+    "platform": "android",
+    "device_label": "Samsung Galaxy S24"
+  }
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

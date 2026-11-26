@@ -9,6 +9,7 @@ import { DataSource } from 'typeorm';
 import { Environment } from '../../config/environment';
 import { Order } from './entities/order.entity';
 import { OrderEventsGateway } from './order-events.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /** Auto-deliver orders that have been in Picked_Up status for ≥ 90 minutes. */
 @Injectable()
@@ -20,6 +21,7 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly db: DataSource,
     private readonly events: OrderEventsGateway,
+    private readonly notifications: NotificationsService,
     private readonly config: ConfigService<Environment, true>,
   ) {}
 
@@ -90,7 +92,10 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
           if (!updated) continue;
           // Reload fresh order to broadcast correct state
           const fresh = await repo.findOneBy({ order_id: order.order_id });
-          if (fresh) void this.events.notify('order.updated', fresh);
+          if (fresh) {
+            void this.events.notify('order.updated', fresh);
+            void this.notifications.notifyOrderEvent('order.updated', fresh);
+          }
         } catch (err) {
           this.logger.warn(
             `Failed to auto-deliver order ${order.order_id}: ${String(err)}`,

@@ -87,12 +87,17 @@ export class UsersService {
   }
 
   async activeVerifiedRestaurantIds(): Promise<string[]> {
+    return this.activeVerifiedIdsByRole('Restaurant');
+  }
+
+  async activeVerifiedIdsByRole(role: Role): Promise<string[]> {
     const users = await this.dataSource
       .getRepository(User)
       .createQueryBuilder('u')
       .select(['u.user_id'])
       .where(
-        "u.role = 'Restaurant' AND u.is_active = true AND u.email_verified_at IS NOT NULL",
+        'u.role = :role AND u.is_active = true AND u.email_verified_at IS NOT NULL',
+        { role },
       )
       .getMany();
     return users.map((user) => user.user_id);

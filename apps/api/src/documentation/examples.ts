@@ -765,4 +765,21 @@ export const responseExamples: Record<string, unknown> = {
     status: 'ok',
     checked_at: '2026-11-13T12:00:00.000+02:00',
   },
+  DeviceToken: {
+    token_id: '12',
+    platform: 'android',
+    device_label: 'Samsung Galaxy S24',
+    token_preview: 'fcm_exam...uvwxyz',
+    last_seen_at: '2026-11-27T00:00:00.000+02:00',
+    created_at: '2026-11-27T00:00:00.000+02:00',
+    updated_at: '2026-11-27T00:00:00.000+02:00',
+  },
+  NotificationDispatch: {
+    fcm_configured: true,
+    targeted_users: 1,
+    targeted_tokens: 1,
+    sent: 1,
+    failed: 0,
+    pruned_tokens: 0,
+  },
 };

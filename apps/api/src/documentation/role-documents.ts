@@ -46,6 +46,7 @@ const groupOrder = [
   'Orders',
   'Drivers',
   'Images',
+  'Notifications',
   'Health',
 ];
 
@@ -54,6 +55,8 @@ function belongsToRole(path: string, role: SwaggerRole): boolean {
     sharedAuth.has(path) ||
     path === '/api/v1/me' ||
     path === '/api/v1/me/password' ||
+    path === '/api/v1/me/device-tokens' ||
+    path.startsWith('/api/v1/me/device-tokens/') ||
     path.startsWith('/api/v1/health/')
   )
     return true;
@@ -73,6 +76,12 @@ function feature(path: string): string {
   if (path.startsWith('/api/v1/auth/') || path === '/api/v1/me/password')
     return 'Authentication';
   if (path === '/api/v1/me') return 'My Profile';
+  if (
+    path === '/api/v1/me/device-tokens' ||
+    path.startsWith('/api/v1/me/device-tokens/') ||
+    path.includes('/notifications')
+  )
+    return 'Notifications';
   if (path.startsWith('/api/v1/health/')) return 'Health';
   if (path.endsWith('/image') || path.endsWith('/avatar')) return 'Images';
   if (path.includes('/orders')) return 'Orders';

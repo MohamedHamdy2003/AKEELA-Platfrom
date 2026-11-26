@@ -917,4 +917,51 @@ export const operations: OperationDoc[] = [
     status: 200,
     model: 'Health',
   },
+  {
+    method: 'get',
+    path: '/api/v1/me/device-tokens',
+    tag: '18. Push Notifications (FCM)',
+    summary:
+      'List active registered FCM device tokens for the signed-in account.',
+    status: 200,
+    model: 'List<DeviceToken>',
+  },
+  {
+    method: 'put',
+    path: '/api/v1/me/device-tokens',
+    tag: '18. Push Notifications (FCM)',
+    summary:
+      'Register or refresh an FCM device token for the signed-in account and current session.',
+    status: 200,
+    model: 'DeviceToken',
+    bodyExample: {
+      fcm_token:
+        'fcm_example_device_token_0123456789abcdefghijklmnopqrstuvwxyz',
+      platform: 'android',
+      device_label: 'Samsung Galaxy S24',
+    },
+  },
+  {
+    method: 'delete',
+    path: '/api/v1/me/device-tokens/{token_id}',
+    tag: '18. Push Notifications (FCM)',
+    summary: 'Remove an owned registered FCM device token.',
+    status: 200,
+    model: 'Message',
+  },
+  {
+    method: 'post',
+    path: '/api/v1/admin/notifications/send',
+    tag: '18. Push Notifications (FCM)',
+    summary:
+      'Send a custom or test FCM push notification to a target user or role.',
+    status: 200,
+    model: 'NotificationDispatch',
+    bodyExample: {
+      title: 'عرض جديد من أكيلة',
+      body: 'استمتع بخصم 20% على جميع طلبات المشويات اليوم.',
+      role: 'Customer',
+      data: { screen: 'offers' },
+    },
+  },
 ];

@@ -1,0 +1,26 @@
+meta {
+  name: Admin send notification
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/admin/notifications/send
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "عرض جديد من أكيلة",
+    "body": "استمتع بخصم 20% على جميع طلبات المشويات اليوم.",
+    "role": "Customer",
+    "data": {
+      "screen": "offers"
+    }
+  }
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

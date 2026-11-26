@@ -17,6 +17,7 @@ import { AdminOrdersController } from './admin-orders.controller';
 import { DeliveryOrdersController } from './delivery-orders.controller';
 import { Module } from '@nestjs/common';
 import { CartModule } from '../cart/cart.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { OrdersService } from './orders.service';
 import { CustomerOrdersController } from './customer-orders.controller';
 @Module({
@@ -27,6 +28,7 @@ import { CustomerOrdersController } from './customer-orders.controller';
     UsersModule,
     RestaurantsModule,
     DeliveryModule,
+    NotificationsModule,
   ],
   providers: [
     OrdersService,
