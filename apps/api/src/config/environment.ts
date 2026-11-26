@@ -11,6 +11,9 @@ export interface Environment extends AuthEnvironment {
   DATABASE_SSL: boolean;
   CORS_ORIGINS: string[];
   DEFAULT_DELIVERY_COMPANY_ID: string | null;
+  FCM_PROJECT_ID: string | null;
+  FCM_CLIENT_EMAIL: string | null;
+  FCM_PRIVATE_KEY: string | null;
 }
 
 export function validateEnvironment(
@@ -116,6 +119,32 @@ export function validateEnvironment(
       'DEFAULT_DELIVERY_COMPANY_ID must be a positive BIGINT ID or empty.',
     );
   }
+  const fcmProjectId =
+    typeof input.FCM_PROJECT_ID === 'string' ? input.FCM_PROJECT_ID.trim() : '';
+  const fcmClientEmail =
+    typeof input.FCM_CLIENT_EMAIL === 'string'
+      ? input.FCM_CLIENT_EMAIL.trim()
+      : '';
+  const rawFcmPrivateKey =
+    typeof input.FCM_PRIVATE_KEY === 'string'
+      ? input.FCM_PRIVATE_KEY.trim()
+      : '';
+  const fcmPrivateKey = rawFcmPrivateKey.replace(/\\n/g, '\n');
+  const fcmSetCount = [fcmProjectId, fcmClientEmail, fcmPrivateKey].filter(
+    Boolean,
+  ).length;
+  if (fcmSetCount > 0 && fcmSetCount < 3) {
+    throw new Error(
+      'FCM_PROJECT_ID, FCM_CLIENT_EMAIL, and FCM_PRIVATE_KEY must all be set together or all left empty.',
+    );
+  }
+  if (
+    fcmPrivateKey &&
+    !fcmPrivateKey.includes('-----BEGIN PRIVATE KEY-----') &&
+    !fcmPrivateKey.includes('-----BEGIN RSA PRIVATE KEY-----')
+  ) {
+    throw new Error('FCM_PRIVATE_KEY must be a PEM-formatted private key.');
+  }
   return {
     ...validateAuthEnvironment(input),
     NODE_ENV: mode,
@@ -127,5 +156,8 @@ export function validateEnvironment(
     DATABASE_SSL: ssl === 'true',
     CORS_ORIGINS: origins,
     DEFAULT_DELIVERY_COMPANY_ID: companyId || null,
+    FCM_PROJECT_ID: fcmProjectId || null,
+    FCM_CLIENT_EMAIL: fcmClientEmail || null,
+    FCM_PRIVATE_KEY: fcmPrivateKey || null,
   };
 }

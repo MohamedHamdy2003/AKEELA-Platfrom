@@ -115,7 +115,7 @@ before(async () => {
   config = app.get(ConfigService);
   await db.runMigrations({ transaction: 'all' });
   await db.query(
-    'TRUNCATE order_item_addons,order_items,orders,cart_item_addons,cart_items,carts,delivery_drivers,offers,product_addons,addons,products,categories,customer_addresses,auth_sessions,auth_challenges,admin_profiles,delivery_company_profiles,restaurant_profiles,customer_profiles,users RESTART IDENTITY',
+    'TRUNCATE device_tokens, order_item_addons,order_items,orders,cart_item_addons,cart_items,carts,delivery_drivers,offers,product_addons,addons,products,categories,customer_addresses,auth_sessions,auth_challenges,admin_profiles,delivery_company_profiles,restaurant_profiles,customer_profiles,users RESTART IDENTITY',
   );
   const hash = await app.get(AuthCryptoService).hashPassword('TestPassword123');
   for (const [i, role] of [

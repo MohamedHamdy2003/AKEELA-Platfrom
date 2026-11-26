@@ -337,3 +337,20 @@ Implemented with Socket.IO in the existing API process. See [realtime contract](
 | `order.updated` | Re-fetch after a committed status/driver change. | Owning Customer, Restaurant, assigned Delivery_Company, Admin |
 
 JWT goes in handshake auth.token; namespace /orders, transport websocket, path /socket.io. Payload: order_id, status, company_id, driver_id, updated_at only. Re-fetch REST on every connection/event; no replay or delivery guarantee. Expired/revoked sessions cannot receive new updates. Browser apps are integrated; mobile must add the Socket.IO client.
+
+## 18. Push Notifications (FCM)
+
+**Rules**
+
+- Any authenticated active verified user (`Customer`, `Restaurant`, `Delivery_Company`, `Admin`) can register, list, and remove their own FCM device tokens (`android`, `ios`, `web`).
+- Upserting an existing `fcm_token` atomically reassigns it to the signed-in user and current `session_id`. Up to 15 tokens per account; oldest excess tokens are pruned automatically.
+- Tokens bound to a revoked or expired session are excluded from delivery and deleted when sessions are cleaned up. Permanent FCM delivery errors (`UNREGISTERED`, `SENDER_ID_MISMATCH`) automatically prune dead tokens.
+- Order lifecycle commits automatically send best-effort Arabic push notifications via Firebase Cloud Messaging HTTP v1 to relevant active recipients without rolling back or delaying order mutations. See `docs/NOTIFICATIONS.md` for Firebase setup.
+- Admin can send a custom or test push notification targeting either one `user_id` or one `role`.
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/me/device-tokens` | List active registered FCM device tokens for the signed-in account. |
+| PUT | `/me/device-tokens` | Register or refresh an FCM device token for the signed-in account and session. |
+| DELETE | `/me/device-tokens/{token_id}` | Remove an owned registered FCM device token. |
+| POST | `/admin/notifications/send` | Send a custom or test FCM push notification to a target user or role. |

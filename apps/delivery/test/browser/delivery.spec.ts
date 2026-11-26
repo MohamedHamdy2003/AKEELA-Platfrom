@@ -186,9 +186,7 @@ test('delivery executive analytics dashboard displays dispatch radar, fleet metr
     'text-transform',
     'uppercase',
   );
-  await expect(page.locator('.sidebar-partner-name')).toContainText(
-    'شركة أكيلة للتوصيل',
-  );
+  await expect(page.locator('.sidebar-partner')).toHaveCount(0);
   await expect(page.getByText('إيرادات رسوم التوصيل')).toBeVisible();
   await expect(page.getByText('متوسط زمن التوصيل')).toBeVisible();
   await expect(page.getByText('التحصيل النقدي (COD)')).toBeVisible();

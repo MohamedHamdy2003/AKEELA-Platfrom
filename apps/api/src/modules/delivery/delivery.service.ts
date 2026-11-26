@@ -61,6 +61,15 @@ export class DeliveryService {
     return driver.driver_id;
   }
 
+  async profileById(
+    companyId: string,
+    manager = this.dataSource.manager,
+  ): Promise<DeliveryCompanyProfile | null> {
+    return manager
+      .getRepository(DeliveryCompanyProfile)
+      .findOneBy({ company_id: companyId });
+  }
+
   async ownedProfile(userId: string, manager = this.dataSource.manager) {
     const company = await this.profile(userId, manager);
     if (!company)

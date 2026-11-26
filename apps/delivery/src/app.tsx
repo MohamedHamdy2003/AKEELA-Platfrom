@@ -97,8 +97,6 @@ function DeliveryWorkspace() {
     typeof company?.company_name === 'string' && company.company_name.trim()
       ? company.company_name.trim()
       : 'إدارة التوصيل';
-  const companyId =
-    typeof company?.company_id === 'string' ? company.company_id : undefined;
 
   useEffect(() => {
     const routeLabel = navigation.find(([key]) => key === route)?.[1];
@@ -162,8 +160,6 @@ function DeliveryWorkspace() {
       status={status}
       brandIdentity={{
         name: companyName,
-        subtitle: 'شريك التوصيل الرسمي',
-        code: companyId ? `معرّف الشركة #${companyId}` : undefined,
         onClick: () => navigate('profile'),
       }}
       logout={async () => {

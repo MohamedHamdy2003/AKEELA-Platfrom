@@ -3,6 +3,7 @@ import { AuthActor } from '../../common/http/current-actor.decorator';
 import { UsersService } from '../users/users.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 import { DeliveryService } from '../delivery/delivery.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager, In } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
@@ -26,13 +27,17 @@ export class OrdersService {
     private readonly restaurants: RestaurantsService,
     private readonly delivery: DeliveryService,
     private readonly events: OrderEventsGateway,
+    private readonly notifications: NotificationsService,
   ) {}
   private async announce(orderId: string, event: OrderEvent) {
     try {
       const order = await this.db
         .getRepository(Order)
         .findOneBy({ order_id: orderId });
-      if (order) await this.events.notify(event, order);
+      if (order) {
+        await this.events.notify(event, order);
+        void this.notifications.notifyOrderEvent(event, order);
+      }
     } catch {
       this.events.reportFailure();
     }

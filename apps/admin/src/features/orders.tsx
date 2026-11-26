@@ -8,23 +8,26 @@ export function AdminActions({
   order: Order;
   refresh: () => void;
 }) {
+  if (!['Accepted', 'Picked_Up'].includes(order.status)) {
+    return null;
+  }
+
   return (
-    <section className="detail-section">
-      <h3>إجراءات الإدارة</h3>
-      <p className="muted">المطعم يقبل الطلب والشركة تُسند السائق.</p>
-      {['Accepted', 'Picked_Up'].includes(order.status) && (
-        <Confirm
-          label="تسجيل تعثّر الطلب"
-          danger
-          description="سيتم إنهاء الطلب بحالة «متعثر». لا يمكن التراجع عن هذا الإجراء."
-          run={() =>
-            api.request('/admin/orders/' + order.order_id + '/fail', {
-              method: 'POST',
-            })
-          }
-          done={refresh}
-        />
-      )}
+    <section className="order-card order-action-card">
+      <div className="order-card-head">
+        <h3>إجراءات الإدارة</h3>
+      </div>
+      <Confirm
+        label="تسجيل تعثّر الطلب"
+        danger
+        description="سيتم إنهاء الطلب بحالة «متعثر». لا يمكن التراجع عن هذا الإجراء."
+        run={() =>
+          api.request('/admin/orders/' + order.order_id + '/fail', {
+            method: 'POST',
+          })
+        }
+        done={refresh}
+      />
     </section>
   );
 }

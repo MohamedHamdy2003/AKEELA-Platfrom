@@ -728,6 +728,23 @@ export const responseModels: Record<string, SchemaObject> = {
     status: { type: 'string', enum: ['ok'] },
     checked_at: time,
   }),
+  DeviceToken: object({
+    token_id: id,
+    platform: { type: 'string', enum: ['android', 'ios', 'web'] },
+    device_label: { ...text('Optional device name.'), nullable: true },
+    token_preview: text('Masked preview of the registered FCM token.'),
+    last_seen_at: time,
+    created_at: time,
+    updated_at: time,
+  }),
+  NotificationDispatch: object({
+    fcm_configured: bool,
+    targeted_users: integer,
+    targeted_tokens: integer,
+    sent: integer,
+    failed: integer,
+    pruned_tokens: integer,
+  }),
   PaginationMeta: object({
     page: { ...integer, minimum: 1 },
     per_page: { ...integer, minimum: 1, maximum: 100 },

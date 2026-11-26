@@ -1245,3 +1245,39 @@ Implemented with Socket.IO in the existing API process. See [realtime contract](
 | `order.updated` | Re-fetch after a committed status/driver change. | Owning Customer, Restaurant, assigned Delivery_Company, Admin |
 
 JWT goes in handshake auth.token; namespace /orders, transport websocket, path /socket.io. Payload: order_id, status, company_id, driver_id, updated_at only. Re-fetch REST on every connection/event; no replay or delivery guarantee. Expired/revoked sessions cannot receive new updates. Browser apps are integrated; mobile must add the Socket.IO client.
+
+## 18. Push Notifications (FCM)
+
+| Method | Route | Purpose | Request | Response data |
+|---|---|---|---|---|
+| GET | `/me/device-tokens` | List active registered FCM device tokens for the signed-in account. | No body | `200` · List<DeviceToken> |
+| PUT | `/me/device-tokens` | Register or refresh an FCM device token for the signed-in account and session. | Body: `{"fcm_token":"...","platform":"android","device_label":"Samsung Galaxy S24"}` | `200` · DeviceToken |
+| DELETE | `/me/device-tokens/{token_id}` | Remove an owned registered FCM device token. | No body | `200` · Message |
+| POST | `/admin/notifications/send` | Send a custom or test FCM push notification to a target user or role. | Body: `{"title":"...","body":"...","role":"Customer","data":{"screen":"offers"}}` | `200` · NotificationDispatch |
+
+### DeviceToken
+
+```json
+{
+  "token_id": "12",
+  "platform": "android",
+  "device_label": "Samsung Galaxy S24",
+  "token_preview": "fcm_exam...uvwxyz",
+  "last_seen_at": "2026-11-27T00:00:00.000+02:00",
+  "created_at": "2026-11-27T00:00:00.000+02:00",
+  "updated_at": "2026-11-27T00:00:00.000+02:00"
+}
+```
+
+### NotificationDispatch
+
+```json
+{
+  "fcm_configured": true,
+  "targeted_users": 1,
+  "targeted_tokens": 1,
+  "sent": 1,
+  "failed": 0,
+  "pruned_tokens": 0
+}
+```

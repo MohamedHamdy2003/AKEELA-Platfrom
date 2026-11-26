@@ -150,21 +150,23 @@ export function DeliveryActions({
         </fieldset>
       </form>
     );
+  if (!['Accepted', 'Picked_Up'].includes(order.status)) {
+    return null;
+  }
+
   return (
-    <section className="detail-section">
-      <h3>إدارة التوصيل</h3>
+    <section className="order-card order-action-card">
+      <div className="order-card-head">
+        <h3>
+          {order.status === 'Accepted'
+            ? 'إسناد سائق للتوصيل'
+            : 'متابعة التسليم'}
+        </h3>
+      </div>
       {!!error && <Failure error={error} />}
-      {order.status === 'Accepted' && (
-        <>
-          {driverForm}
-          <p className="muted">أَسند سائقًا للطلب لبدء التوصيل.</p>
-        </>
-      )}
+      {order.status === 'Accepted' && driverForm}
       {order.status === 'Picked_Up' && (
-        <>
-          <p>
-            السائق: <bdi>#{order.driver_id}</bdi>
-          </p>
+        <div className="order-action-stack">
           <Confirm
             label="تأكيد تسليم الطلب"
             description="تأكّد أن الطلب تم تسليمه للعميل. هذا الإجراء ينهي الطلب."
@@ -192,10 +194,7 @@ export function DeliveryActions({
               </button>
             )}
           </div>
-        </>
-      )}
-      {!['Accepted', 'Picked_Up'].includes(order.status) && (
-        <p className="muted">لا توجد إجراءات متاحة لهذه الحالة.</p>
+        </div>
       )}
     </section>
   );

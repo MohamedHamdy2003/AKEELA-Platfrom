@@ -1,0 +1,15 @@
+meta {
+  name: List device tokens
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/me/device-tokens
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
+}

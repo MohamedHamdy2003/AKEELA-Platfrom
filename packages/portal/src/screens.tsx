@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ApiClient, ApiError, query } from './api';
 import {
+  deliveryStatuses,
   statuses,
   type Driver,
   type Order,
@@ -145,7 +146,7 @@ export function OrdersBoard({
   const metricItems = delivery
     ? [
         {
-          label: 'الطلبات المقبولة',
+          label: deliveryStatuses.Accepted,
           value: statusCounts?.Accepted ?? null,
           icon: <Clock size={20} />,
           status: 'Accepted' as OrderStatus,
@@ -244,12 +245,14 @@ export function OrdersBoard({
     <DetailWorkspace
       selectedKey={id}
       title="تفاصيل الطلب"
+      titleBadge={id ?? undefined}
       onClose={() => setId(null)}
       details={
         <ResourceState resource={detail} skeleton={<DetailSkeleton />}>
           {detail.result && (
             <OrderFacts
               order={detail.result.data}
+              delivery={delivery}
               driverName={
                 detail.result.data.driver_id
                   ? driverNameById.get(detail.result.data.driver_id)
@@ -283,7 +286,7 @@ export function OrdersBoard({
               <option value="">جميع الحالات</option>
               {availableStatuses.map((value) => (
                 <option value={value} key={value}>
-                  {statuses[value]}
+                  {delivery ? deliveryStatuses[value] : statuses[value]}
                 </option>
               ))}
             </select>
@@ -376,20 +379,15 @@ export function OrdersBoard({
                         </td>
                         <td>{dateTime(order.created_at)}</td>
                         <td>
-                          <Badge status={order.status} />
+                          <Badge status={order.status} delivery={delivery} />
                         </td>
                         {delivery && (
                           <td>
                             {order.driver_id ? (
                               driverName ? (
-                                <span className="cell-stack">
-                                  <strong>{driverName}</strong>
-                                  <small>
-                                    <bdi>#{order.driver_id}</bdi>
-                                  </small>
-                                </span>
+                                <strong>{driverName}</strong>
                               ) : (
-                                <bdi>#{order.driver_id}</bdi>
+                                <bdi>{order.driver_id}</bdi>
                               )
                             ) : (
                               'لم يُسند'
