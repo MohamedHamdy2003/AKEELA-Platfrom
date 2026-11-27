@@ -1,0 +1,32 @@
+meta {
+  name: Global search
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/search?q=شاورما&type=all&limit=10
+  body: none
+  auth: none
+}
+
+params:query {
+  q: شاورما
+  type: all
+  limit: 10
+}
+
+tests {
+  test('Successful global search', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data).to.be.an('object');
+    expect(res.getBody().data.restaurants).to.be.an('array');
+    expect(res.getBody().data.products).to.be.an('array');
+    expect(res.getBody().data.offers).to.be.an('array');
+    expect(res.getBody().data.categories).to.be.an('array');
+  });
+}
+
+docs {
+  Search across active restaurants, products, current offers, and categories. No authentication required.
+}

@@ -6,9 +6,11 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
+import { config as loadEnv } from 'dotenv';
 import { configureApplication } from '../../src/bootstrap';
 import { AuthCryptoService } from '../../src/modules/auth/auth-crypto.service';
 
+loadEnv({ quiet: true });
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 if (!testDatabaseUrl) {
   throw new Error('Set TEST_DATABASE_URL to a dedicated PostgreSQL test DB.');

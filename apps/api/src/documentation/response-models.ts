@@ -745,6 +745,66 @@ export const responseModels: Record<string, SchemaObject> = {
     failed: integer,
     pruned_tokens: integer,
   }),
+  SearchRestaurant: object({
+    ...restaurant,
+    is_open: bool,
+    matched_in: {
+      type: 'array',
+      items: {
+        type: 'string',
+        enum: ['name', 'description', 'category', 'product', 'offer'],
+      },
+      description: 'Signals that matched the search query for this restaurant.',
+    },
+    matching_items_count: integer,
+  }),
+  SearchProduct: object({
+    ...product,
+    cat_title: text('Owning category title.'),
+    rest_id: id,
+    rest_title: text('Owning restaurant display name.'),
+    rest_image_url_mobile: url,
+    is_open: bool,
+  }),
+  SearchOffer: object({
+    ...offer,
+    rest_title: text('Owning restaurant display name.'),
+    rest_image_url_mobile: url,
+    is_open: bool,
+  }),
+  SearchCategory: object({
+    cat_id: id,
+    cat_title: text('Category title.'),
+    display_order: integer,
+    rest_id: id,
+    rest_title: text('Owning restaurant display name.'),
+    rest_image_url_mobile: url,
+    is_open: bool,
+  }),
+  GlobalSearchCounts: object({
+    restaurants: integer,
+    products: integer,
+    offers: integer,
+    categories: integer,
+  }),
+  GlobalSearch: object(
+    {
+      query: text('Original trimmed search query.'),
+      normalized_query: text(
+        'Normalized Arabic/Latin query string used for matching.',
+      ),
+      type: {
+        type: 'string',
+        enum: ['all', 'restaurants', 'products', 'offers', 'categories'],
+      },
+      counts: ref('GlobalSearchCounts'),
+      restaurants: array('SearchRestaurant'),
+      products: array('SearchProduct'),
+      offers: array('SearchOffer'),
+      categories: array('SearchCategory'),
+    },
+    'Grouped public search results across active restaurants, products, active sale-window offers, and categories.',
+  ),
   PaginationMeta: object({
     page: { ...integer, minimum: 1 },
     per_page: { ...integer, minimum: 1, maximum: 100 },

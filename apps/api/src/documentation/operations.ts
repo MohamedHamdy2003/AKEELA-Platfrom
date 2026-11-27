@@ -569,6 +569,15 @@ export const operations: OperationDoc[] = [
   },
   {
     method: 'get',
+    path: '/api/v1/search',
+    tag: '09. Public Restaurant Menu',
+    summary:
+      'Search across active restaurants, products, current offers, and categories with Arabic normalization and typo tolerance.',
+    status: 200,
+    model: 'GlobalSearch',
+  },
+  {
+    method: 'get',
     path: '/api/v1/delivery-company/profile',
     tag: '10. Delivery Company and Drivers',
     summary: "Read the company's own profile.",

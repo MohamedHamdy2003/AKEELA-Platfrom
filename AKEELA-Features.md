@@ -187,6 +187,7 @@ Features 01-17 are implemented. Docker/Caddy and CI/CD are deployed on Hostinger
 | GET | `/restaurants/{rest_id}/products/{prod_id}` | Read a product and its allowed active addons. |
 | GET | `/restaurants/{rest_id}/offers` | Browse offers available for sale. |
 | GET | `/restaurants/{rest_id}/offers/{offer_id}` | Read an available offer. |
+| GET | `/search` | Search active restaurants, products, current offers, and categories. |
 
 ## 10. Delivery Company and Drivers
 

@@ -35,6 +35,7 @@ const groupOrder = [
   'Addresses',
   'Users',
   'Restaurants',
+  'Search',
   'Restaurant Profile',
   'Company Profile',
   'Categories',
@@ -64,7 +65,8 @@ function belongsToRole(path: string, role: SwaggerRole): boolean {
     role.slug === 'customer' &&
     (path === '/api/v1/auth/register' ||
       path === '/api/v1/restaurants' ||
-      path.startsWith('/api/v1/restaurants/'))
+      path.startsWith('/api/v1/restaurants/') ||
+      path === '/api/v1/search')
   )
     return true;
   if (role.slug === 'restaurant' && path === '/api/v1/auth/register/restaurant')
@@ -82,6 +84,7 @@ function feature(path: string): string {
     path.includes('/notifications')
   )
     return 'Notifications';
+  if (path === '/api/v1/search') return 'Search';
   if (path.startsWith('/api/v1/health/')) return 'Health';
   if (path.endsWith('/image') || path.endsWith('/avatar')) return 'Images';
   if (path.includes('/orders')) return 'Orders';
