@@ -67,7 +67,7 @@ export function OrdersBoard({
   delivery?: boolean;
   initialStatus?: string;
   onInitialStatusConsumed?: () => void;
-  actions: (order: Order, refresh: () => void) => ReactNode;
+  actions: (order: Order, refresh: () => void, driver?: Driver) => ReactNode;
   dateFields?: (
     value: OrderDateFilters,
     change: (value: OrderDateFilters) => void,
@@ -124,10 +124,10 @@ export function OrdersBoard({
       delivery ? '/delivery-company/drivers?per_page=100' : null,
       revision + tick,
     );
-  const driverNameById = useMemo(() => {
-    const map = new Map<string, string>();
+  const driverById = useMemo(() => {
+    const map = new Map<string, Driver>();
     for (const driver of driversDirectory.result?.data ?? []) {
-      map.set(driver.driver_id, driver.driver_name);
+      map.set(driver.driver_id, driver);
     }
     return map;
   }, [driversDirectory.result]);
@@ -249,18 +249,20 @@ export function OrdersBoard({
       onClose={() => setId(null)}
       details={
         <ResourceState resource={detail} skeleton={<DetailSkeleton />}>
-          {detail.result && (
-            <OrderFacts
-              order={detail.result.data}
-              delivery={delivery}
-              driverName={
-                detail.result.data.driver_id
-                  ? driverNameById.get(detail.result.data.driver_id)
-                  : undefined
-              }
-              actions={actions(detail.result.data, refresh)}
-            />
-          )}
+          {detail.result &&
+            (() => {
+              const assignedDriver = detail.result.data.driver_id
+                ? driverById.get(detail.result.data.driver_id)
+                : undefined;
+              return (
+                <OrderFacts
+                  order={detail.result.data}
+                  delivery={delivery}
+                  driverName={assignedDriver?.driver_name}
+                  actions={actions(detail.result.data, refresh, assignedDriver)}
+                />
+              );
+            })()}
         </ResourceState>
       }
     >
@@ -365,7 +367,7 @@ export function OrdersBoard({
                 <tbody>
                   {list.result?.data.map((order) => {
                     const driverName = order.driver_id
-                      ? driverNameById.get(order.driver_id)
+                      ? driverById.get(order.driver_id)?.driver_name
                       : undefined;
                     return (
                       <tr

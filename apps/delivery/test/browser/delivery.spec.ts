@@ -32,6 +32,21 @@ test('dispatcher assigns, picks up and delivers, then sees live changes', async 
   await expect(
     page.getByRole('button', { name: 'تأكيد تسليم الطلب', exact: true }),
   ).toBeVisible();
+  const whatsappLink = page.getByRole('link', {
+    name: 'إرسال التفاصيل للسائق عبر واتساب',
+    exact: true,
+  });
+  await expect(whatsappLink).toBeVisible();
+  const whatsappHref = await whatsappLink.getAttribute('href');
+  expect(whatsappHref).toMatch(/^https:\/\/wa\.me\/201000000011\?text=/);
+  const decodedWhatsapp = decodeURIComponent(
+    whatsappHref!.split('?text=')[1] ?? '',
+  );
+  expect(decodedWhatsapp).toContain('1248');
+  expect(decodedWhatsapp).toContain('مطعم بيت الشواية');
+  expect(decodedWhatsapp).toContain('شارع الجمهورية، الإسماعيلية');
+  expect(decodedWhatsapp).toContain('الاتصال عند الوصول');
+  expect(decodedWhatsapp).toContain('240.00 EGP');
   await expect(page.getByLabel('السائق', { exact: true })).toHaveCount(0);
   await page
     .getByRole('button', { name: 'تأكيد تسليم الطلب', exact: true })

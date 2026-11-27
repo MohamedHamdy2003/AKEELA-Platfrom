@@ -192,10 +192,11 @@ function DeliveryWorkspace() {
           dateFields={(value, change) => (
             <ArabicDateFields value={value} change={change} />
           )}
-          actions={(order, refresh) => (
+          actions={(order, refresh, driver) => (
             <DeliveryActions
               key={order.order_id}
               order={order}
+              driver={driver}
               refresh={refresh}
             />
           )}
