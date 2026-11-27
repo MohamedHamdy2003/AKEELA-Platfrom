@@ -73,6 +73,8 @@ The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery`
 4. Update implementation status and checks. All unimplemented features must remain labeled as planned.
 5. Run `npm run docs:check`; keep endpoint method/path inventories aligned in the two API documents.
 
+- [Global mobile search](SEARCH.md): `GET /api/v1/search` parameters, all response/error examples, Arabic normalization, and mobile integration tips.
+- [Push notifications (FCM)](NOTIFICATIONS.md): Firebase HTTP v1 configuration, device token registration, and order push triggers.
 - [Realtime orders](REALTIME.md): Socket.IO connection, permissions, payload and REST recovery.
 - [Admin/Delivery design](PORTAL-DESIGN.md): identity, shared components and checks.
 
