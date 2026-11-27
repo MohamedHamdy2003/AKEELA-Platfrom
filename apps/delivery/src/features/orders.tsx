@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Check, Copy, MessageCircle } from 'lucide-react';
 
 import type { Order, Driver } from '@akeela/portal/models';
 import { Confirm, Failure, Field, Loading } from '@akeela/portal/ui';
 import { api } from '../lib/api';
+import {
+  buildDriverOrderWhatsAppMessage,
+  buildDriverOrderWhatsAppUrl,
+} from '../lib/whatsapp';
 
 function useAllActiveDrivers(enabled: boolean) {
   const [data, setData] = useState<Driver[] | null>(null);
@@ -50,13 +55,20 @@ function useAllActiveDrivers(enabled: boolean) {
 
 export function DeliveryActions({
   order,
+  driver: assignedDriverProp,
   refresh,
 }: {
   order: Order;
+  driver?: Driver;
   refresh: () => void;
 }) {
   const [driver, setDriver] = useState(order.driver_id ?? ''),
     [changingDriver, setChangingDriver] = useState(false),
+    [justAssigned, setJustAssigned] = useState(false),
+    [assignedDriverCache, setAssignedDriverCache] = useState<Driver | null>(
+      null,
+    ),
+    [copied, setCopied] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState<unknown>(null);
 
@@ -65,8 +77,17 @@ export function DeliveryActions({
   }, [order.driver_id]);
 
   useEffect(() => {
-    if (order.status !== 'Picked_Up') setChangingDriver(false);
+    if (order.status !== 'Picked_Up') {
+      setChangingDriver(false);
+      setJustAssigned(false);
+    }
   }, [order.status]);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
 
   const showDriverForm =
     order.status === 'Accepted' ||
@@ -74,22 +95,44 @@ export function DeliveryActions({
   const drivers = useAllActiveDrivers(showDriverForm);
   const activeDrivers = drivers.data ?? [];
 
+  const resolvedDriver =
+    assignedDriverProp ??
+    (assignedDriverCache?.driver_id === order.driver_id
+      ? assignedDriverCache
+      : undefined) ??
+    activeDrivers.find((item) => item.driver_id === order.driver_id);
+
+  const whatsappUrl = buildDriverOrderWhatsAppUrl(order, resolvedDriver);
+  const whatsappText = buildDriverOrderWhatsAppMessage(order, resolvedDriver);
+
   const assign = async (event: FormEvent) => {
     event.preventDefault();
     if (busy || !driver) return;
     setBusy(true);
     setError(null);
     try {
+      const picked = activeDrivers.find((item) => item.driver_id === driver);
       await api.request(
         '/delivery-company/orders/' + order.order_id + '/driver',
         { method: 'PUT', body: { driver_id: driver } },
       );
+      if (picked) setAssignedDriverCache(picked);
       setChangingDriver(false);
+      setJustAssigned(true);
       refresh();
     } catch (cause) {
       setError(cause);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const copyMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(whatsappText);
+      setCopied(true);
+    } catch {
+      setCopied(false);
     }
   };
   const driverForm =
@@ -167,6 +210,42 @@ export function DeliveryActions({
       {order.status === 'Accepted' && driverForm}
       {order.status === 'Picked_Up' && (
         <div className="order-action-stack">
+          {justAssigned && (
+            <p className="whatsapp-ready-hint" role="status">
+              تم إسناد الطلب للسائق. أرسل تفاصيل التوصيل عبر واتساب الآن.
+            </p>
+          )}
+          <div className="whatsapp-dispatch-row">
+            {whatsappUrl ? (
+              <a
+                className="button whatsapp full"
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle size={16} aria-hidden="true" />
+                إرسال التفاصيل للسائق عبر واتساب
+              </a>
+            ) : (
+              <button type="button" className="button whatsapp full" disabled>
+                <MessageCircle size={16} aria-hidden="true" />
+                رقم واتساب السائق غير متاح
+              </button>
+            )}
+            <button
+              type="button"
+              className="button icon-copy-btn"
+              aria-label={copied ? 'تم نسخ تفاصيل الطلب' : 'نسخ تفاصيل الطلب'}
+              title={copied ? 'تم النسخ' : 'نسخ نص الرسالة'}
+              onClick={() => void copyMessage()}
+            >
+              {copied ? (
+                <Check size={15} aria-hidden="true" />
+              ) : (
+                <Copy size={15} aria-hidden="true" />
+              )}
+            </button>
+          </div>
           <Confirm
             label="تأكيد تسليم الطلب"
             description="تأكّد أن الطلب تم تسليمه للعميل. هذا الإجراء ينهي الطلب."
