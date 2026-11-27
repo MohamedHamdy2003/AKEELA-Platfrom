@@ -86,7 +86,7 @@ test('OpenAPI describes every real REST route with validated schemas, inputs, au
           .map((method) => `${method} ${path}`),
       )
       .sort();
-    assert.equal(found.length, 94);
+    assert.equal(found.length, 95);
     assert.deepEqual(
       found,
       operations.map((o) => `${o.method} ${o.path}`).sort(),
@@ -331,7 +331,7 @@ test('four role references include only role routes, usable feature tags and rea
     const original = JSON.stringify(source);
     const union = new Set<string>();
     const expectedCounts = {
-      customer: 39,
+      customer: 40,
       restaurant: 45,
       admin: 28,
       'delivery-company': 27,
@@ -381,6 +381,7 @@ test('four role references include only role routes, usable feature tags and rea
         !!doc.paths['/api/v1/restaurants'],
         role.slug === 'customer',
       );
+      assert.equal(!!doc.paths['/api/v1/search'], role.slug === 'customer');
       assert.equal(
         !!doc.paths['/api/v1/restaurant/products'],
         role.slug === 'restaurant',
@@ -437,7 +438,7 @@ test('four role references include only role routes, usable feature tags and rea
           ['Product Addons'],
         );
     }
-    assert.equal(union.size, 94);
+    assert.equal(union.size, 95);
     assert.equal(
       JSON.stringify(source),
       original,

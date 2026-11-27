@@ -187,6 +187,7 @@ Product-addon PUT returns `200` for both a new link and an update. Linking an un
 | GET | `/restaurants/{rest_id}/products/{prod_id}` | Read a product and its allowed active addons. | No body | `200` · PublicProductDetails |
 | GET | `/restaurants/{rest_id}/offers` | Browse offers available for sale. | Query: `page=1&per_page=20` | `200` · List<PublicOffer> |
 | GET | `/restaurants/{rest_id}/offers/{offer_id}` | Read an available offer. | No body | `200` · PublicOffer |
+| GET | `/search` | Search active restaurants, products, current offers, and categories with Arabic normalization and typo tolerance. | Query: `q=شاورما&type=all&limit=10&open_only=false` | `200` · GlobalSearch |
 
 ## 10. Delivery Company and Drivers
 

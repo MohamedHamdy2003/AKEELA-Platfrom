@@ -23,6 +23,7 @@ import {
   ListAddonsQuery,
   ListOffersQuery,
 } from '../modules/catalog/catalog.dto';
+import { GlobalSearchQuery } from '../modules/catalog/search.dto';
 import { ListDriversQuery } from '../modules/delivery/delivery.dto';
 import {
   AdminAnalyticsQuery,
@@ -83,6 +84,7 @@ function isPublic(doc: OperationDoc): boolean {
   return (
     (doc.path.startsWith('/api/v1/auth/') && !doc.path.endsWith('/logout')) ||
     doc.path.startsWith('/api/v1/restaurants') ||
+    doc.path === '/api/v1/search' ||
     doc.path.startsWith('/api/v1/health/')
   );
 }
@@ -451,6 +453,7 @@ export function createApiDocument(app: INestApplication): OpenAPIObject {
       ListRestaurantProductsQuery,
       ListAddonsQuery,
       ListOffersQuery,
+      GlobalSearchQuery,
       ListDriversQuery,
       ListOrdersQuery,
       OperationalOrdersQuery,
