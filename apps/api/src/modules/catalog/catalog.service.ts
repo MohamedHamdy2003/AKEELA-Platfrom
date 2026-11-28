@@ -196,12 +196,14 @@ export class CatalogService {
       const item = product
         ? {
             name: product.prod_name,
+            image_url: product.prod_image_url ?? null,
             price: product.price,
             is_available: product.is_active && Boolean(category?.is_active),
           }
         : offer
           ? {
               name: offer.offer_title,
+              image_url: offer.offer_image_url ?? null,
               price: offer.real_price,
               is_available:
                 offer.is_active &&

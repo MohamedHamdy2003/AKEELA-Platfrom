@@ -163,6 +163,9 @@ test('Features 11 and 12: cart and checkout with actual PostgreSQL', async (t) =
       .set('Authorization', auth())
       .expect(200);
     assert.equal(empty.body.data.cart_id, null);
+    assert.equal(empty.body.data.rest_id, null);
+    assert.equal(empty.body.data.rest_title, null);
+    assert.equal(empty.body.data.rest_image_url_mobile, null);
     await add(0).expect(422);
     await api()
       .post('/api/v1/customer/orders')
@@ -231,7 +234,100 @@ test('Features 11 and 12: cart and checkout with actual PostgreSQL', async (t) =
         .send({ quantity: 0 })
         .expect(200);
       assert.equal(clearedByZero.body.data.cart_id, null);
+      assert.equal(clearedByZero.body.data.rest_title, null);
+      assert.equal(clearedByZero.body.data.rest_image_url_mobile, null);
       assert.deepEqual(clearedByZero.body.data.items, []);
+    },
+  );
+  await t.test(
+    'cart and quote expose live restaurant metadata and product/offer item images',
+    async () => {
+      const restImg = 'http://localhost:3000/images/rest-logo.webp';
+      const prodImg = 'http://localhost:3000/images/burger.webp';
+      const offerImg = 'http://localhost:3000/images/combo.webp';
+      await db.query(
+        'UPDATE restaurant_profiles SET rest_image_url_mobile=$1 WHERE rest_id=$2',
+        [restImg, restId],
+      );
+      await db.query('UPDATE products SET prod_image_url=$1 WHERE prod_id=$2', [
+        prodImg,
+        prodId,
+      ]);
+      await db.query('UPDATE offers SET offer_image_url=$1 WHERE offer_id=$2', [
+        offerImg,
+        offerId,
+      ]);
+      try {
+        const addedProd = await add(1, []).expect(201);
+        assert.equal(addedProd.body.data.rest_title, 'Test Kitchen');
+        assert.equal(addedProd.body.data.rest_image_url_mobile, restImg);
+        assert.equal(addedProd.body.data.items[0].item_image_url, prodImg);
+
+        const addedOffer = await api()
+          .post('/api/v1/customer/cart/items')
+          .set('Authorization', auth())
+          .send({ rest_id: restId, offer_id: offerId, quantity: 1 })
+          .expect(201);
+        assert.equal(addedOffer.body.data.items.length, 2);
+        const prodLine = addedOffer.body.data.items.find(
+          (i: { prod_id: string | null }) => i.prod_id === prodId,
+        );
+        const offerLine = addedOffer.body.data.items.find(
+          (i: { offer_id: string | null }) => i.offer_id === offerId,
+        );
+        assert.equal(prodLine.item_image_url, prodImg);
+        assert.equal(offerLine.item_image_url, offerImg);
+
+        const quoteWithImages = await api()
+          .post('/api/v1/customer/cart/quote')
+          .set('Authorization', auth())
+          .send({ address_id: savedId })
+          .expect(200);
+        assert.equal(quoteWithImages.body.data.cart.rest_title, 'Test Kitchen');
+        assert.equal(
+          quoteWithImages.body.data.cart.rest_image_url_mobile,
+          restImg,
+        );
+        assert.equal(
+          quoteWithImages.body.data.cart.items[0].item_image_url,
+          prodImg,
+        );
+        assert.equal(
+          quoteWithImages.body.data.cart.items[1].item_image_url,
+          offerImg,
+        );
+
+        await db.query(
+          'UPDATE products SET prod_image_url=NULL WHERE prod_id=$1',
+          [prodId],
+        );
+        const refreshed = await api()
+          .get('/api/v1/customer/cart')
+          .set('Authorization', auth())
+          .expect(200);
+        assert.equal(refreshed.body.data.items[0].item_image_url, null);
+        assert.equal(refreshed.body.data.items[1].item_image_url, offerImg);
+
+        const cleared = await api()
+          .delete('/api/v1/customer/cart')
+          .set('Authorization', auth())
+          .expect(200);
+        assert.equal(cleared.body.data.rest_title, null);
+        assert.equal(cleared.body.data.rest_image_url_mobile, null);
+      } finally {
+        await db.query(
+          'UPDATE restaurant_profiles SET rest_image_url_mobile=NULL WHERE rest_id=$1',
+          [restId],
+        );
+        await db.query(
+          'UPDATE products SET prod_image_url=NULL WHERE prod_id=$1',
+          [prodId],
+        );
+        await db.query(
+          'UPDATE offers SET offer_image_url=NULL WHERE offer_id=$1',
+          [offerId],
+        );
+      }
     },
   );
   await t.test(
