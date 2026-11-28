@@ -26,10 +26,4 @@ export interface CartView {
   subtotal: string;
   updated_at: string | null;
 }
-export interface AddressSnapshot {
-  address_line: string;
-  longitude: string;
-  latitude: string;
-}
-export const CURRENCY = 'EGP';
 export const GENERAL_DELIVERY_FEE = '30.00';

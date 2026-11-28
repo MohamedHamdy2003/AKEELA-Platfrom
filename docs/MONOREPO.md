@@ -9,10 +9,12 @@ AKEELA/
     restaurant/            # React/Vite client; restaurant.akeelaonline.tech
     admin/                 # implemented; admin.akeelaonline.tech
     delivery/              # implemented; delivery.akeelaonline.tech
-  packages/brand/          # shared brand tokens and assets
-  docs/                    # architecture and frontend design guides
-  bruno/AKEELA/            # existing API collection
-  deploy/                  # Caddy, server/release scripts and templates
+  packages/
+    brand/                 # shared brand tokens, forms/sidebar CSS, and assets
+    portal/                # shared HTTP/session/realtime/dialog/portal helpers
+  docs/                    # architecture, API, and frontend guides
+  bruno/AKEELA/            # maintained API collection
+  deploy/                  # Caddy and VPS/release scripts
   scripts/                 # repository checks, setup and smoke testing
   .github/workflows/       # CI and approved main releases
   package.json             # private npm workspace root and command shortcuts
@@ -35,27 +37,15 @@ AKEELA/
 
 ## Checks and releases
 
-- `npm run check` runs repository lint/format/docs/Bruno/tool tests, API typecheck/unit/build and Restaurant lint/types/unit/build. Restaurant browser flows run with `npm run test:e2e --workspace @akeela/restaurant`. `npm run test:integration` runs the real PostgreSQL/Mailpit suite.
-- CI always checks repository quality and audits production dependencies. API integration and Docker smoke run when `apps/api`, shared manifests/tooling, deployment files or unclassified paths change. Frontend/docs-only changes skip that API build path. Missing Git history runs the API checks conservatively.
-- Main releases publish/deploy the API only when that path is affected. Image package naming remains compatible with existing GHCR releases. Deployment still needs explicit server configuration and DEPLOY_ENABLED.
-- The consolidated CI/release workflows verify all three frontend workspaces and publish four images from one commit. Each app has its own check, browser tests and static Docker image.
-- Feature PRs target dev; pushing, merging and main promotion follow the current owner's explicit instruction and GitHub flow.
+- `npm run check` runs `check:repo` (ESLint, Prettier, docs, Bruno, tool tests), `check:api` (typecheck, unit tests, NestJS build), and `check:restaurant`, `check:admin`, and `check:delivery`. Browser flows run via `npm run test:e2e --workspace @akeela/<app>`; `npm run test:integration` runs the real PostgreSQL/Mailpit suite.
+- CI checks repository quality, audits runtime dependencies, tests affected workspaces, runs Playwright E2E, and verifies the Docker/Caddy production smoke stack.
+- Consolidated `main` releases verify and publish all four GHCR images (`api`, `-admin`, `-restaurant`, `-delivery`) from one commit and deploy immutable digests when `DEPLOY_ENABLED=true`.
+- Feature PRs target `dev`; pushing, merging, and `main` promotion follow the current owner's explicit instruction and [GITHUB-FLOW.md](GITHUB-FLOW.md).
 
 ## Docker and Caddy
 
-- Build context is the repository root; API Dockerfile is `apps/api/Dockerfile`. Docker copies only the API/manifests and installs production workspace dependencies for runtime. It never copies private environment files or future frontend code.
-- Production Compose runs prebuilt images and never builds on the VPS. API, database, image and Caddy volume identities remain stable across this move.
-- Caddy explicitly serves API/admin/vendor/delivery hostnames, with same-origin HTTP/socket proxies and public images. The old sites-enabled/templates files are not imported; see DEPLOYMENT.md.
-- `deploy/templates/frontends.caddy` reserves the three domain configurations with explicit 503 responses only. It is validated but not imported or deployed as a frontend. Once an application and DNS are ready, enable only its tested site; replace its response with a static-file or reverse-proxy configuration appropriate to the chosen framework.
-- ADMIN_DOMAIN, VENDOR_DOMAIN and DELIVERY_DOMAIN are configurable. API CORS uses the exact three origins from `.env.production.example`; change the allowlist with the real origins. Domain variables alone do not configure DNS or change CORS.
-- Restaurant builds static assets in apps/restaurant/dist and its Docker image serves port 8080. It is not enabled in production Compose/Caddy. Actual Hostinger provisioning, public TLS and frontend deployment remain pending; backups remain deferred.
+- Build context is the repository root with per-app Dockerfiles (`apps/<app>/Dockerfile`). Production Compose runs prebuilt GHCR images and never builds on the VPS.
+- Caddy (`deploy/Caddyfile`, `deploy/routes.caddy`, `deploy/frontend-routes.caddy`) serves `api`, `admin`, `restaurant`, and `delivery` under `akeelaonline.tech`, with same-origin `/api/*` and `/socket.io/*` proxies and public `/images/*`.
+- `ADMIN_DOMAIN`, `VENDOR_DOMAIN` (value `restaurant.akeelaonline.tech`), and `DELIVERY_DOMAIN` are configured in `/opt/akeela/.env.production`; `CORS_ORIGINS` must list the exact three frontend HTTPS origins. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 References: [npm workspaces](https://docs.npmjs.com/cli/v11/using-npm/workspaces/), [Docker build context](https://docs.docker.com/build/concepts/context/), [Caddy imports](https://caddyserver.com/docs/caddyfile/directives/import).
-
-## Dashboards, realtime and deployment — 2026-11-18
-
-Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and tab-scoped sessionStorage sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant shares the realtime, session-storage, bootstrap and logout-confirmation helpers while keeping its own HTTP client and remaining UI. Root check and consolidated CI cover all workspaces.
-
-Socket.IO runs inside the single API process. Events invalidate authorized REST reads after order commits; no schema, microservice, Redis or durable event log is added. See [REALTIME](REALTIME.md) and [portal design](PORTAL-DESIGN.md).
-
-The owner purchased Hostinger KVM 2 at 2.25.12.243, France. SSH confirmed Ubuntu 26.04.1 LTS. Domain: akeelaonline.tech; API/admin/vendor/delivery subdomains. Production Compose includes all services plus one-off migrations and idempotent Admin initialization. Existing Admin values are never reset. See [DEPLOYMENT](DEPLOYMENT.md).

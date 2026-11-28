@@ -149,16 +149,29 @@ export class FcmHttpV1Transport {
       },
     };
 
-    try {
-      const response = await this.httpFetch(endpoint, {
+    const postMessage = async (bearerToken: string) =>
+      this.httpFetch(endpoint, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${bearerToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(10_000),
       });
+
+    try {
+      let response = await postMessage(token);
+      if (response.status === 401) {
+        // Clear cached Google OAuth token and retry once in case of early revocation or clock skew.
+        this.cachedToken = null;
+        try {
+          token = await this.accessToken();
+          response = await postMessage(token);
+        } catch {
+          return { ok: false, errorCode: 'OAUTH_ERROR' };
+        }
+      }
 
       const body = (await response.json().catch(() => null)) as {
         name?: string;

@@ -1,7 +1,7 @@
 # AKEELA Delivery Company Application
 
 Frontend design scope for **delivery.akeelaonline.tech**. Login role: `Delivery_Company`.
-This application is implemented for the company/dispatcher, not drivers. Production rollout requires DNS/private configuration and verification.
+This application is implemented and live on `https://delivery.akeelaonline.tech` for the company/dispatcher, not drivers.
 
 ## Read First
 
@@ -103,8 +103,7 @@ API paths omit `/api/v1`. Configure the full API base URL; the production API do
 - Read paginated `data` and `meta`. Keep IDs, coordinates and money as strings. Display EGP and Africa/Cairo time; do not turn current-page sums into company earnings reports.
 - JWT access uses Authorization; refresh currently uses JSON tokens. Keep tokens in tab-scoped sessionStorage, coordinate refreshes and avoid retry loops. Reload checks /me before restoring login; see [AUTH](../AUTH.md). No remember-me across browser sessions is implemented. No shared-subdomain SSO or browser-exposed secrets are assumed.
 - OTP actions respect cooldown/expiry/errors; recovery messaging stays generic. Socket.IO notifications invalidate order REST reads; reconnect also refreshes. See [realtime](../REALTIME.md).
-- Build order: auth → company profile → drivers → assigned orders/details → assignment → pickup/delivery → history/account/security → responsive/error checks.
-- Implemented stack: React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
+- Implemented stack: React/Vite/TypeScript, Arabic RTL, HTML5 path routing, and tab-scoped sessionStorage sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
 - Out of scope: driver accounts, live GPS tracking, automated driver payouts, delivery-fee settings, multiple-company routing, and online payment settlements.
 
 Monorepo location: `apps/delivery`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).

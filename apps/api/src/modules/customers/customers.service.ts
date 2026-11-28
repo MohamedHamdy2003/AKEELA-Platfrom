@@ -118,12 +118,7 @@ export class CustomersService {
     dto: CreateAddressDto,
   ): Promise<AddressResponse> {
     return this.dataSource.transaction(async (manager) => {
-      await manager
-        .getRepository(CustomerProfile)
-        .createQueryBuilder('customer')
-        .where('customer.user_id = :userId', { userId })
-        .setLock('pessimistic_write')
-        .getOneOrFail();
+      await this.lockForCart(userId, manager);
       const repo = manager.getRepository(CustomerAddress);
 
       const count = await repo.countBy({ user_id: userId });
@@ -168,12 +163,7 @@ export class CustomersService {
     }
 
     return this.dataSource.transaction(async (manager) => {
-      await manager
-        .getRepository(CustomerProfile)
-        .createQueryBuilder('customer')
-        .where('customer.user_id = :userId', { userId })
-        .setLock('pessimistic_write')
-        .getOneOrFail();
+      await this.lockForCart(userId, manager);
       const repo = manager.getRepository(CustomerAddress);
       const address = await repo.findOneBy({
         address_id: addressId,
@@ -221,12 +211,7 @@ export class CustomersService {
     }
 
     return this.dataSource.transaction(async (manager) => {
-      await manager
-        .getRepository(CustomerProfile)
-        .createQueryBuilder('customer')
-        .where('customer.user_id = :userId', { userId })
-        .setLock('pessimistic_write')
-        .getOneOrFail();
+      await this.lockForCart(userId, manager);
       const repo = manager.getRepository(CustomerAddress);
       const address = await repo.findOneBy({
         address_id: addressId,
@@ -252,16 +237,12 @@ export class CustomersService {
       throw new ApiError(404, 'NOT_FOUND', 'Address not found.');
     }
 
-    const repo = this.dataSource.getRepository(CustomerAddress);
-    const address = await repo.findOneBy({
-      address_id: addressId,
-      user_id: userId,
-    });
+    const result = await this.dataSource
+      .getRepository(CustomerAddress)
+      .delete({ address_id: addressId, user_id: userId });
 
-    if (!address) {
+    if (!result.affected) {
       throw new ApiError(404, 'NOT_FOUND', 'Address not found.');
     }
-
-    await repo.delete({ address_id: addressId, user_id: userId });
   }
 }

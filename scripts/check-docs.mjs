@@ -41,7 +41,6 @@ const documents = [
   'apps/admin/README.md',
   'apps/restaurant/README.md',
   'apps/delivery/README.md',
-  'deploy/sites-enabled/README.md',
 ];
 for (const file of documents) {
   const text = await read(file);

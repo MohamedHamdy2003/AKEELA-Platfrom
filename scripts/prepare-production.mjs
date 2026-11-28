@@ -1,4 +1,10 @@
-import { chmodSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -47,10 +53,17 @@ try {
     'ADMIN_DOMAIN',
     'VENDOR_DOMAIN',
     'DELIVERY_DOMAIN',
+    'CORS_ORIGINS',
   ];
   const missing = required.filter((key) => !values[key]?.trim());
   if (missing.length)
     throw new Error('Fill private fields: ' + missing.join(', '));
+  if (
+    ['localhost', '127.0.0.1', '::1'].includes(
+      values.SMTP_HOST.trim().toLowerCase(),
+    )
+  )
+    throw new Error('Production SMTP_HOST cannot point to localhost.');
   if (
     !isEmail(values.ADMIN_EMAIL) ||
     !isEmail(values.ACME_EMAIL) ||
@@ -74,19 +87,47 @@ try {
   ])
     if (!/^[a-zA-Z0-9.-]+$/.test(values[domain]))
       throw new Error('Invalid public domain field: ' + domain);
+  const corsList = values.CORS_ORIGINS.split(',').map((o) => o.trim());
+  for (const domainKey of [
+    'ADMIN_DOMAIN',
+    'VENDOR_DOMAIN',
+    'DELIVERY_DOMAIN',
+  ]) {
+    const expectedOrigin = `https://${values[domainKey]}`;
+    if (!corsList.includes(expectedOrigin))
+      throw new Error(`CORS_ORIGINS must include ${expectedOrigin}.`);
+  }
+  const fcmValues = [
+    values.FCM_PROJECT_ID?.trim(),
+    values.FCM_CLIENT_EMAIL?.trim(),
+    values.FCM_PRIVATE_KEY?.trim(),
+  ].filter(Boolean);
+  if (fcmValues.length > 0 && fcmValues.length < 3)
+    throw new Error(
+      'Set all three FCM_PROJECT_ID, FCM_CLIENT_EMAIL, and FCM_PRIVATE_KEY together, or leave all blank.',
+    );
   const database = new URL(values.DATABASE_URL);
   if (
+    !['postgresql:', 'postgres:'].includes(database.protocol) ||
     database.hostname !== 'postgres' ||
+    decodeURIComponent(database.username) !== 'akeela' ||
+    database.pathname !== '/akeela' ||
+    database.search ||
+    database.hash ||
     decodeURIComponent(database.password) !== values.POSTGRES_PASSWORD
   )
     throw new Error('Production database credentials/hostname do not match.');
   if (Object.values(values).some((value) => /[\r\n\0]/.test(value)))
     throw new Error('Environment fields must be single-line values.');
-  // Compose single quotes prevent $ expansion. Escape apostrophes; retain literal backslashes.
+  // Validate rendered file with Docker Compose BEFORE overwriting .env.production.local.
   const content = renderPrivateEnvironment(values);
-  writeFileSync(target, content, { mode: 0o600 });
+  const tempTarget = new URL('../.env.production.local.tmp', import.meta.url);
+  const composeFile = fileURLToPath(
+    new URL('../compose.production.yml', import.meta.url),
+  );
+  writeFileSync(tempTarget, content, { mode: 0o600 });
   try {
-    chmodSync(target, 0o600);
+    chmodSync(tempTarget, 0o600);
   } catch {
     // Windows filesystems ignore POSIX mode bits.
   }
@@ -95,18 +136,25 @@ try {
     [
       'compose',
       '--env-file',
-      fileURLToPath(target),
+      fileURLToPath(tempTarget),
       '-f',
-      'compose.production.yml',
+      composeFile,
       'config',
       '--quiet',
     ],
     { stdio: 'pipe', encoding: 'utf8' },
   );
-  if (result.status !== 0)
+  if (result.status !== 0) {
+    try {
+      unlinkSync(tempTarget);
+    } catch {
+      // Ignore cleanup failure.
+    }
     throw new Error(
       'Compose preflight failed; inspect required setting names, not secret dumps.',
     );
+  }
+  renameSync(tempTarget, target);
   console.log(
     'Private production configuration validated; SMTP populated from the local API only for missing fields. No values displayed.',
   );

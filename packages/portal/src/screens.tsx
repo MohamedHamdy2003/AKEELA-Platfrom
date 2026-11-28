@@ -117,12 +117,12 @@ export function OrdersBoard({
     activeDrivers = useResource<unknown[]>(
       api,
       delivery ? '/delivery-company/drivers?per_page=1&is_active=true' : null,
-      revision + tick,
+      tick,
     ),
     driversDirectory = useResource<Driver[]>(
       api,
       delivery ? '/delivery-company/drivers?per_page=100' : null,
-      revision + tick,
+      tick,
     );
   const driverById = useMemo(() => {
     const map = new Map<string, Driver>();
@@ -582,7 +582,4 @@ export function AccountScreen({
       </section>
     </>
   );
-}
-export function StatusLabel({ status }: { status: OrderStatus }) {
-  return <Badge status={status} />;
 }

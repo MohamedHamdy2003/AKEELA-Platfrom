@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Circle,
-  CircleCheck,
   ImageOff,
   Inbox,
   LoaderCircle,
@@ -528,13 +527,5 @@ export function Dialog({
         {children}
       </dialog>
     </>
-  );
-}
-export function Saved() {
-  return (
-    <span className="saved">
-      <CircleCheck size={18} />
-      تم حفظ التغييرات
-    </span>
   );
 }

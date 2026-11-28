@@ -29,15 +29,10 @@ export class OrdersService {
     private readonly events: OrderEventsGateway,
     private readonly notifications: NotificationsService,
   ) {}
-  private async announce(orderId: string, event: OrderEvent) {
+  private async announce(order: Order, event: OrderEvent) {
     try {
-      const order = await this.db
-        .getRepository(Order)
-        .findOneBy({ order_id: orderId });
-      if (order) {
-        await this.events.notify(event, order);
-        void this.notifications.notifyOrderEvent(event, order);
-      }
+      await this.events.notify(event, order);
+      void this.notifications.notifyOrderEvent(event, order);
     } catch {
       this.events.reportFailure();
     }
@@ -161,10 +156,13 @@ export class OrdersService {
         await m.getRepository(OrderItemAddon).save(allAddonRows);
       }
       await this.cart.clearInTransaction(userId, m);
-      return this.details(userId, order.order_id, m);
+      return {
+        order,
+        view: await this.details(userId, order.order_id, m),
+      };
     });
-    void this.announce(result.order_id, 'order.created');
-    return result;
+    void this.announce(result.order, 'order.created');
+    return result.view;
   }
   async list(userId: string, query: ListOrdersQuery) {
     const page = resolvePagination(query);
@@ -354,13 +352,14 @@ export class OrdersService {
           );
           await work(order, m);
           return {
+            order,
             state: this.state(order),
             changed:
               before !==
               [order.status, order.company_id, order.driver_id].join(':'),
           };
         });
-        if (result.changed) void this.announce(id, 'order.updated');
+        if (result.changed) void this.announce(result.order, 'order.updated');
         return result.state;
       } catch (error) {
         const code = (error as { driverError?: { code?: string } }).driverError
@@ -472,10 +471,10 @@ export class OrdersService {
             );
           order.status = 'Cancelled';
           const saved = await repo.save(order);
-          return this.state(saved);
+          return { order: saved, state: this.state(saved) };
         });
-        void this.announce(result.order_id, 'order.updated');
-        return result;
+        void this.announce(result.order, 'order.updated');
+        return result.state;
       } catch (error) {
         const code = (error as { driverError?: { code?: string } }).driverError
           ?.code;

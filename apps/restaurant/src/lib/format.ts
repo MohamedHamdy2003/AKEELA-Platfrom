@@ -1,71 +1,85 @@
 export const cairo = 'Africa/Cairo';
+
+const dateTimeFormatter = new Intl.DateTimeFormat('ar-EG', {
+  timeZone: cairo,
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const dateFormatter = new Intl.DateTimeFormat('ar-EG', {
+  timeZone: cairo,
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+const cairoDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: cairo,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const todayFormatter = new Intl.DateTimeFormat('ar-EG', {
+  timeZone: cairo,
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+const cairoLocalFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: cairo,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
 export function dateTime(value: string) {
-  return new Intl.DateTimeFormat('ar-EG', {
-    timeZone: cairo,
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return dateTimeFormatter.format(parsed);
 }
 export function formatDate(value: string) {
-  return new Intl.DateTimeFormat('ar-EG', {
-    timeZone: cairo,
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(value));
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return dateFormatter.format(parsed);
 }
 export function cairoDate(value: string | Date = new Date()): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: cairo,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(typeof value === 'string' ? new Date(value) : value);
+  const parsed = typeof value === 'string' ? new Date(value) : value;
+  const parts = cairoDateFormatter.formatToParts(parsed);
   const get = (type: string) => parts.find((p) => p.type === type)?.value;
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 export function today() {
-  return new Intl.DateTimeFormat('ar-EG', {
-    timeZone: cairo,
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date());
+  return todayFormatter.format(new Date());
 }
-export function cairoGreeting(now = new Date()): string {
-  const hour = Number(
-    new Intl.DateTimeFormat('en-GB', {
-      timeZone: cairo,
-      hour: '2-digit',
-      hourCycle: 'h23',
-    }).format(now),
-  );
-  return hour >= 4 && hour < 12 ? 'صباح الخير' : 'مساء الخير';
+export function parseMoneyCents(value: string): bigint | null {
+  const trimmed = value.trim();
+  const match = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(trimmed);
+  if (!match) return null;
+  const sign = match[1] === '-' ? -1n : 1n;
+  const whole = BigInt(match[2]!);
+  const frac = BigInt((match[3] ?? '').padEnd(2, '0'));
+  return sign * (whole * 100n + frac);
 }
-export function money(value: string) {
-  const [whole, fraction = ''] = value.split('.');
-  return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction.padEnd(2, '0')} ج.م`;
+export function money(value: string | null | undefined) {
+  if (!value) return '0.00 ج.م';
+  const [whole = '0', fraction = ''] = String(value).split('.');
+  return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction.slice(0, 2).padEnd(2, '0')} ج.م`;
 }
 export function sumMoney(values: string[]) {
   const cents = values.reduce((sum, value) => {
-    const [whole, fraction = ''] = value.split('.');
-    return sum + BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
+    const parsed = parseMoneyCents(value);
+    return sum + (parsed ?? 0n);
   }, 0n);
-  return `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
+  const sign = cents < 0n ? '-' : '';
+  const abs = cents < 0n ? -cents : cents;
+  return `${sign}${abs / 100n}.${String(abs % 100n).padStart(2, '0')}`;
 }
 export function cairoLocal(value: string) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: cairo,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(new Date(value));
+  const parts = cairoLocalFormatter.formatToParts(new Date(value));
   const get = (type: string) => parts.find((p) => p.type === type)?.value;
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
 }

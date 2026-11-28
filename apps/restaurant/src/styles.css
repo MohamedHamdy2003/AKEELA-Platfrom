@@ -1134,7 +1134,7 @@ tbody tr:last-child .badge[data-tooltip]:focus-visible::after {
 }
 .drawer .dialog-heading h2 {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
 }
 .order-drawer-stack {
   display: flex;
@@ -1287,7 +1287,7 @@ tbody tr:last-child .badge[data-tooltip]:focus-visible::after {
   background: var(--brand-secondary);
   color: var(--brand-primary);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   flex-shrink: 0;
 }
 .order-item-subtotal {

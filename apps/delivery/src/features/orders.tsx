@@ -102,8 +102,13 @@ export function DeliveryActions({
       : undefined) ??
     activeDrivers.find((item) => item.driver_id === order.driver_id);
 
-  const whatsappUrl = buildDriverOrderWhatsAppUrl(order, resolvedDriver);
-  const whatsappText = buildDriverOrderWhatsAppMessage(order, resolvedDriver);
+  const isPickedUp = order.status === 'Picked_Up';
+  const whatsappUrl = isPickedUp
+    ? buildDriverOrderWhatsAppUrl(order, resolvedDriver)
+    : null;
+  const whatsappText = isPickedUp
+    ? buildDriverOrderWhatsAppMessage(order, resolvedDriver)
+    : '';
 
   const assign = async (event: FormEvent) => {
     event.preventDefault();

@@ -34,7 +34,6 @@ import {
   Menu,
   MessageSquareText,
   Minimize2,
-  RefreshCw,
   ShoppingBag,
   Store,
   Truck,
@@ -50,7 +49,7 @@ import logoWebp from '@akeela/brand/logo.webp';
 import brandIcon from '@akeela/brand/icon.png';
 import brandIconWebp from '@akeela/brand/icon.webp';
 import { ApiClient, ApiError, errorMessage } from './api';
-import { normalizeOtpDigits } from './error-messages';
+import { normalizeOtpDigits, translateFieldReason } from './error-messages';
 import {
   deliveryStatusDescriptions,
   deliveryStatuses,
@@ -80,21 +79,27 @@ export function ActivityBadge({
   );
 }
 
-export function money(value: string) {
-  const [whole, fraction = '00'] = value.split('.');
+const cairoDateTimeFormatter = new Intl.DateTimeFormat('ar-EG', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'Africa/Cairo',
+});
+
+export function money(value: string | null | undefined) {
+  if (!value) return '0.00 EGP';
+  const [whole = '0', fraction = '00'] = String(value).split('.');
   return (
-    whole!.replace(/\B(?=(\d{3})+(?!\d))/g, ',') +
+    whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') +
     '.' +
-    fraction.padEnd(2, '0') +
+    fraction.slice(0, 2).padEnd(2, '0') +
     ' EGP'
   );
 }
-export function dateTime(value: string) {
-  return new Intl.DateTimeFormat('ar-EG', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Africa/Cairo',
-  }).format(new Date(value));
+export function dateTime(value: string | null | undefined) {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return cairoDateTimeFormatter.format(parsed);
 }
 export function Notice({
   children,
@@ -133,7 +138,9 @@ export function Failure({
 }
 export const FieldMessagesContext = createContext<
   (name: string, messages: string[]) => string[]
->((_name, messages) => messages);
+>((name, messages) =>
+  messages.map((reason) => translateFieldReason(name, reason)),
+);
 export function Field({
   label,
   name,
@@ -459,11 +466,13 @@ export function Confirm({
   done: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
+    pending = useRef(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState<unknown>(null);
   return (
     <>
       <button
+        type="button"
         className={'button ' + (danger ? 'danger' : 'primary')}
         onClick={() => {
           setError(null);
@@ -481,6 +490,7 @@ export function Confirm({
         <div className="dialog-head">
           <h2>{label}</h2>
           <button
+            type="button"
             aria-label="إغلاق"
             disabled={busy}
             onClick={() => dialog.current?.close()}
@@ -492,9 +502,12 @@ export function Confirm({
         {!!error && <Failure error={error} />}
         <div className="actions">
           <button
+            type="button"
             className={'button ' + (danger ? 'danger' : 'primary')}
             disabled={busy}
             onClick={() => {
+              if (pending.current) return;
+              pending.current = true;
               setBusy(true);
               setError(null);
               void run()
@@ -505,12 +518,16 @@ export function Confirm({
                 .catch((cause) => {
                   setError(cause);
                 })
-                .finally(() => setBusy(false));
+                .finally(() => {
+                  pending.current = false;
+                  setBusy(false);
+                });
             }}
           >
             {busy ? 'جار التنفيذ…' : 'تأكيد'}
           </button>
           <button
+            type="button"
             className="button"
             disabled={busy}
             onClick={() => dialog.current?.close()}
@@ -575,7 +592,6 @@ export function Shell({
   brandIdentity?: {
     name: string;
     subtitle?: string;
-    code?: string;
     onClick?: () => void;
   };
   children: ReactNode;
@@ -696,6 +712,7 @@ export function Shell({
               aria-hidden="true"
               width="38"
               height="38"
+              loading="lazy"
               decoding="async"
             />
           </picture>
@@ -1467,4 +1484,3 @@ export function Metrics({
     </div>
   );
 }
-export { RefreshCw, X, statuses };

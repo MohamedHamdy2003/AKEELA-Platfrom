@@ -33,6 +33,12 @@ export function Users({
   revision?: number;
 }) {
   const resendDeadlines = useRef(new Map<string, number>());
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+    };
+  }, []);
   const [page, setPage] = useState(1),
     [role, setRole] = useState(''),
     [active, setActive] = useState(''),
@@ -95,11 +101,11 @@ export function Users({
                   </p>
                   {selected.role === 'Delivery_Company' && selected.profile && (
                     <>
-                      <h3>{String(selected.profile.company_name)}</h3>
-                      <p>{String(selected.profile.company_address)}</p>
+                      <h3>{String(selected.profile.company_name ?? '—')}</h3>
+                      <p>{String(selected.profile.company_address ?? '—')}</p>
                       <p>
                         <bdi>
-                          {String(selected.profile.company_phone)}
+                          {String(selected.profile.company_phone ?? '—')}
                           {selected.profile.company_email
                             ? ' · ' + String(selected.profile.company_email)
                             : ''}
@@ -108,34 +114,40 @@ export function Users({
                       <p className="copy-id-row">
                         <span>
                           رقم الشركة:{' '}
-                          <bdi>{String(selected.profile.company_id)}</bdi>
+                          <bdi>
+                            {String(selected.profile.company_id ?? '—')}
+                          </bdi>
                         </span>
-                        <button
-                          type="button"
-                          className="button compact"
-                          onClick={() => {
-                            const companyId = String(
-                              selected.profile.company_id,
-                            );
-                            void navigator.clipboard
-                              ?.writeText(companyId)
-                              .then(() => {
-                                setCopiedId(companyId);
-                                setTimeout(
-                                  () =>
-                                    setCopiedId((current) =>
-                                      current === companyId ? null : current,
-                                    ),
-                                  2000,
-                                );
-                              })
-                              .catch(() => undefined);
-                          }}
-                        >
-                          {copiedId === String(selected.profile.company_id)
-                            ? 'تم النسخ'
-                            : 'نسخ'}
-                        </button>
+                        {selected.profile.company_id != null && (
+                          <button
+                            type="button"
+                            className="button compact"
+                            onClick={() => {
+                              const companyId = String(
+                                selected.profile.company_id,
+                              );
+                              void navigator.clipboard
+                                ?.writeText(companyId)
+                                .then(() => {
+                                  setCopiedId(companyId);
+                                  if (copyTimer.current)
+                                    clearTimeout(copyTimer.current);
+                                  copyTimer.current = setTimeout(
+                                    () =>
+                                      setCopiedId((current) =>
+                                        current === companyId ? null : current,
+                                      ),
+                                    2000,
+                                  );
+                                })
+                                .catch(() => undefined);
+                            }}
+                          >
+                            {copiedId === String(selected.profile.company_id)
+                              ? 'تم النسخ'
+                              : 'نسخ'}
+                          </button>
+                        )}
                       </p>
                       <Notice>
                         {selected.email_verified_at

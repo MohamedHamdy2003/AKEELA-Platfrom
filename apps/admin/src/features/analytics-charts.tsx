@@ -28,15 +28,17 @@ export const STATUS_COLORS: Record<OrderStatus, string> = {
   Failed: '#b91c1c',
 };
 
+const shortCairoDateFormatter = new Intl.DateTimeFormat('ar-EG', {
+  day: 'numeric',
+  month: 'short',
+  timeZone: 'UTC',
+});
+
 function shortCairoDate(isoDate: string): string {
   const [y, m, d] = isoDate.split('-').map(Number);
   if (!y || !m || !d) return isoDate;
   const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-  return new Intl.DateTimeFormat('ar-EG', {
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'UTC',
-  }).format(dt);
+  return shortCairoDateFormatter.format(dt);
 }
 
 function compactNumber(value: number): string {

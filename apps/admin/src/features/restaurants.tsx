@@ -26,10 +26,12 @@ import './restaurants.css';
 
 export function Restaurants({
   revision = 0,
+  analyticsRevision = revision,
   initialStatus,
   onInitialStatusConsumed,
 }: {
   revision?: number;
+  analyticsRevision?: number;
   initialStatus?: string;
   onInitialStatusConsumed?: () => void;
 } = {}) {
@@ -159,6 +161,7 @@ export function Restaurants({
         <RestaurantWorkspace
           restaurant={activeWorkspaceRest}
           revision={revision}
+          analyticsRevision={analyticsRevision}
           onBack={() => setWorkspaceRest(null)}
           onRequestActivation={(action) => setConfirmAction(action)}
         />

@@ -31,4 +31,5 @@ test('private Compose encoding is repeatable and preserves dollar signs, apostro
     parse("PASSWORD='owner\\'value'"),
   );
   assert.throws(() => renderPrivateEnvironment({ PASSWORD: 'line\nbreak' }));
+  assert.throws(() => renderPrivateEnvironment({ PASSWORD: 'trailing\\' }));
 });

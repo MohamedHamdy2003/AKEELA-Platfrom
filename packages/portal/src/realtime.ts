@@ -67,17 +67,26 @@ export function watchOrders(options: {
     if (stopped) return;
     options.status?.('offline');
     if (reason === 'io server disconnect') {
-      scheduleReconnect(1500, true);
+      failures = Math.min(failures + 1, 6);
+      const backoff = Math.min(30_000, 1500 * 2 ** (failures - 1));
+      // Resynchronize REST once on actual reconnect (connect handler), not on every failed retry.
+      scheduleReconnect(backoff, false);
     }
   });
 
-  socket.on('connect_error', () => {
+  socket.on('connect_error', (err) => {
     if (stopped) return;
     options.status?.('offline');
     if (!socket.active) {
+      if (
+        err?.message === 'ORIGIN_NOT_ALLOWED' ||
+        err?.message === 'CONNECTION_LIMIT'
+      ) {
+        return;
+      }
       failures = Math.min(failures + 1, 6);
       const backoff = Math.min(30_000, 2000 * 2 ** (failures - 1));
-      scheduleReconnect(backoff, hasConnectedOnce);
+      scheduleReconnect(backoff, false);
     }
   });
 

@@ -6,9 +6,7 @@ The Restaurant client is now implemented in apps/restaurant with React/Vite/Type
 
 ## Scope and status
 
-One deployable NestJS application, one PostgreSQL database, and TypeORM. Features 01-14 include twenty table mappings, one history view and eleven reviewed migrations. Features 01-17 are implemented, including image uploads, health checks, and Socket.IO order notifications. See [AUTH.md](AUTH.md).
-
-The user approved the foundation and authorized Features 01-16, local tests, CI/CD and deployment preparation. Other features and actual VPS deployment still require authorization.
+One deployable NestJS application, one PostgreSQL 17 database, and TypeORM (`11` domain modules, `21` entity tables, `1` history view, and reviewed migrations). Features `01–18` are implemented, including image uploads, health checks, Socket.IO order notifications, FCM push notifications, global search, and the smart home offers feed. See [AUTH.md](AUTH.md) and [STATUS.md](STATUS.md).
 
 ## Runtime structure
 
@@ -27,6 +25,7 @@ flowchart TD
     APP --> DELIVERY[Delivery]
     APP --> CART[Cart]
     APP --> ORDERS[Orders]
+    APP --> NOTIF[Notifications]
     AUTH --> DB[One PostgreSQL database via TypeORM]
     USERS --> DB
     CUSTOMERS --> DB
@@ -35,13 +34,14 @@ flowchart TD
     DELIVERY --> DB
     CART --> DB
     ORDERS --> DB
+    NOTIF --> DB
 ```
 
 The diagram shows implemented business ownership. Images coordinates uploads through domain services; Health uses the shared DataSource. All modules share the same database and connection pool; no per-module databases or network calls between modules.
 
-## Approved deployment target
+## Deployment topology
 
-Host the single NestJS backend, PostgreSQL, and primary image files on one Hostinger VPS. Run Caddy, NestJS, and PostgreSQL in separate Docker containers. Caddy is the public HTTPS entry point; PostgreSQL stays private. Persist database data, images, and Caddy state, with backup automation deferred. Dockerfile, production Compose, and Caddy templates now exist, but actual server provisioning/deployment is not performed or authorized. See [DEPLOYMENT.md](DEPLOYMENT.md).
+The NestJS backend, PostgreSQL 17, three static Nginx frontends (`admin`, `restaurant`, `delivery`), and Caddy run in separate Docker containers on one Hostinger KVM 2 VPS (`2.25.12.243`). Caddy is the public HTTPS entry point for `*.akeelaonline.tech`; PostgreSQL stays on an internal Docker network. Persistent named volumes hold database data, images, and Caddy state; off-server backup automation remains deferred. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Code organization
 
@@ -49,14 +49,17 @@ Host the single NestJS backend, PostgreSQL, and primary image files on one Hosti
 AKEELA/
   apps/
     api/                     # NestJS package, src/, test/, configs, Dockerfile
-    restaurant/              # implemented React/Vite frontend
-    admin/                   # implemented React/Vite frontend
-    delivery/                # implemented React/Vite frontend
-  docs/                      # shared architecture and frontend guides
-  bruno/AKEELA/              # maintained API requests
+    restaurant/              # React/Vite Restaurant dashboard
+    admin/                   # React/Vite Admin dashboard
+    delivery/                # React/Vite Delivery Company dashboard
+  packages/
+    brand/                   # shared CSS tokens, forms/sidebar styles, brand assets
+    portal/                  # shared HTTP/session/realtime/dialog/portal helpers
+  docs/                      # architecture, API, and frontend guides
+  bruno/AKEELA/              # maintained API collection
   deploy/                    # Caddy and VPS/release assets
-  scripts/                   # repository checks and smoke test
-  .github/workflows/         # CI and owner-approved main releases
+  scripts/                   # repository checks, setup, and smoke tests
+  .github/workflows/         # CI, owner-approved releases, and uptime monitor
   package.json               # npm workspace root
   package-lock.json          # shared lockfile
   compose.yml
@@ -108,7 +111,7 @@ Cart writes lock the parent cart row. Order transitions lock/check the order row
 - Environment validation fails on invalid settings without echoing credentials.
 - Database startup fails when PostgreSQL is unavailable. Graceful shutdown hooks close application resources.
 - Application and CLI use the same TypeORM options, with synchronization, schema dropping, SQL logging, and automatic migrations disabled.
-- Feature 01 controllers return explicit success envelopes. A shared filter normalizes errors and validation failures. JWT guards check live sessions/accounts, and SMTP sends codes after commit. Public health probes exist; no Swagger document or automatic seeds exist.
+- Controllers return explicit success envelopes; a shared filter normalizes errors and validation failures. JWT guards check live sessions/accounts, and SMTP sends OTP codes after commit. Public health probes and optional Swagger docs (`SWAGGER_ENABLED`) exist; no automatic business seeds exist.
 
 Module boundaries follow [Nest module encapsulation](https://docs.nestjs.com/modules). Database changes use [TypeORM migrations](https://typeorm.io/docs/migrations/why/) rather than automatic synchronization.
 
@@ -120,12 +123,4 @@ Images uses Sharp for byte validation/re-encoding and local persistent files. It
 
 ## Repository and deployment boundaries
 
-One monorepo contains the implemented API and three independently owned browser apps. Use npm workspaces with one lockfile. The API remains a modular monolith with one database. Frontends consume HTTP APIs and never import backend repositories/entities. React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions are approved for all three browser apps. See [MONOREPO.md](MONOREPO.md) for paths, environment migration, coordinated CI/release rules and Caddy sites.
-
-## Dashboards, realtime and deployment — 2026-11-18
-
-Admin and Delivery are implemented React/Vite/TypeScript workspaces, Arabic RTL and tab-scoped sessionStorage sessions. Their visual identities differ; shared HTTP/layout/order components live in packages/portal for these two consumers. Restaurant shares the realtime, session-storage, bootstrap and logout-confirmation helpers while keeping its own HTTP client and remaining UI. Root check and consolidated CI cover all workspaces.
-
-Socket.IO runs inside the single API process. Events invalidate authorized REST reads after order commits; no schema, microservice, Redis or durable event log is added. See [REALTIME](REALTIME.md) and [portal design](PORTAL-DESIGN.md).
-
-The owner purchased Hostinger KVM 2 at 2.25.12.243, France. SSH confirmed Ubuntu 26.04.1 LTS. Domain: akeelaonline.tech; API/admin/vendor/delivery subdomains. Production Compose includes all services plus one-off migrations and idempotent Admin initialization. Existing Admin values are never reset. See [DEPLOYMENT](DEPLOYMENT.md).
+One monorepo contains the implemented API, three independently owned React/Vite/TypeScript Arabic RTL dashboards, and shared `packages/brand` + `packages/portal` workspaces under one root lockfile. Frontends consume HTTP APIs and Socket.IO (`/orders`), never backend repositories/entities. See [MONOREPO.md](MONOREPO.md), [REALTIME.md](REALTIME.md), [PORTAL-DESIGN.md](PORTAL-DESIGN.md), and [DEPLOYMENT.md](DEPLOYMENT.md).

@@ -37,7 +37,6 @@ export class ApiClient {
   private refreshing: Promise<void> | null = null;
   private restoring: Promise<User | null> | null = null;
   onSessionEnd?: () => void;
-  onActivationDenied?: () => void;
   constructor(
     base: string,
     role: 'Admin' | 'Delivery_Company',
@@ -132,7 +131,12 @@ export class ApiClient {
     if (exp !== null && exp - Date.now() > 60_000) {
       return this.tokens.access_token;
     }
-    await this.request('/me');
+    try {
+      if (exp !== null) await this.refresh();
+      else await this.request('/me');
+    } catch {
+      return null;
+    }
     return this.tokens?.access_token ?? null;
   }
   private async refresh() {
@@ -148,7 +152,11 @@ export class ApiClient {
           body: { refresh_token: refreshToken },
           public: true,
         });
-        if (generation !== this.generation)
+        if (
+          generation !== this.generation ||
+          !result.data?.access_token ||
+          !result.data?.refresh_token
+        )
           throw new ApiError(401, 'UNAUTHENTICATED', 'انتهت الجلسة.');
         this.tokens = result.data;
         this.sessionStore?.write(result.data);
@@ -225,7 +233,6 @@ export class ApiClient {
       const code =
         data?.error?.code ??
         (response.status === 401 ? 'UNAUTHENTICATED' : 'HTTP_ERROR');
-      if (code === 'RESTAURANT_NOT_ACTIVE') this.onActivationDenied?.();
       if (
         response.status === 401 &&
         !options.public &&
@@ -248,5 +255,6 @@ export function query(values: Record<string, string | number | undefined>) {
   Object.entries(values).forEach(([key, value]) => {
     if (value !== undefined && value !== '') params.set(key, String(value));
   });
-  return '?' + params.toString();
+  const encoded = params.toString();
+  return encoded ? '?' + encoded : '';
 }

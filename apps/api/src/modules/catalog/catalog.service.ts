@@ -1208,11 +1208,16 @@ export class CatalogService {
 
   // --- Feature 09: Public Restaurant Menu ---
 
-  private isRestaurantOpen(profile: RestaurantProfile): boolean {
+  currentCairoSeconds(): number {
     const local = cairoClockFormatter.format(new Date());
     const [h = 0, m = 0, sec = 0] = local.split(':').map(Number);
-    const nowSec = h * 3600 + m * 60 + sec;
+    return h * 3600 + m * 60 + sec;
+  }
 
+  private isRestaurantOpen(
+    profile: RestaurantProfile,
+    nowSec = this.currentCairoSeconds(),
+  ): boolean {
     const [oh = 0, om = 0, os] = (profile.opens_at as string)
       .split(':')
       .map(Number);
@@ -1302,35 +1307,45 @@ export class CatalogService {
     restId: string,
     prodId: string,
   ): Promise<{ product: Product; addons: Addon[] }> {
-    await this.getPublicRestaurant(restId);
+    const [product, addons] = await Promise.all([
+      this.dataSource
+        .getRepository(Product)
+        .createQueryBuilder('p')
+        .innerJoin(
+          Category,
+          'c',
+          'c.cat_id = p.cat_id AND c.rest_id = p.rest_id AND c.is_active = true',
+        )
+        .innerJoin(
+          RestaurantProfile,
+          'r',
+          "r.rest_id = p.rest_id AND r.activation_status = 'Active' AND r.is_active = true",
+        )
+        .innerJoin(
+          'users',
+          'u',
+          'u.user_id = r.user_id AND u.is_active = true AND u.email_verified_at IS NOT NULL',
+        )
+        .where(
+          'p.rest_id = :restId AND p.prod_id = :prodId AND p.is_active = true',
+          { restId, prodId },
+        )
+        .getOne(),
+      this.dataSource
+        .getRepository(Addon)
+        .createQueryBuilder('a')
+        .innerJoin(
+          ProductAddon,
+          'pa',
+          'pa.rest_id = a.rest_id AND pa.addon_id = a.addon_id AND pa.prod_id = :prodId AND pa.is_active = true',
+          { prodId },
+        )
+        .where('a.rest_id = :restId AND a.is_active = true', { restId })
+        .orderBy('a.addon_id', 'ASC')
+        .getMany(),
+    ]);
 
-    const product = await this.dataSource.getRepository(Product).findOneBy({
-      rest_id: restId,
-      prod_id: prodId,
-      is_active: true,
-    });
-    if (
-      !product ||
-      !product.cat_id ||
-      !(await this.dataSource
-        .getRepository(Category)
-        .existsBy({ cat_id: product.cat_id, rest_id: restId, is_active: true }))
-    )
-      throw new ApiError(404, 'NOT_FOUND', 'Product not found.');
-
-    const links = await this.dataSource.getRepository(ProductAddon).find({
-      where: { rest_id: restId, prod_id: prodId, is_active: true },
-      order: { addon_id: 'ASC' },
-    });
-
-    let addons: Addon[] = [];
-    if (links.length > 0) {
-      const addonIds = links.map((l) => l.addon_id);
-      addons = await this.dataSource.getRepository(Addon).find({
-        where: { rest_id: restId, addon_id: In(addonIds), is_active: true },
-        order: { addon_id: 'ASC' },
-      });
-    }
+    if (!product) throw new ApiError(404, 'NOT_FOUND', 'Product not found.');
 
     return { product, addons };
   }
@@ -1340,7 +1355,6 @@ export class CatalogService {
     pagination: { skip: number; take: number },
   ): Promise<{ items: Offer[]; total: number }> {
     await this.getPublicRestaurant(restId);
-    await this.deactivateExpiredOffers(restId);
 
     const now = new Date();
     const qb = this.dataSource
@@ -1379,8 +1393,8 @@ export class CatalogService {
     return offer;
   }
 
-  isOpen(profile: RestaurantProfile): boolean {
-    return this.isRestaurantOpen(profile);
+  isOpen(profile: RestaurantProfile, nowSec?: number): boolean {
+    return this.isRestaurantOpen(profile, nowSec);
   }
 
   async restaurantMenuSummary(restId: string): Promise<{
@@ -1402,7 +1416,6 @@ export class CatalogService {
   }> {
     const now = new Date();
     const soon = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-    await this.deactivateExpiredOffers(restId);
     const [categories, products, activeAddons, offers] = await Promise.all([
       this.dataSource.getRepository(Category).find({
         select: { cat_id: true, cat_title: true, is_active: true },

@@ -44,7 +44,7 @@ Temporary Swagger publishing uses the existing API HTTPS host. Set private `SWAG
 
 Production Caddy explicitly serves the four domains. Each frontend proxies /api/* and /socket.io/* to the API, serves /images/* from the read-only image volume, and sends remaining requests to its static frontend. The API domain proxies the API/socket paths directly. Caddy handles WebSocket upgrades and automatic HTTPS. Frontend CSP allows its own WebSocket host. No DNS record, live certificate or deployment is implied by a validated Caddyfile.
 
-The old sites-enabled/templates files are legacy preparation, not production imports. See [realtime](REALTIME.md) for mobile/browser connections, session expiry and REST recovery. Run one API instance; no Redis adapter or event replay exists.
+See [realtime](REALTIME.md) for mobile/browser connections, session expiry and REST recovery. Run one API instance; no Redis adapter or event replay exists.
 
 ## CI/CD and release
 
@@ -70,6 +70,6 @@ Workflow secrets belong to the production environment. Configuration/credentials
 
 References: [Docker Ubuntu installation](https://docs.docker.com/engine/install/ubuntu/), [Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/), [Caddy HTTPS](https://caddyserver.com/docs/automatic-https).
 
-Current verification: all four A records resolve to 2.25.12.243. Docker/Compose and a dedicated deploy user/key are installed; the owner's existing root SSH settings were preserved. Private configuration is installed mode 600. The first rollout, trusted public HTTPS, Admin login/WSS and Gmail SMTP authentication are verified; see STATUS.md for evidence and remaining company/inbox setup.
+Current status: all four A records resolve to `2.25.12.243`, Docker/Compose and the dedicated `akeela` deploy user are live, private configuration is installed mode `600`, public HTTPS and Socket.IO are verified, and production OTP delivery is active on `mail.akeelaonline.tech` (Resend + Brevo).
 
-VENDOR_DOMAIN is retained as a compatible configuration key, but its value is restaurant.akeelaonline.tech. Do not create or switch to a vendor DNS record. The current owner approved main promotion and deployment after CI succeeds.
+`VENDOR_DOMAIN` is retained as a compatible configuration key whose value is `restaurant.akeelaonline.tech`. Do not create or switch to a `vendor` DNS record. New `main` promotions and VPS deployments always require an explicit owner request.

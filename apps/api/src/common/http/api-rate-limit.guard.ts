@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { Environment } from '../../config/environment';
 import { ApiError } from './api-error';
+import { FixedWindowRateLimiter } from './fixed-window-rate-limiter';
 
 const WINDOW_MS = 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 300;
@@ -10,10 +11,7 @@ const MAX_TRACKED_IPS = 20_000;
 
 @Injectable()
 export class ApiRateLimitGuard implements CanActivate {
-  private readonly counters = new Map<
-    string,
-    { count: number; until: number }
-  >();
+  private readonly limiter = new FixedWindowRateLimiter(MAX_TRACKED_IPS);
 
   constructor(private readonly config: ConfigService<Environment, true>) {}
 
@@ -26,44 +24,20 @@ export class ApiRateLimitGuard implements CanActivate {
     if (path.startsWith('/api/v1/health/')) return true;
 
     const response = context.switchToHttp().getResponse<Response>();
-    const now = Date.now();
-    if (this.counters.size > 1000) {
-      for (const [key, value] of this.counters) {
-        if (value.until <= now) this.counters.delete(key);
-      }
-    }
-
     const key = request.ip || 'unknown';
-    const current = this.counters.get(key);
-    const active = current && current.until > now ? current : undefined;
-
-    if (active && active.count >= MAX_REQUESTS_PER_WINDOW) {
-      response.setHeader(
-        'Retry-After',
-        Math.max(1, Math.ceil((active.until - now) / 1000)),
-      );
+    const result = this.limiter.consume(
+      key,
+      MAX_REQUESTS_PER_WINDOW,
+      WINDOW_MS,
+    );
+    if (!result.allowed) {
+      response.setHeader('Retry-After', result.retryAfterSeconds);
       throw new ApiError(
         429,
         'RATE_LIMITED',
         'Too many requests. Try again shortly.',
       );
     }
-
-    if (!active && this.counters.size >= MAX_TRACKED_IPS) {
-      for (const [entryKey, value] of this.counters) {
-        if (value.until <= now) this.counters.delete(entryKey);
-      }
-      if (this.counters.size >= MAX_TRACKED_IPS) {
-        const oldest = this.counters.keys().next().value;
-        if (oldest !== undefined) this.counters.delete(oldest);
-      }
-    }
-
-    this.counters.delete(key);
-    this.counters.set(key, {
-      count: (active?.count ?? 0) + 1,
-      until: active?.until ?? now + WINDOW_MS,
-    });
     return true;
   }
 }

@@ -10,7 +10,6 @@ import {
 } from 'typeorm';
 
 @Entity('offers')
-@Index('ix_offers_rest_id', ['rest_id'])
 @Index('ix_offers_rest_active_window', [
   'rest_id',
   'is_active',
@@ -24,6 +23,9 @@ import {
     where: 'is_active = true',
   },
 )
+@Index('ix_offers_active_expires', ['expires_at'], {
+  where: 'is_active = true',
+})
 @Index('uq_offers_rest_offer', ['rest_id', 'offer_id'], { unique: true })
 @ForeignKey('restaurant_profiles', ['rest_id'], ['rest_id'], {
   name: 'fk_offers_restaurant',

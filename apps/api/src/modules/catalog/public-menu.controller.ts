@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import { PublicRoute } from '../../common/http/public-route.decorator';
 import { paginationMeta, resolvePagination } from '../users/admin.dto';
 import {
@@ -100,23 +100,26 @@ export class PublicMenuController {
   constructor(private readonly catalog: CatalogService) {}
 
   @Get()
+  @Header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30')
   async listRestaurants(@Query() query: ListCategoriesQuery) {
     const pagination = resolvePagination(query);
     const { items, total } = await this.catalog.listPublicRestaurants({
       skip: pagination.skip,
       take: pagination.take,
     });
+    const nowSec = this.catalog.currentCairoSeconds();
     return {
       success: true,
       message: 'Records returned.',
       data: items.map((r) =>
-        serializePublicRestaurant(r, this.catalog.isOpen(r)),
+        serializePublicRestaurant(r, this.catalog.isOpen(r, nowSec)),
       ),
       meta: paginationMeta(total, pagination.page, pagination.per_page),
     };
   }
 
   @Get(':rest_id')
+  @Header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30')
   async getRestaurant(@Param('rest_id') restId: string) {
     const profile = await this.catalog.getPublicRestaurant(restId);
     return {
@@ -127,6 +130,7 @@ export class PublicMenuController {
   }
 
   @Get(':rest_id/categories')
+  @Header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30')
   async listCategories(
     @Param('rest_id') restId: string,
     @Query() query: ListCategoriesQuery,
@@ -145,6 +149,7 @@ export class PublicMenuController {
   }
 
   @Get(':rest_id/products')
+  @Header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30')
   async listProducts(
     @Param('rest_id') restId: string,
     @Query() query: ListProductsQuery,
@@ -164,6 +169,7 @@ export class PublicMenuController {
   }
 
   @Get(':rest_id/products/:prod_id')
+  @Header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30')
   async getProduct(
     @Param('rest_id') restId: string,
     @Param('prod_id') prodId: string,
@@ -180,6 +186,7 @@ export class PublicMenuController {
   }
 
   @Get(':rest_id/offers')
+  @Header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30')
   async listOffers(
     @Param('rest_id') restId: string,
     @Query() query: ListOffersQuery,
@@ -198,6 +205,7 @@ export class PublicMenuController {
   }
 
   @Get(':rest_id/offers/:offer_id')
+  @Header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30')
   async getOffer(
     @Param('rest_id') restId: string,
     @Param('offer_id') offerId: string,

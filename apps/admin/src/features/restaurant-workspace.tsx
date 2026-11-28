@@ -42,7 +42,6 @@ import {
 } from '@akeela/portal/ui';
 import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import { api } from '../lib/api';
-import { downloadRestaurantEarningsExcel } from '../lib/excel-export';
 import { DetailWorkspace } from '../components/detail-workspace';
 import { EmailVerification } from '../components/email-verification';
 import { AdminActions } from './orders';
@@ -104,11 +103,13 @@ function DeltaBadge({
 export function RestaurantWorkspace({
   restaurant,
   revision,
+  analyticsRevision = revision,
   onBack,
   onRequestActivation,
 }: {
   restaurant: RestaurantReview;
   revision: number;
+  analyticsRevision?: number;
   onBack: () => void;
   onRequestActivation: (action: 'Active' | 'Suspended') => void;
 }) {
@@ -136,11 +137,13 @@ export function RestaurantWorkspace({
   const analytics = useResource<AdminRestaurantAnalytics>(
     api,
     analyticsPath,
-    revision,
+    analyticsRevision,
   );
 
-  const [cachedAnalytics, setCachedAnalytics] =
-    useState<AdminRestaurantAnalytics | null>(null);
+  const [cachedAnalytics, setCachedAnalytics] = useState<{
+    key: string;
+    data: AdminRestaurantAnalytics;
+  } | null>(null);
 
   useEffect(() => {
     setCachedAnalytics(null);
@@ -148,11 +151,16 @@ export function RestaurantWorkspace({
 
   useEffect(() => {
     if (analytics.result?.data) {
-      setCachedAnalytics(analytics.result.data);
+      setCachedAnalytics({ key: analyticsPath, data: analytics.result.data });
     }
-  }, [analytics.result]);
+  }, [analytics.result, analyticsPath]);
 
-  const data = analytics.result?.data ?? cachedAnalytics;
+  const matchingCache =
+    cachedAnalytics && cachedAnalytics.key === analyticsPath
+      ? cachedAnalytics.data
+      : null;
+  const data = analytics.result?.data ?? matchingCache;
+  const canExport = Boolean(data) && !analytics.error;
 
   const periodLabel = appliedCustom
     ? `من ${appliedCustom.date_from} إلى ${appliedCustom.date_to}`
@@ -182,8 +190,10 @@ export function RestaurantWorkspace({
     setAppliedCustom(null);
   };
 
-  const handleExportExcel = () => {
-    if (!data) return;
+  const handleExportExcel = async () => {
+    if (!data || !canExport) return;
+    const { downloadRestaurantEarningsExcel } =
+      await import('../lib/excel-export');
     downloadRestaurantEarningsExcel({
       restId,
       restTitle: restaurant.profile.rest_title,
@@ -245,8 +255,8 @@ export function RestaurantWorkspace({
           <button
             type="button"
             className="button primary adm-excel-btn"
-            disabled={!data}
-            onClick={handleExportExcel}
+            disabled={!canExport}
+            onClick={() => void handleExportExcel()}
           >
             <Download size={16} aria-hidden="true" />
             تصدير تقرير المكاسب (Excel)
@@ -395,8 +405,8 @@ export function RestaurantWorkspace({
               <button
                 type="button"
                 className="button compact adm-excel-inline"
-                disabled={!data}
-                onClick={handleExportExcel}
+                disabled={!canExport}
+                onClick={() => void handleExportExcel()}
               >
                 <Download size={14} aria-hidden="true" />
                 تنزيل جدول المكاسب كـ Excel (.xlsx)
@@ -997,6 +1007,8 @@ function RestaurantOrdersTab({
                         <button
                           type="button"
                           className="button compact"
+                          data-detail-record={order.order_id}
+                          aria-expanded={selectedOrderId === order.order_id}
                           onClick={() => setSelectedOrderId(order.order_id)}
                         >
                           عرض التفاصيل

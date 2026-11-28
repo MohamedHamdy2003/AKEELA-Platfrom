@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'node:crypto';
-import { DataSource, EntityManager, MoreThan, IsNull } from 'typeorm';
+import { DataSource, EntityManager, IsNull } from 'typeorm';
 import { Environment } from '../../config/environment';
 import { ApiError } from '../../common/http/api-error';
 import { AuthActor } from '../../common/http/current-actor.decorator';
@@ -47,7 +47,9 @@ export class AuthService {
       'Invalid or expired credentials.',
     );
   }
-  private checkAccount(account: Account): void {
+  private checkAccount(
+    account: Pick<Account, 'is_active' | 'email_verified_at'>,
+  ): void {
     if (!account.is_active)
       throw new ApiError(403, 'FORBIDDEN', 'This account is inactive.');
     if (!account.email_verified_at)
@@ -142,7 +144,12 @@ export class AuthService {
     const candidate = await this.users.byEmail(email);
     if (!candidate) return;
     const result = await this.db.transaction(async (manager) => {
-      const account = await this.users.byId(candidate.user_id, manager, true);
+      const account = await this.users.byId(
+        candidate.user_id,
+        manager,
+        true,
+        true,
+      );
       if (
         !account?.is_active ||
         (purpose === 'Email_Verification' && account.email_verified_at)
@@ -206,7 +213,12 @@ export class AuthService {
     const candidate = await this.users.byEmail(email);
     if (!candidate) this.invalidOtp();
     const success = await this.db.transaction(async (manager) => {
-      const account = await this.users.byId(candidate.user_id, manager, true);
+      const account = await this.users.byId(
+        candidate.user_id,
+        manager,
+        true,
+        true,
+      );
       if (!account?.is_active || account.email_verified_at) return false;
       if (
         !(await this.consumeCode(account, 'Email_Verification', code, manager))
@@ -234,7 +246,12 @@ export class AuthService {
       this.unauthorized();
     this.checkAccount(candidate);
     const result = await this.db.transaction(async (manager) => {
-      const account = await this.users.byId(candidate.user_id, manager, true);
+      const account = await this.users.byId(
+        candidate.user_id,
+        manager,
+        true,
+        true,
+      );
       if (!account || account.password_hash !== candidate.password_hash)
         this.unauthorized();
       this.checkAccount(account);
@@ -296,7 +313,12 @@ export class AuthService {
       .findOneBy({ refresh_token_hash: hash });
     if (!candidate) this.unauthorized();
     return this.db.transaction(async (manager) => {
-      const account = await this.users.byId(candidate.user_id, manager, true);
+      const account = await this.users.byId(
+        candidate.user_id,
+        manager,
+        true,
+        true,
+      );
       if (!account) this.unauthorized();
       const repo = manager.getRepository(AuthSession);
       const session = await repo.findOne({
@@ -342,22 +364,35 @@ export class AuthService {
       )
     )
       this.unauthorized();
-    const session = await this.db.getRepository(AuthSession).findOneBy({
-      session_id: payload.sid,
-      user_id: payload.sub,
-      revoked_at: IsNull(),
-      expires_at: MoreThan(new Date()),
-    });
-    // Explicit revoked check below avoids using a nullable filter as an accidental wildcard.
-    if (!session || session.revoked_at) this.unauthorized();
-    const account = await this.users.byId(payload.sub);
-    if (!account) this.unauthorized();
-    this.checkAccount(account);
+    const [row] = (await this.db.query(
+      `SELECT
+        s.session_id::text AS session_id,
+        u.user_id::text AS user_id,
+        u.role AS role,
+        u.is_active AS is_active,
+        u.email_verified_at AS email_verified_at
+      FROM auth_sessions s
+      INNER JOIN users u ON u.user_id = s.user_id
+      WHERE s.session_id = $1
+        AND s.user_id = $2
+        AND s.revoked_at IS NULL
+        AND s.expires_at > NOW()
+      LIMIT 1`,
+      [payload.sid, payload.sub],
+    )) as Array<{
+      session_id: string;
+      user_id: string;
+      role: AuthActor['role'];
+      is_active: boolean;
+      email_verified_at: Date | null;
+    }>;
+    if (!row) this.unauthorized();
+    this.checkAccount(row);
     return {
       actor: {
-        userId: account.user_id,
-        sessionId: session.session_id,
-        role: account.role,
+        userId: row.user_id,
+        sessionId: row.session_id,
+        role: row.role,
       },
       expiresAt: payload.exp * 1000,
     };
@@ -416,7 +451,12 @@ export class AuthService {
       )
     ) {
       await this.db.transaction(async (manager) => {
-        const account = await this.users.byId(candidate.user_id, manager, true);
+        const account = await this.users.byId(
+          candidate.user_id,
+          manager,
+          true,
+          true,
+        );
         if (account?.is_active) {
           await this.consumeCode(account, 'Password_Reset', input.otp, manager);
         }
@@ -425,7 +465,12 @@ export class AuthService {
     }
     const hash = await this.crypto.hashPassword(input.new_password);
     const success = await this.db.transaction(async (manager) => {
-      const account = await this.users.byId(candidate.user_id, manager, true);
+      const account = await this.users.byId(
+        candidate.user_id,
+        manager,
+        true,
+        true,
+      );
       if (
         !account?.is_active ||
         !(await this.consumeCode(account, 'Password_Reset', input.otp, manager))
@@ -447,7 +492,12 @@ export class AuthService {
   ): Promise<void> {
     // Perform both scrypt derivations outside the DB transaction so no pool
     // connection or pessimistic user row lock is held during hashing.
-    const candidate = await this.users.byId(actor.userId);
+    const candidate = await this.users.byId(
+      actor.userId,
+      undefined,
+      false,
+      true,
+    );
     if (
       !candidate ||
       !(await this.crypto.verifyPassword(
@@ -458,7 +508,7 @@ export class AuthService {
       this.unauthorized();
     const hash = await this.crypto.hashPassword(input.new_password);
     await this.db.transaction(async (manager) => {
-      const account = await this.users.byId(actor.userId, manager, true);
+      const account = await this.users.byId(actor.userId, manager, true, true);
       if (!account || account.password_hash !== candidate.password_hash)
         this.unauthorized();
       await this.assertLiveSession(actor, manager);

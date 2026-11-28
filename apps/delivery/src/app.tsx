@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import type { Company, User } from '@akeela/portal/models';
-import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
-import { AccountScreen, OrdersBoard } from '@akeela/portal/screens';
+import type { RealtimeStatus } from '@akeela/portal/realtime';
 import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import {
   AuthPage,
@@ -12,10 +11,25 @@ import {
 } from '@akeela/portal/ui';
 import { useSessionRestore } from '@akeela/portal/use-session-restore';
 import { api, base } from './lib/api';
-import { Home } from './features/home';
-import { Drivers } from './features/drivers';
-import { CompanyProfile } from './features/profile';
-import { DeliveryActions } from './features/orders';
+
+const Home = lazy(() =>
+  import('./features/home').then((m) => ({ default: m.Home })),
+);
+const Drivers = lazy(() =>
+  import('./features/drivers').then((m) => ({ default: m.Drivers })),
+);
+const CompanyProfile = lazy(() =>
+  import('./features/profile').then((m) => ({ default: m.CompanyProfile })),
+);
+const DeliveryActions = lazy(() =>
+  import('./features/orders').then((m) => ({ default: m.DeliveryActions })),
+);
+const OrdersBoard = lazy(() =>
+  import('@akeela/portal/screens').then((m) => ({ default: m.OrdersBoard })),
+);
+const AccountScreen = lazy(() =>
+  import('@akeela/portal/screens').then((m) => ({ default: m.AccountScreen })),
+);
 const navigation: Array<[string, string]> = [
   ['home', 'نظرة عامة'],
   ['orders', 'طلبات الشركة'],
@@ -69,12 +83,21 @@ function DeliveryWorkspace() {
   }, []);
   useEffect(() => {
     if (!user) return;
-    return watchOrders({
-      baseUrl: base,
-      getToken: () => api.tokenForRealtime(),
-      changed: () => setRevision((n) => n + 1),
-      status: setStatus,
+    let active = true;
+    let stop: (() => void) | undefined;
+    void import('@akeela/portal/realtime').then(({ watchOrders }) => {
+      if (!active) return;
+      stop = watchOrders({
+        baseUrl: base,
+        getToken: () => api.tokenForRealtime(),
+        changed: () => setRevision((n) => n + 1),
+        status: setStatus,
+      });
     });
+    return () => {
+      active = false;
+      stop?.();
+    };
   }, [user?.user_id]);
   useEffect(() => {
     if (revision === 0) return;
@@ -174,50 +197,54 @@ function DeliveryWorkspace() {
         setRoute('home');
       }}
     >
-      {route === 'home' && (
-        <Home
-          revision={analyticsRevision}
-          navigate={navigate}
-          company={company}
-        />
-      )}
-      {route === 'orders' && (
-        <OrdersBoard
-          api={api}
-          prefix="/delivery-company"
-          revision={revision}
-          delivery
-          initialStatus={ordersStatus}
-          onInitialStatusConsumed={consumeOrdersStatus}
-          dateFields={(value, change) => (
-            <ArabicDateFields value={value} change={change} />
-          )}
-          actions={(order, refresh, driver) => (
-            <DeliveryActions
-              key={order.order_id}
-              order={order}
-              driver={driver}
-              refresh={refresh}
-            />
-          )}
-        />
-      )}
-      {route === 'drivers' && <Drivers />}
-      {route === 'profile' && (
-        <CompanyProfile onUpdated={handleCompanyUpdated} />
-      )}
-      {route === 'account' && (
-        <AccountScreen
-          api={api}
-          user={user}
-          updated={setUser}
-          onPasswordChanged={() =>
-            setAuthNotice(
-              'تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.',
-            )
-          }
-        />
-      )}
+      <Suspense fallback={<Loading />}>
+        {route === 'home' && (
+          <Home
+            revision={analyticsRevision}
+            navigate={navigate}
+            company={company}
+          />
+        )}
+        {route === 'orders' && (
+          <OrdersBoard
+            api={api}
+            prefix="/delivery-company"
+            revision={revision}
+            delivery
+            initialStatus={ordersStatus}
+            onInitialStatusConsumed={consumeOrdersStatus}
+            dateFields={(value, change) => (
+              <ArabicDateFields value={value} change={change} />
+            )}
+            actions={(order, refresh, driver) => (
+              <Suspense fallback={<Loading />}>
+                <DeliveryActions
+                  key={order.order_id}
+                  order={order}
+                  driver={driver}
+                  refresh={refresh}
+                />
+              </Suspense>
+            )}
+          />
+        )}
+        {route === 'drivers' && <Drivers />}
+        {route === 'profile' && (
+          <CompanyProfile onUpdated={handleCompanyUpdated} />
+        )}
+        {route === 'account' && (
+          <AccountScreen
+            api={api}
+            user={user}
+            updated={setUser}
+            onPasswordChanged={() =>
+              setAuthNotice(
+                'تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.',
+              )
+            }
+          />
+        )}
+      </Suspense>
     </Shell>
   );
 }

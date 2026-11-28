@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -17,8 +18,8 @@ import {
   SlidersHorizontal,
   Trash2,
   Unlink,
-  Upload,
 } from 'lucide-react';
+import { translateFieldReason } from '@akeela/portal/error-messages';
 import { api, ApiError, query } from '../lib/api';
 import type {
   Addon,
@@ -36,9 +37,11 @@ import {
   cairoStartOfDayISO,
   formatDate,
   money,
+  parseMoneyCents,
 } from '../lib/format';
 import { useResource } from '../lib/use-resource';
 import { Presence } from '../components/presence';
+import { ImagePicker } from '../components/image-picker';
 import {
   Activity,
   ButtonContent,
@@ -183,21 +186,6 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
     useState(false);
 
   useEffect(() => {
-    setPage(1);
-    setCategory('');
-    setPool('all');
-    setSelectedCategoryId(null);
-    setManagingCategoryProducts(false);
-    setEditing(null);
-    setLinking(null);
-    setLinkingAddon(null);
-    setMovingProduct(null);
-    setConfirmState(null);
-    setConfirmError(null);
-    setFeedback('');
-  }, [kind]);
-
-  useEffect(() => {
     if (!feedback) return;
     const timer = window.setTimeout(() => setFeedback(''), 5000);
     return () => window.clearTimeout(timer);
@@ -229,21 +217,30 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
     if (last && page > last) setPage(Math.max(1, last));
   }, [resource.result?.meta?.last_page, page]);
 
-  const singlePageCategories =
-    kind === 'categories' &&
-    page === 1 &&
-    resource.result?.meta?.last_page === 1
-      ? (resource.result.data as Category[])
-      : null;
+  const singlePageCategories = useMemo(
+    () =>
+      kind === 'categories' &&
+      page === 1 &&
+      resource.result?.meta?.last_page === 1
+        ? (resource.result.data as Category[])
+        : null,
+    [kind, page, resource.result],
+  );
+  const needsAllCategoriesFetch =
+    kind === 'products' ||
+    (kind === 'categories' &&
+      !singlePageCategories &&
+      Boolean(resource.result || !resource.loading));
 
   useEffect(() => {
     if (singlePageCategories) {
       setCategories(singlePageCategories);
       setPickerError(null);
-      return;
     }
-    if (kind !== 'products' && kind !== 'categories') return;
-    if (kind === 'categories' && !resource.result && resource.loading) return;
+  }, [singlePageCategories]);
+
+  useEffect(() => {
+    if (!needsAllCategoriesFetch) return;
     const controller = new AbortController();
     setPickerError(null);
     allPages<Category>('/restaurant/categories', controller.signal)
@@ -254,13 +251,7 @@ export function Catalog({ kind }: { kind: CatalogKind }) {
         if (!controller.signal.aborted) setPickerError(cause);
       });
     return () => controller.abort();
-  }, [
-    kind,
-    categoriesRev,
-    singlePageCategories,
-    resource.loading,
-    resource.result,
-  ]);
+  }, [needsAllCategoriesFetch, categoriesRev]);
 
   const refreshAll = (message?: string) => {
     if (message) setFeedback(message);
@@ -1516,10 +1507,20 @@ export function CatalogEditor({
 
   useEffect(() => {
     if (kind !== 'products') return;
+    const hasPrefetchedCategories = allCategories.length > 0;
+    if (hasPrefetchedCategories) {
+      setCategories(allCategories);
+    }
+    if (hasPrefetchedCategories && !initialId) {
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     setLoading(true);
     Promise.all([
-      allPages<Category>('/restaurant/categories', controller.signal),
+      hasPrefetchedCategories
+        ? Promise.resolve(allCategories)
+        : allPages<Category>('/restaurant/categories', controller.signal),
       initialId
         ? api.request<Product>('/restaurant/products/' + initialId, {
             signal: controller.signal,
@@ -1550,12 +1551,16 @@ export function CatalogEditor({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [kind, initialId]);
+  }, [kind, initialId, allCategories]);
 
   const set = (name: string, val: string) =>
     setValues((old) => ({ ...old, [name]: val }));
   const err = (name: string) =>
-    error instanceof ApiError ? error.fields[name]?.join(' ') : undefined;
+    error instanceof ApiError
+      ? error.fields[name]
+          ?.map((reason) => translateFieldReason(name, reason))
+          .join(' ')
+      : undefined;
 
   const isProductUnlinked = kind === 'products' && !values.cat_id;
   const editingCategory =
@@ -1671,11 +1676,11 @@ export function CatalogEditor({
           );
         const start = cairoStartOfDayISO(values.starts_at);
         const end = cairoEndOfDayISO(values.expires_at);
-        const toCents = (v: string) => {
-          const [a, b = ''] = v.split('.');
-          return BigInt(a) * 100n + BigInt(b.padEnd(2, '0'));
-        };
-        if (toCents(values.real_price) > toCents(values.initial_price))
+        const realCents = parseMoneyCents(values.real_price);
+        const initialCents = parseMoneyCents(values.initial_price);
+        if (realCents === null || initialCents === null)
+          throw new Error('أدخل أسعارًا صالحة بخانتين عشريتين على الأكثر.');
+        if (realCents > initialCents)
           throw new Error('سعر العرض لا يتجاوز السعر الأصلي.');
         Object.assign(body, {
           offer_description: values.offer_description || null,
@@ -2084,74 +2089,6 @@ export function CatalogEditor({
         </form>
       )}
     </Dialog>
-  );
-}
-
-export function ImagePicker({
-  src,
-  file,
-  onFile,
-  uploading = false,
-}: {
-  src: string | null;
-  file: File | null;
-  onFile: (file: File | null) => void;
-  uploading?: boolean;
-}) {
-  const [preview, setPreview] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    if (!file) {
-      setPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-  return (
-    <div className="image-picker full">
-      <Picture src={preview || src} alt="معاينة الصورة" />
-      <div>
-        <h3>الصورة</h3>
-        {uploading && (
-          <div role="status">
-            <progress aria-label="جارٍ رفع الصورة" /> جارٍ رفع الصورة…
-          </div>
-        )}
-        <p>JPEG، PNG أو WebP — حتى 5MB</p>
-        <label className="button secondary upload-label">
-          <Upload size={17} />
-          اختيار صورة
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(event) => {
-              const selected = event.target.files?.[0];
-              if (!selected) return;
-              if (
-                !['image/jpeg', 'image/png', 'image/webp'].includes(
-                  selected.type,
-                ) ||
-                selected.size > 5 * 1024 * 1024
-              ) {
-                setError('اختر صورة JPEG أو PNG أو WebP لا تتجاوز 5MB.');
-                event.target.value = '';
-                return;
-              }
-              setError('');
-              onFile(selected);
-            }}
-          />
-        </label>
-        {file && <small>{file.name} · تُرفع بعد حفظ البيانات.</small>}
-        {error && (
-          <p role="alert" className="field-error">
-            {error}
-          </p>
-        )}
-      </div>
-    </div>
   );
 }
 

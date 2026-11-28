@@ -13,7 +13,7 @@ npm run start:dev
 npm run check
 ```
 
-Local secrets belong in `apps/api/.env`; use `.env.example` and `.env.gmail.example` in this directory. Production values are passed into the container. Keep separate environments for future frontends.
+Local secrets belong in `apps/api/.env`; use `.env.example` and `.env.gmail.example` in this directory. Production values are passed into the container. Keep separate public environments for the frontend apps.
 
 Compiled outputs are `apps/api/dist` and `apps/api/dist-test`. From the repository root, build the production image with:
 

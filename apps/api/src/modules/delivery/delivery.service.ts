@@ -33,12 +33,16 @@ export class DeliveryService {
     const company = id
       ? await manager
           .getRepository(DeliveryCompanyProfile)
-          .findOneBy({ company_id: id })
+          .createQueryBuilder('c')
+          .innerJoin(
+            'users',
+            'u',
+            'u.user_id = c.user_id AND u.is_active = true AND u.email_verified_at IS NOT NULL',
+          )
+          .where('c.company_id = :id AND c.is_active = true', { id })
+          .getOne()
       : null;
-    const owner = company
-      ? await this.users.byId(company.user_id, manager)
-      : null;
-    if (!company?.is_active || !owner?.is_active || !owner.email_verified_at)
+    if (!company)
       throw new ApiError(
         409,
         'DELIVERY_COMPANY_UNAVAILABLE',
@@ -92,7 +96,15 @@ export class DeliveryService {
         .getOne();
       if (!profile)
         throw new ApiError(404, 'NOT_FOUND', 'Company profile not found.');
-      Object.assign(profile, input);
+      if (input.company_name !== undefined)
+        profile.company_name = input.company_name;
+      if (input.company_phone !== undefined)
+        profile.company_phone = input.company_phone;
+      if (input.company_email !== undefined)
+        profile.company_email = input.company_email;
+      if (input.company_address !== undefined)
+        profile.company_address = input.company_address;
+      if (input.is_active !== undefined) profile.is_active = input.is_active;
       return repo.save(profile);
     });
   }
@@ -141,7 +153,13 @@ export class DeliveryService {
         .setLock('pessimistic_write')
         .getOne();
       if (!driver) throw new ApiError(404, 'NOT_FOUND', 'Driver not found.');
-      Object.assign(driver, input);
+      if (input.driver_name !== undefined)
+        driver.driver_name = input.driver_name;
+      if (input.driver_phone !== undefined)
+        driver.driver_phone = input.driver_phone;
+      if (input.driver_email !== undefined)
+        driver.driver_email = input.driver_email;
+      if (input.is_active !== undefined) driver.is_active = input.is_active;
       return repo.save(driver);
     });
   }

@@ -1,6 +1,6 @@
 # Realtime Orders
 
-Socket.IO is part of the existing NestJS process. No new service, database table or mobile push-notification provider is needed. Use REST as the source of truth.
+Socket.IO is part of the existing NestJS process for live dashboard/client invalidation; mobile background push notifications are handled separately via FCM HTTP v1 ([NOTIFICATIONS.md](NOTIFICATIONS.md)). Use REST as the source of truth.
 
 ## Connection
 

@@ -22,8 +22,6 @@ export interface RestaurantRegistration {
 export interface RestaurantListFilters {
   activation_status?: 'Pending' | 'Active' | 'Suspended';
   search?: string;
-  page?: number;
-  per_page?: number;
   skip?: number;
   take?: number;
 }
@@ -80,18 +78,27 @@ export class RestaurantsService {
       .update({ rest_id: profile.rest_id }, { rest_image_url_mobile: url });
   }
   async saleStatus(restId: string, manager: EntityManager) {
-    const profile = await this.profileById(restId, manager);
-    const owner = profile
-      ? await this.users.byId(profile.user_id, manager)
-      : null;
+    const { entities, raw } = await manager
+      .getRepository(RestaurantProfile)
+      .createQueryBuilder('r')
+      .leftJoin('users', 'u', 'u.user_id = r.user_id')
+      .addSelect('u.is_active', 'owner_is_active')
+      .addSelect('u.email_verified_at', 'owner_email_verified_at')
+      .where('r.rest_id = :restId', { restId })
+      .getRawAndEntities<{
+        owner_is_active: boolean | null;
+        owner_email_verified_at: Date | null;
+      }>();
+    const profile = entities[0] ?? null;
+    const ownerRow = raw[0];
     return {
       profile,
       is_available: Boolean(
         profile &&
         profile.activation_status === 'Active' &&
         profile.is_active &&
-        owner?.is_active &&
-        owner.email_verified_at,
+        ownerRow?.owner_is_active &&
+        ownerRow.owner_email_verified_at,
       ),
     };
   }
@@ -131,16 +138,20 @@ export class RestaurantsService {
   }
 
   async getPublic(restId: string): Promise<RestaurantProfile> {
-    const profile = await this.profileById(restId);
-    const owner = profile ? await this.users.byId(profile.user_id) : null;
-    if (
-      !profile ||
-      profile.activation_status !== 'Active' ||
-      !profile.is_active ||
-      !owner?.is_active ||
-      !owner.email_verified_at
-    )
-      throw new ApiError(404, 'NOT_FOUND', 'Restaurant not found.');
+    const profile = await this.dataSource
+      .getRepository(RestaurantProfile)
+      .createQueryBuilder('r')
+      .innerJoin(
+        'users',
+        'u',
+        'u.user_id = r.user_id AND u.is_active = true AND u.email_verified_at IS NOT NULL',
+      )
+      .where(
+        "r.rest_id = :restId AND r.activation_status = 'Active' AND r.is_active = true",
+        { restId },
+      )
+      .getOne();
+    if (!profile) throw new ApiError(404, 'NOT_FOUND', 'Restaurant not found.');
     return profile;
   }
 
@@ -251,8 +262,8 @@ export class RestaurantsService {
         { search: `%${escaped}%` },
       );
     }
-    const take = filters.take ?? filters.per_page ?? 20;
-    const skip = filters.skip ?? ((filters.page ?? 1) - 1) * take;
+    const take = filters.take ?? 20;
+    const skip = filters.skip ?? 0;
     const [profiles, total] = await qb.skip(skip).take(take).getManyAndCount();
 
     const owners = await this.users.byIds(

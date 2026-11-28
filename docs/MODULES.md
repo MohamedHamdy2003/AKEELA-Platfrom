@@ -1,19 +1,20 @@
 # Module Ownership
 
-Features 01-17 are implemented, including restaurant, customer, Admin and delivery-company order operations. Twenty table mappings and the Orders_History view exist. Orders owns every order read and transition; Delivery and Restaurants expose transaction-aware validation only.
+Features 01–18 are implemented across 11 backend modules, 21 entity tables, and the `Orders_History` view. Orders owns every order read and transition; Delivery and Restaurants expose transaction-aware validation only.
 
-| Module        | Responsibilities                                                                                    | Owned logical tables / view                                 | Feature sections                                       |
-| ------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ |
-| `users`       | Shared account records, activity, role, Admin profile                                               | Users, Admin_Profiles                                       | 01–02 account data                                     |
-| `auth`        | Registration orchestration, email OTP, login, JWT sessions, password recovery, account provisioning | Auth_Challenges, Auth_Sessions                              | 01; account creation in 02                             |
-| `customers`   | Customer profile and saved addresses                                                                | Customer_Profiles, Customer_Addresses                       | 03; profile portions of 01                             |
-| `restaurants` | Restaurant profile, approval/suspension, dashboard, public restaurant details                       | Restaurant_Profiles                                         | Restaurant review in 02, 04, restaurant portions of 09 |
-| `catalog`     | Categories, products, addons, links, offers, public menus                                           | Categories, Products, Addons, Product_Addons, Offers        | 05–09                                                  |
-| `delivery`    | Company profiles, drivers, active-company selection lookup                                          | Delivery_Company_Profiles, Delivery_Drivers                 | 10; lookup portions of 14                              |
-| `cart`        | Customer cart, item/addon choices, current quote                                                    | Carts, Cart_Items, Cart_Item_Addons                         | 11                                                     |
-| `orders`      | Checkout, snapshots, order queries/history, transitions, delivery assignment                        | Orders, Order_Items, Order_Item_Addons, Orders_History view | 12–14                                                  |
-| `images`      | Upload validation, encoding, persistent files and URL assignment through domain services            | None                                                        | 15                                                     |
-| `health`      | Public process/database probes                                                                      | None                                                        | 16                                                     |
+| Module          | Responsibilities                                                                                    | Owned logical tables / view                                 | Feature sections                                       |
+| --------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ |
+| `users`         | Shared account records, activity, role, Admin profile                                               | Users, Admin_Profiles                                       | 01–02 account data                                     |
+| `auth`          | Registration orchestration, email OTP, login, JWT sessions, password recovery, account provisioning | Auth_Challenges, Auth_Sessions                              | 01; account creation in 02                             |
+| `customers`     | Customer profile and saved addresses                                                                | Customer_Profiles, Customer_Addresses                       | 03; profile portions of 01                             |
+| `restaurants`   | Restaurant profile, approval/suspension, dashboard, public restaurant details                       | Restaurant_Profiles                                         | Restaurant review in 02, 04, restaurant portions of 09 |
+| `catalog`       | Categories, products, addons, links, offers, public menus, global search, smart home offers feed    | Categories, Products, Addons, Product_Addons, Offers        | 05–09                                                  |
+| `delivery`      | Company profiles, drivers, active-company selection lookup                                          | Delivery_Company_Profiles, Delivery_Drivers                 | 10; lookup portions of 14                              |
+| `cart`          | Customer cart, item/addon choices, current quote                                                    | Carts, Cart_Items, Cart_Item_Addons                         | 11                                                     |
+| `orders`        | Checkout, snapshots, order queries/history, counts, analytics, transitions, delivery assignment     | Orders, Order_Items, Order_Item_Addons, Orders_History view | 12–14, 17                                              |
+| `images`        | Upload validation, encoding, persistent files, orphan cleanup and URL assignment via domain         | None                                                        | 15                                                     |
+| `health`        | Public process/database probes                                                                      | None                                                        | 16                                                     |
+| `notifications` | FCM device token registration/management and push notification dispatch                             | Device_Tokens                                               | 18                                                     |
 
 All backend modules below live under `apps/api/src/modules`. Frontends are separate clients in implemented `apps/restaurant`, `apps/admin` and `apps/delivery` directories; they do not own database tables.
 
@@ -29,16 +30,17 @@ All backend modules below live under `apps/api/src/modules`. Frontends are separ
 
 ## Dependency direction
 
-| Caller      | Permitted collaborators when needed                          |
-| ----------- | ------------------------------------------------------------ |
-| Users       | No business module dependency                                |
-| Customers   | Users                                                        |
-| Restaurants | Users                                                        |
-| Delivery    | Users                                                        |
-| Catalog     | Restaurants                                                  |
-| Auth        | Users, Customers, Restaurants, Delivery                      |
-| Cart        | Customers, Restaurants, Catalog                              |
-| Orders      | Auth, Users, Customers, Restaurants, Catalog, Cart, Delivery |
+| Caller        | Permitted collaborators when needed                                         |
+| ------------- | --------------------------------------------------------------------------- |
+| Users         | No business module dependency                                               |
+| Customers     | Users                                                                       |
+| Restaurants   | Users                                                                       |
+| Delivery      | Users                                                                       |
+| Catalog       | Restaurants                                                                 |
+| Auth          | Users, Customers, Restaurants, Delivery                                     |
+| Cart          | Customers, Restaurants, Catalog                                             |
+| Orders        | Auth, Users, Customers, Restaurants, Catalog, Cart, Delivery, Notifications |
+| Notifications | Users                                                                       |
 
 Images may call Users, Customers, Restaurants and Catalog; Health uses the shared DataSource without table ownership.
 

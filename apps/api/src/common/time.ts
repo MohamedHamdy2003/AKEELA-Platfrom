@@ -43,25 +43,51 @@ export function msUntilNextCairoMidnight(now: Date = new Date()): number {
   }
   return 60 * 60 * 1_000;
 }
+const ISO_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/;
 export function cairoTimestamp(date: Date): string {
-  const p = Object.fromEntries(
-    formatter.formatToParts(date).map((part) => [part.type, part.value]),
-  );
+  let year = '';
+  let month = '';
+  let day = '';
+  let hour = '';
+  let minute = '';
+  let second = '';
+  for (const part of formatter.formatToParts(date)) {
+    switch (part.type) {
+      case 'year':
+        year = part.value;
+        break;
+      case 'month':
+        month = part.value;
+        break;
+      case 'day':
+        day = part.value;
+        break;
+      case 'hour':
+        hour = part.value;
+        break;
+      case 'minute':
+        minute = part.value;
+        break;
+      case 'second':
+        second = part.value;
+        break;
+    }
+  }
   const offset = Math.round(
     (Date.UTC(
-      Number(p.year),
-      Number(p.month) - 1,
-      Number(p.day),
-      Number(p.hour),
-      Number(p.minute),
-      Number(p.second),
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second),
     ) -
       Math.floor(date.getTime() / 1000) * 1000) /
       60000,
   );
   const sign = offset >= 0 ? '+' : '-';
   const n = Math.abs(offset);
-  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}.${date.getUTCMilliseconds().toString().padStart(3, '0')}${sign}${Math.floor(
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}.${date.getUTCMilliseconds().toString().padStart(3, '0')}${sign}${Math.floor(
     n / 60,
   )
     .toString()
@@ -72,14 +98,40 @@ function localize(value: unknown, key = ''): unknown {
   if (
     typeof value === 'string' &&
     key.endsWith('_at') &&
-    /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    ISO_TIMESTAMP_RE.test(value)
   )
     return cairoTimestamp(new Date(value));
-  if (Array.isArray(value)) return value.map((item) => localize(item));
-  if (value && typeof value === 'object')
-    return Object.fromEntries(
-      Object.entries(value).map(([name, item]) => [name, localize(item, name)]),
-    );
+  if (Array.isArray(value)) {
+    let changed = false;
+    let out: unknown[] | undefined;
+    for (let i = 0; i < value.length; i++) {
+      const item = value[i];
+      const next = localize(item);
+      if (next !== item) {
+        if (!changed) {
+          changed = true;
+          out = value.slice(0, i);
+        }
+      }
+      if (out) out.push(next);
+    }
+    return out ?? value;
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    let changed = false;
+    let out: Record<string, unknown> | undefined;
+    for (const name of Object.keys(record)) {
+      const item = record[name];
+      const next = localize(item, name);
+      if (next !== item && !changed) {
+        changed = true;
+        out = { ...record };
+      }
+      if (out) out[name] = next;
+    }
+    return out ?? value;
+  }
   return value;
 }
 @Injectable()

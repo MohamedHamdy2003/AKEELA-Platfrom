@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Header, Query } from '@nestjs/common';
 import { PublicRoute } from '../../common/http/public-route.decorator';
 import { paginationMeta, resolvePagination } from '../users/admin.dto';
 import { ListPublicOffersFeedQuery } from './offers-feed.dto';
@@ -10,6 +10,7 @@ export class PublicOffersController {
   constructor(private readonly offersFeed: OffersFeedService) {}
 
   @Get()
+  @Header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30')
   async list(@Query() query: ListPublicOffersFeedQuery) {
     const pagination = resolvePagination(query);
     const { items, total } = await this.offersFeed.listPublicOffersFeed({

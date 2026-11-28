@@ -10,7 +10,6 @@ import {
 } from 'typeorm';
 
 @Entity('addons')
-@Index('ix_addons_rest_id', ['rest_id'])
 @Index('uq_addons_rest_addon', ['rest_id', 'addon_id'], { unique: true })
 @ForeignKey('restaurant_profiles', ['rest_id'], ['rest_id'], {
   name: 'fk_addons_restaurant',

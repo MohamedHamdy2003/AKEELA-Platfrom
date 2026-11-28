@@ -1,14 +1,10 @@
 # Bruno API Collection
 
-The Git-managed collection lives at `bruno/AKEELA`. It contains 89 implemented requests across folders 01-16. New implemented features get the same numbered folder names as the API specifications; do not add runnable placeholders for unimplemented endpoints.
+The Git-managed collection lives at `bruno/AKEELA`. It contains 96 implemented requests across 17 folders (`01–16` and `18`; section 17 is Socket.IO realtime with no HTTP routes). New implemented features get the same numbered folder names as the API specifications; do not add runnable placeholders for unimplemented endpoints.
 
 ## Open the project collection
 
-Use the collection inside the backend repository. In Bruno, choose **Open Collection** and select:
-
-```text
-G:\AKEELA\bruno\AKEELA
-```
+Use the collection inside the repository. In Bruno, choose **Open Collection** and select `<repo-root>/bruno/AKEELA`.
 
 The collection follows the current branch of the same repository as the backend. Update requests with their feature, then use the normal feature branch → dev → owner-approved main flow. Do not create a separate testing checkout. GitHub updates arrive through Git pulls, not automatically in Bruno.
 
@@ -30,7 +26,7 @@ Tokens are held in memory and cleared after successful logout or password reset/
 - Update the endpoint specifications and matching feature folder in the same feature PR.
 - Run `npm run bruno:check` and `npm run docs:check`. The first discovers numbered feature folders and validates their syntax, request bodies, scripts, auth modes, and route coverage against the matching specification section.
 - Keep one collection, two shared environment templates, private `.env` values, and runtime tokens. Avoid new tooling layers or generated endpoint placeholders.
-- Feature PRs target dev. Publishing newer collections to main follows the owner-approved release flow; this Auth/Bruno promotion is explicitly approved, not blanket permission for future main merges.
+- Feature PRs target `dev`. Main promotion requires explicit owner approval.
 - Test the current feature using this same project collection; its requests follow the checked-out branch.
 
 References: [Bruno Git collaboration](https://docs.usebruno.com/git-integration/overview), [private dotenv files](https://docs.usebruno.com/secrets-management/dotenv-file), [runtime variables](https://docs.usebruno.com/variables/runtime-variables).
@@ -39,10 +35,8 @@ References: [Bruno Git collaboration](https://docs.usebruno.com/git-integration/
 
 Folders 11 and 12 contain the ten implemented cart/order requests. Use Customer login. Set runtime rest_id/prod_id from the public menu. Add item stores cart_item_id and Checkout stores order_id in runtime variables only. Quote is informational; checkout uses current prices plus EGP 30.00 without a quote token or checkout key. The templates show a one-time address; replace it with address_id to use a saved address. Run requests individually, not the whole folder as a single scenario.
 
-## Restaurant orders and delivery
+## Restaurant orders, delivery, images, health, and notifications
 
-Folders 13 and 14 contain the final twelve routes. Set DEFAULT_DELIVERY_COMPANY_ID in the backend environment to the real company profile ID and restart the backend before acceptance. Use the restaurant login for folder 13, Admin for the first three requests of folder 14, and the assigned company for its remaining requests. Reuse runtime order_id from checkout and driver_id from company driver creation. Actions are state-specific; run them individually.
+Folders 13 and 14 cover restaurant orders, delivery company operations, Admin order monitoring/failure, status counts, and analytics. Set `DEFAULT_DELIVERY_COMPANY_ID` in the backend environment to the real company profile ID and restart the backend before acceptance. Use the restaurant login for folder 13, Admin for the Admin routes in folder 14, and the assigned company for company routes. Reuse runtime `order_id` from checkout and `driver_id` from company driver creation. Actions are state-specific; run them individually.
 
-## Images and health
-
-Folder 15 uses multipart uploads. Choose a local JPEG/PNG/WebP in its `file` field (replace the empty picker); do not set a Content-Type boundary manually. Use Customer login for avatar and Active owner login for restaurant/product/offer images. Product/offer IDs are runtime variables. Folder 16 health requests need no authentication.
+Folder 15 uses multipart uploads. Choose a local JPEG/PNG/WebP in its `file` field (replace the empty picker); do not set a `Content-Type` boundary manually. Use Customer login for avatar and Active owner login for restaurant/product/offer images. Product/offer IDs are runtime variables. Folder 16 health requests need no authentication. Folder 18 covers FCM device token registration/removal (any authenticated user) and Admin push notification dispatch.

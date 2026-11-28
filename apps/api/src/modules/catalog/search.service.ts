@@ -170,6 +170,56 @@ export class CatalogSearchService {
     const cairoTime = cairoClockFormatter.format(now);
     const runAll = type === 'all';
 
+    // When fuzzy matching isn't needed (short/exact queries), skip opening a serializing
+    // single-connection transaction and execute the requested entity searches in parallel.
+    if (!terms.useFuzzy) {
+      const ctx: QueryContext = {
+        manager: this.dataSource.manager,
+        terms,
+        limit,
+        openOnly,
+        restId: options.restId,
+        cairoTime,
+        now,
+      };
+      const [restaurantsRes, productsRes, offersRes, categoriesRes] =
+        await Promise.all([
+          runAll || type === 'restaurants'
+            ? this.searchRestaurants(ctx)
+            : Promise.resolve({
+                items: [] as SearchRestaurantResult[],
+                total: 0,
+              }),
+          runAll || type === 'products'
+            ? this.searchProducts(ctx)
+            : Promise.resolve({ items: [] as SearchProductResult[], total: 0 }),
+          runAll || type === 'offers'
+            ? this.searchOffers(ctx)
+            : Promise.resolve({ items: [] as SearchOfferResult[], total: 0 }),
+          runAll || type === 'categories'
+            ? this.searchCategories(ctx)
+            : Promise.resolve({
+                items: [] as SearchCategoryResult[],
+                total: 0,
+              }),
+        ]);
+      return {
+        query: terms.raw,
+        normalized_query: terms.normalized,
+        type,
+        counts: {
+          restaurants: restaurantsRes.total,
+          products: productsRes.total,
+          offers: offersRes.total,
+          categories: categoriesRes.total,
+        },
+        restaurants: restaurantsRes.items,
+        products: productsRes.items,
+        offers: offersRes.items,
+        categories: categoriesRes.items,
+      };
+    }
+
     return this.dataSource.transaction(async (manager) => {
       await manager.query('SET TRANSACTION READ ONLY');
       if (terms.useFuzzy) {
@@ -568,9 +618,11 @@ export class CatalogSearchService {
     );
 
     const extraFilters: string[] = [];
+    let restIdParam: string | null = null;
     if (ctx.restId) {
       params.push(ctx.restId);
-      extraFilters.push(`r.rest_id = $${params.length}`);
+      restIdParam = `$${params.length}`;
+      extraFilters.push(`r.rest_id = ${restIdParam}`);
     }
     if (ctx.openOnly) {
       extraFilters.push(openExpr);
@@ -591,6 +643,7 @@ export class CatalogSearchService {
         FROM restaurant_profiles r
         WHERE r.activation_status = 'Active'
           AND r.is_active = true
+          ${restIdParam ? `AND r.rest_id = ${restIdParam}` : ''}
           AND (${restTitleMatch} OR ${restDescMatch})
 
         UNION ALL
@@ -604,6 +657,7 @@ export class CatalogSearchService {
           0::int AS offer_matches
         FROM categories c
         WHERE c.is_active = true
+          ${restIdParam ? `AND c.rest_id = ${restIdParam}` : ''}
           AND ${catMatch}
         GROUP BY c.rest_id
 
@@ -623,6 +677,7 @@ export class CatalogSearchService {
          AND c.is_active = true
         WHERE p.is_active = true
           AND p.cat_id IS NOT NULL
+          ${restIdParam ? `AND p.rest_id = ${restIdParam}` : ''}
           AND (${prodNameMatch} OR ${prodDescMatch})
         GROUP BY p.rest_id
 
@@ -639,6 +694,7 @@ export class CatalogSearchService {
         WHERE o.is_active = true
           AND o.starts_at <= $5
           AND o.expires_at > $5
+          ${restIdParam ? `AND o.rest_id = ${restIdParam}` : ''}
           AND (${offerTitleMatch} OR ${offerDescMatch})
         GROUP BY o.rest_id
       ),

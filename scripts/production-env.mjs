@@ -17,10 +17,14 @@ export function renderPrivateEnvironment(values) {
   if (
     Object.entries(values).some(
       ([key, value]) =>
-        !/^[_A-Z][_A-Z0-9]*$/.test(key) || /[\r\n\0]/.test(value),
+        !/^[_A-Z][_A-Z0-9]*$/.test(key) ||
+        /[\r\n\0]/.test(value) ||
+        value.endsWith('\\'),
     )
   )
-    throw new Error('Invalid single-line environment fields.');
+    throw new Error(
+      'Invalid single-line environment fields (values cannot end with a backslash).',
+    );
   return (
     header +
     Object.entries(values)

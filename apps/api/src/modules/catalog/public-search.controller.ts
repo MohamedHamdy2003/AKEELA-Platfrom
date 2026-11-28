@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Header, Query } from '@nestjs/common';
 import { PublicRoute } from '../../common/http/public-route.decorator';
 import { GlobalSearchQuery } from './search.dto';
 import { CatalogSearchService } from './search.service';
@@ -9,6 +9,7 @@ export class PublicSearchController {
   constructor(private readonly searchService: CatalogSearchService) {}
 
   @Get()
+  @Header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30')
   async search(@Query() query: GlobalSearchQuery) {
     const data = await this.searchService.search({
       q: query.q,

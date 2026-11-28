@@ -1,8 +1,7 @@
 import { navigation } from './lib/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import type { User } from '@akeela/portal/models';
-import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
-import { AccountScreen, OrdersBoard } from '@akeela/portal/screens';
+import type { RealtimeStatus } from '@akeela/portal/realtime';
 import { ArabicDateFields } from '@akeela/portal/arabic-date-fields';
 import {
   AuthPage,
@@ -14,11 +13,27 @@ import {
 } from '@akeela/portal/ui';
 import { useSessionRestore } from '@akeela/portal/use-session-restore';
 import { api, base } from './lib/api';
-import { Home } from './features/home';
-import { Restaurants } from './features/restaurants';
-import { Users, Companies } from './features/users';
-import { AdminActions } from './features/orders';
 import { ArabicFields } from './components/arabic-fields';
+import { AdminActions } from './features/orders';
+
+const Home = lazy(() =>
+  import('./features/home').then((m) => ({ default: m.Home })),
+);
+const Restaurants = lazy(() =>
+  import('./features/restaurants').then((m) => ({ default: m.Restaurants })),
+);
+const Users = lazy(() =>
+  import('./features/users').then((m) => ({ default: m.Users })),
+);
+const Companies = lazy(() =>
+  import('./features/users').then((m) => ({ default: m.Companies })),
+);
+const OrdersBoard = lazy(() =>
+  import('@akeela/portal/screens').then((m) => ({ default: m.OrdersBoard })),
+);
+const AccountScreen = lazy(() =>
+  import('@akeela/portal/screens').then((m) => ({ default: m.AccountScreen })),
+);
 const currentRoute = () => {
   if (typeof window === 'undefined') return 'home';
   if (window.location.hash.startsWith('#/')) {
@@ -77,12 +92,21 @@ function AdminWorkspace() {
   }, [revision]);
   useEffect(() => {
     if (!user) return;
-    return watchOrders({
-      baseUrl: base,
-      getToken: () => api.tokenForRealtime(),
-      changed: () => setRevision((n) => n + 1),
-      status: setStatus,
+    let active = true;
+    let stop: (() => void) | undefined;
+    void import('@akeela/portal/realtime').then(({ watchOrders }) => {
+      if (!active) return;
+      stop = watchOrders({
+        baseUrl: base,
+        getToken: () => api.tokenForRealtime(),
+        changed: () => setRevision((n) => n + 1),
+        status: setStatus,
+      });
     });
+    return () => {
+      active = false;
+      stop?.();
+    };
   }, [user?.user_id]);
   const navigate = (key: string, filter?: string) => {
     if (key === 'orders') setOrdersStatus(filter ?? '');
@@ -144,53 +168,56 @@ function AdminWorkspace() {
           forceLocalLogout();
         }}
       >
-        {route === 'home' && (
-          <Home revision={analyticsRevision} navigate={navigate} />
-        )}
-        {route === 'restaurants' && (
-          <Restaurants
-            revision={revision}
-            initialStatus={restaurantsStatus}
-            onInitialStatusConsumed={() => setRestaurantsStatus('')}
-          />
-        )}
-        {route === 'users' && (
-          <>
-            <PageTitle
-              title="المستخدمون"
-              description="الحسابات والأدوار وحالة النشاط."
+        <Suspense fallback={<Loading />}>
+          {route === 'home' && (
+            <Home revision={analyticsRevision} navigate={navigate} />
+          )}
+          {route === 'restaurants' && (
+            <Restaurants
+              revision={revision}
+              analyticsRevision={analyticsRevision}
+              initialStatus={restaurantsStatus}
+              onInitialStatusConsumed={() => setRestaurantsStatus('')}
             />
-            <Users />
-          </>
-        )}
-        {route === 'companies' && <Companies />}
-        {route === 'orders' && (
-          <OrdersBoard
-            api={api}
-            prefix="/admin"
-            revision={revision}
-            initialStatus={ordersStatus}
-            onInitialStatusConsumed={() => setOrdersStatus('')}
-            dateFields={(value, change) => (
-              <ArabicDateFields value={value} change={change} />
-            )}
-            actions={(order, refresh) => (
-              <AdminActions order={order} refresh={refresh} />
-            )}
-          />
-        )}
-        {route === 'account' && (
-          <AccountScreen
-            api={api}
-            user={user}
-            updated={setUser}
-            onPasswordChanged={() =>
-              setAuthNotice(
-                'تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.',
-              )
-            }
-          />
-        )}
+          )}
+          {route === 'users' && (
+            <>
+              <PageTitle
+                title="المستخدمون"
+                description="الحسابات والأدوار وحالة النشاط."
+              />
+              <Users />
+            </>
+          )}
+          {route === 'companies' && <Companies />}
+          {route === 'orders' && (
+            <OrdersBoard
+              api={api}
+              prefix="/admin"
+              revision={revision}
+              initialStatus={ordersStatus}
+              onInitialStatusConsumed={() => setOrdersStatus('')}
+              dateFields={(value, change) => (
+                <ArabicDateFields value={value} change={change} />
+              )}
+              actions={(order, refresh) => (
+                <AdminActions order={order} refresh={refresh} />
+              )}
+            />
+          )}
+          {route === 'account' && (
+            <AccountScreen
+              api={api}
+              user={user}
+              updated={setUser}
+              onPasswordChanged={() =>
+                setAuthNotice(
+                  'تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.',
+                )
+              }
+            />
+          )}
+        </Suspense>
       </Shell>
     </ArabicFields>
   );

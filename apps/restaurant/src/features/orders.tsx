@@ -79,13 +79,9 @@ export function OrdersTable({
   );
 }
 export function Orders({
-  initialId,
-  onInitialConsumed,
   initialStatus,
   onInitialStatusConsumed,
 }: {
-  initialId?: string | null;
-  onInitialConsumed: () => void;
   initialStatus?: string;
   onInitialStatusConsumed?: () => void;
 }) {
@@ -95,14 +91,8 @@ export function Orders({
     date_from: '',
     date_to: '',
   });
-  const [selected, setSelected] = useState<string | null>(initialId ?? null);
+  const [selected, setSelected] = useState<string | null>(null);
   const [resetSpin, setResetSpin] = useState(0);
-  useEffect(() => {
-    if (initialId) {
-      setSelected(initialId);
-      onInitialConsumed();
-    }
-  }, [initialId, onInitialConsumed]);
   useEffect(() => {
     if (initialStatus) {
       setFilters((current) => ({ ...current, status: initialStatus }));

@@ -8,13 +8,19 @@ const template = await readFile(
 );
 const content = template
   .replace(
-    'JWT_SECRET=\n',
-    `JWT_SECRET=${randomBytes(48).toString('base64url')}\n`,
+    /^JWT_SECRET=\r?$/m,
+    `JWT_SECRET=${randomBytes(48).toString('base64url')}`,
   )
   .replace(
-    'OTP_SECRET=\n',
-    `OTP_SECRET=${randomBytes(48).toString('base64url')}\n`,
+    /^OTP_SECRET=\r?$/m,
+    `OTP_SECRET=${randomBytes(48).toString('base64url')}`,
   );
+if (
+  !/^JWT_SECRET=.{32,}/m.test(content) ||
+  !/^OTP_SECRET=.{32,}/m.test(content)
+) {
+  throw new Error('Could not populate JWT_SECRET and OTP_SECRET in template.');
+}
 try {
   await writeFile(new URL('../apps/api/.env', import.meta.url), content, {
     flag: 'wx',

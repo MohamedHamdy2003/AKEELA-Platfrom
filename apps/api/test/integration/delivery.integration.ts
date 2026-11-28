@@ -117,11 +117,16 @@ test('company profile and drivers enforce role, ownership, validation and persis
     .send({ company_email: null, is_active: false })
     .expect(409);
   // The current single-company service cannot be disabled through the API.
-  await api()
+  const patchedCompany = await api()
     .patch(profile)
     .set('Authorization', auth(0))
     .send({ is_active: true })
     .expect(200);
+  // Partial PATCH must preserve all omitted company fields in its response payload.
+  assert.equal(patchedCompany.body.data.company_name, 'Delivery 1');
+  assert.equal(patchedCompany.body.data.company_phone, '+201000000010');
+  assert.equal(patchedCompany.body.data.company_address, 'Test address');
+  assert.equal(patchedCompany.body.data.is_active, true);
   await api()
     .post(drivers)
     .set('Authorization', auth(0))
@@ -153,11 +158,15 @@ test('company profile and drivers enforce role, ownership, validation and persis
     .set('Authorization', auth(0))
     .send({ is_active: false })
     .expect(422);
-  await api()
+  const patchedDriver = await api()
     .patch(`${drivers}/${id}`)
     .set('Authorization', auth(0))
     .send({ driver_email: null, is_active: false })
     .expect(200);
+  assert.equal(patchedDriver.body.data.driver_name, 'Driver');
+  assert.equal(patchedDriver.body.data.driver_phone, '+201111111111');
+  assert.equal(patchedDriver.body.data.driver_email, null);
+  assert.equal(patchedDriver.body.data.is_active, false);
   const listed = await api()
     .get(drivers + '?is_active=false&per_page=1')
     .set('Authorization', auth(0))

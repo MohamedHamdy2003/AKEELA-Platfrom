@@ -48,29 +48,28 @@ export class AuthCleanupService implements OnModuleInit, OnModuleDestroy {
     try {
       const sessionCutoff = new Date(Date.now() - SESSION_RETENTION_MS);
       const challengeCutoff = new Date(Date.now() - CHALLENGE_RETENTION_MS);
-      const [expiredSessionsResult, revokedSessionsResult, challengesResult] =
-        await Promise.all([
-          this.db
-            .createQueryBuilder()
-            .delete()
-            .from(AuthSession)
-            .where('expires_at < :cutoff', { cutoff: sessionCutoff })
-            .execute(),
-          this.db
-            .createQueryBuilder()
-            .delete()
-            .from(AuthSession)
-            .where('revoked_at IS NOT NULL AND revoked_at < :cutoff', {
-              cutoff: sessionCutoff,
-            })
-            .execute(),
-          this.db
-            .createQueryBuilder()
-            .delete()
-            .from(AuthChallenge)
-            .where('expires_at < :cutoff', { cutoff: challengeCutoff })
-            .execute(),
-        ]);
+      // Run the two auth_sessions deletes sequentially so overlapping rows
+      // (both expired and revoked) cannot trigger PostgreSQL 40P01 deadlocks.
+      const expiredSessionsResult = await this.db
+        .createQueryBuilder()
+        .delete()
+        .from(AuthSession)
+        .where('expires_at < :cutoff', { cutoff: sessionCutoff })
+        .execute();
+      const revokedSessionsResult = await this.db
+        .createQueryBuilder()
+        .delete()
+        .from(AuthSession)
+        .where('revoked_at IS NOT NULL AND revoked_at < :cutoff', {
+          cutoff: sessionCutoff,
+        })
+        .execute();
+      const challengesResult = await this.db
+        .createQueryBuilder()
+        .delete()
+        .from(AuthChallenge)
+        .where('expires_at < :cutoff', { cutoff: challengeCutoff })
+        .execute();
       const sessions =
         (expiredSessionsResult.affected ?? 0) +
         (revokedSessionsResult.affected ?? 0);

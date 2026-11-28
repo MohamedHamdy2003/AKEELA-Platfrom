@@ -1,47 +1,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { OrderDateFilters } from './screens';
+import {
+  arabicDigits,
+  dateValue,
+  latinDigits,
+  monthDays,
+} from './arabic-date-utils';
 import './arabic-date-fields.css';
 
-const western = '0123456789';
-const eastern = '٠١٢٣٤٥٦٧٨٩';
-const persian = '۰۱۲۳۴۵۶۷۸۹';
-
-function latinDigits(value: string) {
-  return value.replace(
-    /[٠-٩۰-۹]/g,
-    (digit) =>
-      western[
-        eastern.indexOf(digit) >= 0
-          ? eastern.indexOf(digit)
-          : persian.indexOf(digit)
-      ]!,
-  );
-}
-function arabicDigits(value: string | number) {
-  return String(value).replace(/[0-9]/g, (digit) => eastern[Number(digit)]!);
-}
-function monthDays(month: number, year: number) {
-  if (month === 2)
-    return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28;
-  return [4, 6, 9, 11].includes(month) ? 30 : 31;
-}
-function dateValue(day: string, month: string, year: string) {
-  const normalized = latinDigits(year);
-  if (
-    !/^[0-9]{4}$/.test(normalized) ||
-    Number(normalized) < 1 ||
-    !/^[0-9]{1,2}$/.test(day) ||
-    !/^[0-9]{1,2}$/.test(month) ||
-    Number(day) < 1 ||
-    Number(month) < 1 ||
-    Number(month) > 12 ||
-    !day ||
-    !month
-  )
-    return '';
-  if (Number(day) > monthDays(Number(month), Number(normalized))) return '';
-  return `${normalized}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-}
+export { arabicDigits, dateValue, latinDigits, monthDays };
 
 const months = Array.from({ length: 12 }, (_, index) =>
   new Intl.DateTimeFormat('ar-EG-u-ca-gregory', {

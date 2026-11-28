@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  statuses,
+  deliveryStatuses,
   type AdminAnalyticsHourPoint,
   type DeliveryAnalyticsDailyPoint,
   type DeliveryAnalyticsStatusBreakdown,
@@ -23,15 +23,17 @@ export const DELIVERY_STATUS_COLORS: Record<DeliveryStatusKey, string> = {
   Failed: '#c3343f',
 };
 
+const shortCairoDateFormatter = new Intl.DateTimeFormat('ar-EG', {
+  day: 'numeric',
+  month: 'short',
+  timeZone: 'UTC',
+});
+
 function shortCairoDate(isoDate: string): string {
   const [y, m, d] = isoDate.split('-').map(Number);
   if (!y || !m || !d) return isoDate;
   const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-  return new Intl.DateTimeFormat('ar-EG', {
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'UTC',
-  }).format(dt);
+  return shortCairoDateFormatter.format(dt);
 }
 
 function compactNumber(value: number): string {
@@ -409,7 +411,7 @@ export function DeliveryStatusDonut({
                     className="del-donut-seg"
                     tabIndex={0}
                     role="button"
-                    aria-label={`${statuses[seg.key]}: ${seg.value} (${seg.pct}%)`}
+                    aria-label={`${deliveryStatuses[seg.key]}: ${seg.value} (${seg.pct}%)`}
                     onMouseEnter={() => setHoveredStatus(seg.key)}
                     onMouseLeave={() => setHoveredStatus(null)}
                     onFocus={() => setHoveredStatus(seg.key)}
@@ -432,7 +434,7 @@ export function DeliveryStatusDonut({
             </strong>
             <span>
               {activeSeg
-                ? `${statuses[activeSeg.key]} (${activeSeg.pct}%)`
+                ? `${deliveryStatuses[activeSeg.key]} (${activeSeg.pct}%)`
                 : 'طلب مسنَد'}
             </span>
           </div>
@@ -460,7 +462,7 @@ export function DeliveryStatusDonut({
                       style={{ background: DELIVERY_STATUS_COLORS[key] }}
                       aria-hidden="true"
                     />
-                    {statuses[key]}
+                    {deliveryStatuses[key]}
                   </span>
                   <span className="del-legend-vals numeric">
                     <strong>{count}</strong>

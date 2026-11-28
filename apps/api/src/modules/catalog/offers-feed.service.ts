@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
+import { Environment } from '../../config/environment';
 import { PublicOfferFeedItemResponse } from './offers-feed.dto';
+
+const FEED_CACHE_TTL_MS = 20_000;
+const FEED_CACHE_MAX_ENTRIES = 100;
 
 const cairoClockFormatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Africa/Cairo',
@@ -45,16 +50,84 @@ function isOpenSql(cairoParam: string): string {
  */
 @Injectable()
 export class OffersFeedService {
-  constructor(private readonly dataSource: DataSource) {}
+  private readonly cache = new Map<
+    string,
+    {
+      expiresAt: number;
+      value: { items: PublicOfferFeedItemResponse[]; total: number };
+    }
+  >();
+  private readonly inflight = new Map<
+    string,
+    Promise<{ items: PublicOfferFeedItemResponse[]; total: number }>
+  >();
+
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly config: ConfigService<Environment, true>,
+  ) {}
 
   async listPublicOffersFeed(options: {
     skip: number;
     take: number;
     openOnly?: boolean;
   }): Promise<{ items: PublicOfferFeedItemResponse[]; total: number }> {
+    const openOnly = options.openOnly ?? false;
+    if (this.config.get('NODE_ENV', { infer: true }) === 'test') {
+      return this.queryFeed({
+        skip: options.skip,
+        take: options.take,
+        openOnly,
+      });
+    }
+
+    const cacheKey = `${options.skip}:${options.take}:${openOnly ? '1' : '0'}`;
+    const nowMs = Date.now();
+    const hit = this.cache.get(cacheKey);
+    if (hit && hit.expiresAt > nowMs) return hit.value;
+    if (hit) this.cache.delete(cacheKey);
+
+    const pending = this.inflight.get(cacheKey);
+    if (pending) return pending;
+
+    const promise = this.queryFeed({
+      skip: options.skip,
+      take: options.take,
+      openOnly,
+    })
+      .then((value) => {
+        if (this.cache.size >= FEED_CACHE_MAX_ENTRIES) {
+          const ts = Date.now();
+          for (const [k, entry] of this.cache) {
+            if (entry.expiresAt <= ts) this.cache.delete(k);
+          }
+          if (this.cache.size >= FEED_CACHE_MAX_ENTRIES) {
+            const oldest = this.cache.keys().next().value;
+            if (oldest !== undefined) this.cache.delete(oldest);
+          }
+        }
+        this.cache.set(cacheKey, {
+          expiresAt: Date.now() + FEED_CACHE_TTL_MS,
+          value,
+        });
+        return value;
+      })
+      .finally(() => {
+        this.inflight.delete(cacheKey);
+      });
+
+    this.inflight.set(cacheKey, promise);
+    return promise;
+  }
+
+  private async queryFeed(options: {
+    skip: number;
+    take: number;
+    openOnly: boolean;
+  }): Promise<{ items: PublicOfferFeedItemResponse[]; total: number }> {
     const now = new Date();
     const cairoTime = cairoClockFormatter.format(now);
-    const openOnly = options.openOnly ?? false;
+    const openOnly = options.openOnly;
     const openExpr = isOpenSql('$2');
 
     const sql = `

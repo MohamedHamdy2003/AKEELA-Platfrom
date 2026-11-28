@@ -2,17 +2,17 @@
 
 ## Current visual direction
 
-The owner requested a brighter, more vibrant modern Restaurant interface, smaller typography and more visible interaction motion. Fresh Kitchen replaces the muted Garden Kitchen treatment: near-white warm canvas, white operational surfaces, saturated emerald, orange action emphasis and crisp ink text. [Dashboard concept](design/restaurant/home-v2.png) and [login concept](design/restaurant/login-v2.png) guide palette, hierarchy and component treatment.
+The owner requested a brighter, more vibrant modern Restaurant interface, smaller typography and more visible interaction motion. Fresh Kitchen uses a near-white warm canvas, white operational surfaces, saturated emerald, orange action emphasis and crisp ink text.
 
-The implementation follows the owner's explicit compact-type request rather than the generated images' oversized lettering. Original identity assets, supported copy, real data formatting and all API/permission rules remain authoritative. Restaurant, Admin and Delivery are implemented; each keeps its own workflows and identity.
+The implementation uses compact Arabic typography, original identity assets, real API data formatting and strict role/activation rules. Restaurant, Admin and Delivery are all implemented and keep distinct identities.
 
 ## Identity and assets
 
-- Import [shared tokens](../packages/brand/tokens.css) before app styles. Future consumers use the existing `@akeela/brand` workspace and root lockfile.
-- Preserve the original [wordmark](../packages/brand/assets/logo.png) and [icon](../packages/brand/assets/icon.png); generated concepts contain approximate logo variants that are not replacement assets. The login panel uses the wordmark in white.
+- Import [shared tokens](../packages/brand/tokens.css) before app styles via the `@akeela/brand` workspace.
+- Preserve the original [wordmark](../packages/brand/assets/logo.png) and [icon](../packages/brand/assets/icon.png). The login panel uses the wordmark in white.
 - Browser tabs use app-specific symbols without changing the in-app brand: Restaurant has a storefront in `apps/restaurant/public/favicon.svg`. Its title is `AKEELA - المطعم - <page>`, including login. Admin/Delivery tab identities are documented in [portal design](PORTAL-DESIGN.md).
 - [Botanical artwork](../packages/brand/assets/botanical.png) remains on the emerald login panel. Its entry reveal runs once; no continuous floating/decorative loop.
-- [Restaurant UI primitives](../apps/restaurant/src/components/ui.tsx) remain app-local. Do not introduce a shared React library before another implemented app needs it.
+- [Restaurant UI primitives](../apps/restaurant/src/components/ui.tsx) remain app-local, while shared realtime, session-storage, date-field, error-message, and logout-confirmation helpers live in `packages/portal`.
 
 ## Tokens
 
@@ -32,7 +32,7 @@ The implementation follows the owner's explicit compact-type request rather than
 | Radius                | Controls 12px, panels 16px                                               |
 | Shadow                | Panels `0 4px 24px #17332b06`; dialogs retain a stronger separate shadow |
 
-Use white/mint table surfaces, visible status colors and emerald selection. The home order CTA uses orange emphasis; ordinary save/confirm actions remain emerald. The login brand panel uses a controlled emerald gradient (`#009b65` → `#007750` → `#005d40`). No gray canvas, invented metric cards, charts or ornamental dashboard widgets.
+Use white/mint table surfaces, visible status colors and emerald selection. The order CTA uses orange emphasis; ordinary save/confirm actions remain emerald. The login brand panel uses a controlled emerald gradient (`#009b65` → `#007750` → `#005d40`). Analytics charts use real API data from `GET /restaurant/analytics` with no invented or fake statistics.
 
 ## Compact Arabic typography
 
@@ -49,7 +49,7 @@ Lucide navigation icons are 20px with the original metaphor/stroke system. Meani
 - Two-column labeled forms retain normal native inputs/selects; focused fields use an emerald border and soft ring. Password controls remain centered against the actual input. Native dialogs keep keyboard focus, Escape and immediate dismissal guards.
 - All three apps use packages/brand/forms.css for a consistent single-select arrow with a 12px inset and reserved text space. RTL puts it on the left; LTR and forced-colors mode are supported without replacing native selection.
 - Pending is amber, Accepted/Delivered green, Picked_Up blue, Rejected/Failed red, Cancelled neutral. Only existing API enums are valid.
-- Skeletons reflect real pending requests; empty/error/success states preserve actual API feedback. No invented revenue, preparation statuses, staff, branches or notification features.
+- Skeletons reflect real pending requests; empty/error/success states preserve actual API feedback. All displayed metrics come from real endpoints; no invented preparation statuses, staff accounts, or multi-branch features exist.
 
 ## Motion and interaction
 
@@ -68,22 +68,6 @@ Shared timing: micro 150ms, component 240ms, inline feedback 180ms, dialog/drawe
 
 Registration/profile reuse a 320px Leaflet map (280px on phones). The emerald SVG pin anchors exactly at its bottom center. Map content is internally LTR within the RTL form. Automatic registration fixes, click/tap, pin drag/arrow keys and manual fields stay synchronized. Profile starts from the saved point and disables selection for Pending/Suspended or in-flight saves. No map pan/zoom animation or fabricated location is used. Attribution stays visible and tile failure keeps manual/reload fallback.
 
-## Fidelity and functional scope
+## Fidelity and browser QA
 
-The v2 concepts define color, compact component families, active navigation, service strip, table anatomy and login composition. Deliberate differences: smaller type honors the owner's explicit request; the original logo/artwork replace generated approximations; existing API copy/nav/OTP link remain; real Cairo dates, historical order dates, Arabic currency and data replace illustrative values. The app still contains no fake statistics or extra navigation. Existing order/form concepts remain [workflow references](design/restaurant/orders.png), [form references](design/restaurant/forms.png); [previous home](design/restaurant/home.png), [previous login](design/restaurant/login.png) and [brand exploration](design/restaurant/brand-directions.png) are historical visual references, not current color/type specifications.
-
-Browser QA compares dashboard/login and shared form/table/dialog states, checking palette, type sizes, original assets, spacing, responsive layout, hover/press/loading, focus, interruption and reduced motion. Tests use isolated API/location/tile fixtures; final screenshots/video live outside the repository. An exhaustive accessibility/performance audit remains separate work.
-
-## Refresh comparison ledger
-
-| Check           | Concept/render evidence and resolution                                                                                                                                                                               |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Palette         | V2 emerald navigation, orange order CTA, mint service/table header and near-white canvas are implemented through shared tokens; old gray/sage backgrounds were replaced.                                             |
-| Typography      | Rendered desktop title 30px, body 15px, navigation 16px/table 14px were measured. Smaller than generated concepts intentionally follows the owner's explicit compact-type request.                                   |
-| Identity/icons  | Original wordmark and botanical assets are retained instead of approximate generated logos; original Lucide workflow metaphors remain at compact sizes.                                                              |
-| Layout          | RTL sidebar, heading/CTA, service strip, single operational table and login split match the concept hierarchy, with compact 248px sidebar and 440px form. No metric cards/new controls were added.                   |
-| Copy/data       | Existing navigation, auth/OTP actions, API status wording, actual Cairo dates and currency remain; illustrative concept wording/data are not introduced as features.                                                 |
-| Interaction     | Browser verification covers hover lift/sweep/arrows, row stagger, busy geometry, dialog/focus/rapid reopen, phone navigation and reduced motion. One hover-specific reduced-motion override was corrected during QA. |
-| Responsive/maps | Desktop/phone/tablet screenshots show the smaller type, bounded table scrolling, single-column forms, dismissible sidebar and visible OSM attribution without page overflow.                                         |
-
-No unexplained visual mismatch remains against this working specification. UI text stays code-native; screenshots are references/evidence only.
+UI text stays code-native with original AKEELA assets, real Cairo dates, and Arabic EGP currency formatting. Playwright browser QA covers dashboard, analytics, catalog, orders, login, responsive layouts, focus, interruption, and reduced motion using isolated fixtures.

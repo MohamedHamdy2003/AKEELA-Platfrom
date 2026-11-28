@@ -11,7 +11,7 @@ FROM node:24-bookworm-slim AS production-dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
-RUN npm ci --omit=dev --workspace akeela-api --include-workspace-root=false && npm cache clean --force
+RUN npm ci --omit=dev --workspace akeela-api --include-workspace-root=false
 
 FROM node:24-bookworm-slim AS runtime
 ENV NODE_ENV=production

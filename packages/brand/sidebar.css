@@ -137,18 +137,11 @@
   }
   [data-sidebar-collapsed='true'] .sidebar nav button,
   [data-sidebar-collapsed='true'] .sidebar-toggle,
-  [data-sidebar-collapsed='true'] .sidebar-partner,
   [data-sidebar-collapsed='true'] .sidebar .logout,
   [data-sidebar-collapsed='true'] .sidebar .sidebar-logout {
     justify-content: center;
     padding-inline: 0;
     gap: 0;
-  }
-  [data-sidebar-collapsed='true'] .sidebar-partner-meta {
-    width: 0;
-    flex: 0 0 0;
-    opacity: 0;
-    overflow: hidden;
   }
   [data-sidebar-collapsed='true'] .sidebar .nav-label {
     width: 0;
