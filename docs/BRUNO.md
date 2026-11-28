@@ -8,28 +8,27 @@ Use the collection inside the repository. In Bruno, choose **Open Collection** a
 
 The collection follows the current branch of the same repository as the backend. Update requests with their feature, then use the normal feature branch → dev → owner-approved main flow. Do not create a separate testing checkout. GitHub updates arrive through Git pulls, not automatically in Bruno.
 
-## Private values and test flow
+## Environment values and test flow
 
-1. Copy the collection's `.env.example` to `.env` in that same collection folder. This is separate from the backend `apps/api/.env`.
-2. Fill API_EMAIL, API_PASSWORD, API_PHONE, and API_FULL_NAME. New passwords need 8–128 characters, including a letter and a digit. Gmail SMTP credentials belong only in backend `.env`.
-3. Select **Local** for `http://localhost:3000/api/v1`. Production reads API_BASE_URL from the private collection `.env`; set the actual HTTPS API URL including `/api/v1` after deployment.
-4. Run customer registration or restaurant registration with a new email/phone. Then set VERIFICATION_OTP from the received email and run Verify email.
-5. Run Login. It saves access_token and refresh_token as runtime variables; protected requests inherit Bearer auth. Refresh rotates both runtime values.
-6. Use Get me / Update me. For password recovery, run Forgot password, set RESET_OTP, then Reset password. For password change/reset, fill API_NEW_PASSWORD and update API_PASSWORD afterward.
+1. Select **Local** (`http://localhost:3000/api/v1`) or **Production** (`https://api.akeelaonline.tech/api/v1`) in Bruno. `base_url` is pre-configured in both environments.
+2. Open the active environment in Bruno and fill `email`, `phone`, `full_name`, and `password` directly in Bruno's Environment panel. Sensitive fields (`password`, `new_password`, `verification_otp`, `reset_otp`) are marked as Bruno secret variables (`vars:secret`), so Bruno stores their values locally without writing them into Git-tracked `.bru` files. New passwords need 8–128 characters, including a letter and a digit. Gmail SMTP credentials belong only in backend `.env`.
+3. Run customer registration or restaurant registration with a new email/phone. Then enter `verification_otp` from the received email and run Verify email.
+4. Run Login. It saves `access_token` and `refresh_token` as runtime variables; protected requests inherit Bearer auth. Refresh rotates both runtime values.
+5. Use Get me / Update me. For password recovery, run Forgot password, enter `reset_otp`, then Reset password. For password change/reset, fill `new_password` and update `password` afterward.
 
 Run requests individually. A full collection run is not a signup-to-delivery scenario: OTP entry is manual, customer/restaurant signup are alternatives, and Logout/Reset/Change password revoke sessions. Tests show expected success statuses; intended validation/activation errors will fail those success assertions.
 
-Tokens are held in memory and cleared after successful logout or password reset/change. Restarting Bruno loses runtime tokens; log in again. Never save tokens, OTPs, or real passwords into tracked .bru files or screenshots/reports intended for GitHub.
+Tokens are held in memory and cleared after successful logout or password reset/change. Restarting Bruno loses runtime tokens; log in again. Never commit personal emails, phone numbers, tokens, OTPs, or real passwords into tracked `.bru` files or screenshots/reports intended for GitHub.
 
 ## Future agent handoff
 
 - Update the endpoint specifications and matching feature folder in the same feature PR.
-- Run `npm run bruno:check` and `npm run docs:check`. The first discovers numbered feature folders and validates their syntax, request bodies, scripts, auth modes, and route coverage against the matching specification section.
-- Keep one collection, two shared environment templates, private `.env` values, and runtime tokens. Avoid new tooling layers or generated endpoint placeholders.
+- Run `npm run bruno:check` and `npm run docs:check`. The first discovers numbered feature folders and validates their syntax, request bodies, scripts, auth modes, environment templates, and route coverage against the matching specification section.
+- Keep one collection, two shared environment templates (`Local.bru` and `Production.bru`) with pre-filled `base_url`, blank user fields, Bruno secret variables for passwords/OTPs, and runtime tokens. Avoid new tooling layers or generated endpoint placeholders.
 - Feature PRs target `dev`. Main promotion requires explicit owner approval.
 - Test the current feature using this same project collection; its requests follow the checked-out branch.
 
-References: [Bruno Git collaboration](https://docs.usebruno.com/git-integration/overview), [private dotenv files](https://docs.usebruno.com/secrets-management/dotenv-file), [runtime variables](https://docs.usebruno.com/variables/runtime-variables).
+References: [Bruno Git collaboration](https://docs.usebruno.com/git-integration/overview), [secret variables](https://docs.usebruno.com/secrets-management/secret-variables), [runtime variables](https://docs.usebruno.com/variables/runtime-variables).
 
 ## Cart and customer orders
 
