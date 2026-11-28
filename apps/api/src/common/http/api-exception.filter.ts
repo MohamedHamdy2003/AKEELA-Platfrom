@@ -62,7 +62,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (
       error instanceof QueryFailedError &&
       ['22P02', '22003', '22007', '22008'].includes(
-        (error.driverError as { code?: string }).code ?? '',
+        (error.driverError as { code?: string } | undefined)?.code ?? '',
       )
     ) {
       status = 422;
@@ -70,7 +70,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       message = 'Check the numbers, record IDs, and dates in your request.';
     } else if (
       error instanceof QueryFailedError &&
-      (error.driverError as { code?: string }).code === '23505'
+      (error.driverError as { code?: string } | undefined)?.code === '23505'
     ) {
       const driverError = error.driverError as {
         constraint?: string;
@@ -85,6 +85,20 @@ export class ApiExceptionFilter implements ExceptionFilter {
       message = isUserIdentityConflict
         ? 'An account with this email or phone already exists.'
         : 'A conflicting record already exists.';
+    } else if (
+      error instanceof QueryFailedError &&
+      (error.driverError as { code?: string } | undefined)?.code === '57014'
+    ) {
+      status = 504;
+      code = 'REQUEST_TIMEOUT';
+      message = 'The request took too long to complete. Please try again.';
+    } else if (
+      error instanceof QueryFailedError &&
+      (error.driverError as { code?: string } | undefined)?.code === '53300'
+    ) {
+      status = 503;
+      code = 'SERVICE_UNAVAILABLE';
+      message = 'The service is temporarily busy. Please try again shortly.';
     } else {
       // Never log SQL, request bodies, credentials, or raw tokens.
       const method = request?.method ?? 'UNKNOWN';

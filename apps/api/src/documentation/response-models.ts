@@ -772,6 +772,26 @@ export const responseModels: Record<string, SchemaObject> = {
     rest_image_url_mobile: url,
     is_open: bool,
   }),
+  PublicOfferFeedItem: object(
+    {
+      ...offer,
+      rest_title: text('Owning restaurant display name.'),
+      rest_image_url_mobile: url,
+      is_open: bool,
+      discount_percentage: {
+        ...integer,
+        maximum: 100,
+        description:
+          'Rounded integer discount percentage calculated from initial_price and real_price.',
+      },
+      orders_count: {
+        ...integer,
+        description:
+          'Total units ordered for this offer in the last 30 days (excluding Cancelled, Rejected, and Failed orders).',
+      },
+    },
+    'Active sale-window offer enriched with restaurant metadata, discount percentage, and recent demand count for the Home Page offers feed.',
+  ),
   SearchCategory: object({
     cat_id: id,
     cat_title: text('Category title.'),

@@ -137,6 +137,7 @@ export function Drivers() {
         selectedKey={selectedKey}
         title={sheetTitle}
         eyebrow={sheetEyebrow}
+        disableClose={busy}
         onClose={() => {
           if (busy) return;
           setEdit(undefined);

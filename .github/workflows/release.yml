@@ -15,6 +15,7 @@ jobs:
   publish:
     needs: verify
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     permissions:
       contents: read
       packages: write
@@ -126,10 +127,8 @@ jobs:
           for image in "$ADMIN_IMAGE" "$RESTAURANT_IMAGE" "$DELIVERY_IMAGE"; do [[ "$image" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$ ]]; done
           test -n "$SSH_KEY" && test -n "$KNOWN_HOSTS"
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
-          printf 'Host *\n  StrictHostKeyChecking yes\n  IdentitiesOnly yes\n  BatchMode yes\n  ConnectTimeout 15\n' > ~/.ssh/config
+          (umask 077 && printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519 && printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts)
+          printf 'Host *\n  IdentityFile ~/.ssh/id_ed25519\n  StrictHostKeyChecking yes\n  IdentitiesOnly yes\n  BatchMode yes\n  ConnectTimeout 15\n' > ~/.ssh/config
       - name: Transfer release and deploy immutable image
         env:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}

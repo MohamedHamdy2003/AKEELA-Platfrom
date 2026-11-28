@@ -1,6 +1,6 @@
 # Feature 01 — Authentication and My Profile
 
-Implemented scope: the 12 routes in Feature 01 of the root API documents. Features 01-16 are implemented; see STATUS.md for current scope.
+Implemented scope: the 12 routes in Feature 01 of the root API documents. Features 01–18 are implemented; see [STATUS.md](STATUS.md) for current scope.
 
 ## Approved decisions
 
@@ -30,7 +30,7 @@ Auth uses a global APP_GUARD with a common PublicRoute opt-out and CurrentActor 
 The owner now requires login to survive refresh in Admin, Restaurant and Delivery. This replaces the earlier memory-only browser choice; the backend/mobile JSON contract is unchanged.
 
 - Each app saves only its token pair in sessionStorage, keyed by role and API base URL. It is scoped to the origin and tab, not shared SSO or a remember-me across browser sessions. Do not save passwords, OTPs or account/profile data. Existing CSP and same-origin assets remain required; sessionStorage is JavaScript-accessible, not an HttpOnly cookie.
-- Startup shows a loading state, checks /me and validates the role before rendering the workspace. Expired access uses the existing single-flight refresh; rotated tokens replace the saved pair before retries. The hash route is preserved. No new server session or extended expiry is created by reload.
+- Startup shows a loading state, checks `/me` and validates the role before rendering the workspace. Expired access uses the existing single-flight refresh; rotated tokens replace the saved pair before retries. The current path route is preserved. No new server session or extended expiry is created by reload.
 - Logout, password change and confirmed 401/403 session failure clear the saved pair. Logout during a request cannot restore the old session or clear a newer login. Transient network/5xx failures retain the pair and show retry instead of silently logging out.
 - Dashboard logout requires confirmation in all three browser apps. Cancel/Escape does not call `/auth/logout`. Only confirmation sends the request; success clears the saved pair and returns to login. A failed request keeps the confirmation open for retry, unless the API has already confirmed that the session is invalid. This changes browser interaction only; logout still revokes the current session, not every device.
 - Blocked storage falls back to memory-only behavior; malformed saved data is removed safely. Closing a tab normally ends its storage lifetime; browser restore/duplicate-tab features can copy it. Tokens remain governed by server expiry/revocation. Simultaneous refresh of a duplicated session across tabs is not coordinated and may require login in one tab; no cross-tab session sharing is promised. A lost response during server token rotation can also require login.
@@ -78,14 +78,13 @@ Tests cover validation, roles/profiles, duplicate rollback, OTP expiry/attempts/
 - Production Compose connects API and PostgreSQL privately, exposes only Caddy HTTP/HTTPS, and persists PostgreSQL/images/Caddy state. Feature 15 uploads are served publicly through Caddy; see IMAGES.md.
 - `TRUST_PROXY=true` trusts exactly one Caddy hop; keep the API unpublished so clients cannot bypass the proxy or spoof rate-limit IPs.
 - Production SMTP requires TLS. JWT and OTP keys must be different random secrets of at least 32 characters. No built-in production fallback secrets exist.
-- `npm run migration:run:prod` runs compiled migrations explicitly. Application startup never runs them.
-- These templates have not been deployed to a VPS; domain, real SMTP delivery and server sizing still need verification; backups are deferred. This main release is authorized. See [DEPLOYMENT.md](DEPLOYMENT.md).
+- `npm run migration:run:prod` runs compiled migrations explicitly. Application startup never runs them. See [DEPLOYMENT.md](DEPLOYMENT.md) for the live Hostinger VPS setup.
 
-## Current handoff
+## Password policy & SMTP reference
 
 New password policy applies at registration, reset, and password change. Login and current-password checks keep accepting existing valid credentials; they do not rewrite stored hashes. The approved minimum is eight characters with a letter and a digit (including Unicode letters/digits); maximum remains 128.
 
-Real email configuration and connectivity checks are in [GMAIL.md](GMAIL.md). The current Bruno collection is in [BRUNO.md](BRUNO.md). Future feature agents update requests and concise docs together. Local Gmail connection, TLS, and authentication were verified. Inbox delivery remains unconfirmed. The owner explicitly approved promoting the current Auth + Bruno release from dev to main; future main promotions still need explicit approval.
+Real multi-provider SMTP configuration and connectivity checks are in [GMAIL.md](GMAIL.md). The Bruno collection is in [BRUNO.md](BRUNO.md). Future feature agents update requests and concise docs together. Main promotions always require explicit owner approval.
 
 ## Compose Admin initialization
 

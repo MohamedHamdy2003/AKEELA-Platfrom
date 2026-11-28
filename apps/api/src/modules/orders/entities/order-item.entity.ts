@@ -10,13 +10,11 @@ import {
 @Index('uq_order_items_rest_item', ['rest_id', 'order_item_id'], {
   unique: true,
 })
-@Index(
-  'uq_order_items_rest_item_product',
-  ['rest_id', 'order_item_id', 'prod_id'],
-  { unique: true },
-)
 @Index('ix_order_items_order', ['rest_id', 'order_id'])
 @Index('ix_order_items_order_id', ['order_id', 'order_item_id'])
+@Index('ix_order_items_offer_order', ['offer_id', 'order_id'], {
+  where: 'offer_id IS NOT NULL',
+})
 @ForeignKey('orders', ['rest_id', 'order_id'], ['rest_id', 'order_id'], {
   name: 'fk_order_items_order',
   onDelete: 'RESTRICT',

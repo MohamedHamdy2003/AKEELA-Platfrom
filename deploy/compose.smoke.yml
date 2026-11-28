@@ -78,8 +78,6 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile.production:ro
       - ./routes.caddy:/etc/caddy/routes.caddy:ro
       - ./frontend-routes.caddy:/etc/caddy/frontend-routes.caddy:ro
-      - ./sites-enabled:/etc/caddy/sites-enabled:ro
-      - ./templates:/etc/caddy/templates:ro
       - images:/srv/images:ro
       - certificates:/data
     depends_on:

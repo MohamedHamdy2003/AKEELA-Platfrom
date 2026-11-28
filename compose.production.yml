@@ -42,7 +42,7 @@ services:
       IMAGE_STORAGE_PATH: /app/storage/images
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL with postgres as the database hostname}
       DATABASE_SSL: ${DATABASE_SSL:-false}
-      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS}
       DEFAULT_DELIVERY_COMPANY_ID: ${DEFAULT_DELIVERY_COMPANY_ID:-}
       FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
       FCM_CLIENT_EMAIL: ${FCM_CLIENT_EMAIL:-}
@@ -151,10 +151,35 @@ services:
   postgres:
     image: postgres:17
     restart: unless-stopped
-    mem_limit: 768m
+    mem_limit: 1536m
     shm_size: 256m
+    stop_grace_period: 45s
     security_opt: ['no-new-privileges:true']
     logging: *default-logging
+    command:
+      [
+        'postgres',
+        '-c',
+        'shared_buffers=384MB',
+        '-c',
+        'effective_cache_size=1GB',
+        '-c',
+        'work_mem=8MB',
+        '-c',
+        'maintenance_work_mem=128MB',
+        '-c',
+        'max_connections=60',
+        '-c',
+        'random_page_cost=1.1',
+        '-c',
+        'effective_io_concurrency=200',
+        '-c',
+        'log_min_duration_statement=500',
+        '-c',
+        'log_lock_waits=on',
+        '-c',
+        'log_temp_files=0',
+      ]
     environment:
       POSTGRES_USER: akeela
       POSTGRES_DB: akeela
@@ -170,9 +195,19 @@ services:
   caddy:
     image: caddy:2
     restart: unless-stopped
-    mem_limit: 128m
+    mem_limit: 256m
     security_opt: ['no-new-privileges:true']
     logging: *default-logging
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -q -O /dev/null http://127.0.0.1:2019/config/ || exit 1',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}

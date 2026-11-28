@@ -12,7 +12,7 @@ import {
   PageHeading,
   TextArea,
 } from '../components/ui';
-import { ImagePicker } from './catalog';
+import { ImagePicker } from '../components/image-picker';
 
 const LocationMap = lazy(() =>
   import('../components/location-map').then((m) => ({

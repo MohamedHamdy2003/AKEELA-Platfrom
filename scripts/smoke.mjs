@@ -83,10 +83,7 @@ try {
     'restaurant',
     'delivery',
   ]);
-  for (const config of [
-    '/etc/caddy/Caddyfile.production',
-    '/etc/caddy/templates/frontends.caddy',
-  ])
+  for (const config of ['/etc/caddy/Caddyfile.production'])
     docker([
       'run',
       '--rm',

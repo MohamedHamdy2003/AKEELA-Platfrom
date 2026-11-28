@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { randomUUID } from 'node:crypto';
@@ -9,6 +9,7 @@ import { Environment } from '../../config/environment';
 import { Semaphore } from '../../common/concurrency';
 import { AuthActor } from '../../common/http/current-actor.decorator';
 import { ApiError } from '../../common/http/api-error';
+import { FixedWindowRateLimiter } from '../../common/http/fixed-window-rate-limiter';
 import { UsersService } from '../users/users.service';
 import { CustomersService } from '../customers/customers.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
@@ -26,8 +27,12 @@ sharp.concurrency(1);
 const sharpConcurrency = new Semaphore(2);
 
 @Injectable()
-export class ImagesService {
-  private readonly rates = new Map<string, { until: number; count: number }>();
+export class ImagesService implements OnModuleInit {
+  private readonly limiter = new FixedWindowRateLimiter(
+    MAX_TRACKED_UPLOAD_KEYS,
+  );
+  private storageReady = false;
+
   constructor(
     private readonly db: DataSource,
     private readonly config: ConfigService<Environment, true>,
@@ -36,6 +41,13 @@ export class ImagesService {
     private readonly restaurants: RestaurantsService,
     private readonly catalog: CatalogService,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    const path = this.config.get('IMAGE_STORAGE_PATH', { infer: true });
+    await mkdir(path, { recursive: true }).catch(() => undefined);
+    this.storageReady = true;
+  }
+
   async upload(
     actor: AuthActor,
     target: ImageTarget,
@@ -52,32 +64,13 @@ export class ImagesService {
         'IMAGE_TOO_LARGE',
         'Image must be 5MB or smaller.',
       );
-    const now = Date.now();
-    if (this.rates.size > 1000) {
-      for (const [key, rate] of this.rates)
-        if (rate.until <= now) this.rates.delete(key);
-    }
-    const current = this.rates.get(actor.userId);
-    const rate = current && current.until > now ? current : undefined;
-    if ((rate?.count ?? 0) >= 10)
+    const rateResult = this.limiter.consume(actor.userId, 10, 60_000);
+    if (!rateResult.allowed)
       throw new ApiError(
         429,
         'RATE_LIMITED',
         'Too many image uploads. Try again in a minute.',
       );
-    if (!rate && this.rates.size >= MAX_TRACKED_UPLOAD_KEYS) {
-      for (const [key, entry] of this.rates)
-        if (entry.until <= now) this.rates.delete(key);
-      if (this.rates.size >= MAX_TRACKED_UPLOAD_KEYS) {
-        const oldest = this.rates.keys().next().value;
-        if (oldest !== undefined) this.rates.delete(oldest);
-      }
-    }
-    this.rates.delete(actor.userId);
-    this.rates.set(actor.userId, {
-      until: rate?.until ?? now + 60000,
-      count: (rate?.count ?? 0) + 1,
-    });
     // Fast read-only pre-check avoids CPU/RAM decode and disk I/O for unauthorized or missing targets.
     const account = await this.users.byId(actor.userId);
     if (
@@ -117,7 +110,7 @@ export class ImagesService {
             fit: 'inside',
             withoutEnlargement: true,
           })
-          .webp({ quality: 82, effort: 6, smartSubsample: true })
+          .webp({ quality: 82, effort: 4, smartSubsample: true })
           .toBuffer();
       });
     } catch {
@@ -131,8 +124,20 @@ export class ImagesService {
     const filename = `${randomUUID()}.webp`;
     const url = `${this.config.get('PUBLIC_BASE_URL', { infer: true })}/images/${filename}`;
     const destination = join(path, filename);
-    await mkdir(path, { recursive: true });
-    await writeFile(destination, encoded, { flag: 'wx', mode: 0o644 });
+    if (!this.storageReady) {
+      await mkdir(path, { recursive: true });
+      this.storageReady = true;
+    }
+    try {
+      await writeFile(destination, encoded, { flag: 'wx', mode: 0o644 });
+    } catch (error) {
+      if ((error as { code?: string }).code === 'ENOENT') {
+        await mkdir(path, { recursive: true });
+        await writeFile(destination, encoded, { flag: 'wx', mode: 0o644 });
+      } else {
+        throw error;
+      }
+    }
     try {
       await this.db.transaction(async (manager) => {
         const user = await this.users.byId(actor.userId, manager, true);

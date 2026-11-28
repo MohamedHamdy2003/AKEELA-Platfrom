@@ -1,6 +1,8 @@
 import { LogoutConfirmation } from '@akeela/portal/logout-confirmation';
 import {
   Component,
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useRef,
@@ -26,22 +28,36 @@ import {
 } from 'lucide-react';
 import logo from '@akeela/brand/logo.png';
 import logoWebp from '@akeela/brand/logo.webp';
-import { watchOrders, type RealtimeStatus } from '@akeela/portal/realtime';
+import type { RealtimeStatus } from '@akeela/portal/realtime';
 import { api } from './lib/api';
 import type { CatalogKind, Dashboard, Profile, User } from './lib/models';
 import { today } from './lib/format';
 import { Auth } from './features/auth';
 import { ActivationNotice } from './features/home';
-import { RestaurantAnalyticsScreen } from './features/analytics';
-import { Catalog } from './features/catalog';
-import { Orders } from './features/orders';
-import { Account, RestaurantProfile } from './features/settings';
 import { Failure, Loading, Notice } from './components/ui';
 import { Presence } from './components/presence';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import brandIcon from '@akeela/brand/icon.png';
 import brandIconWebp from '@akeela/brand/icon.webp';
 import { useSessionRestore } from '@akeela/portal/use-session-restore';
+
+const RestaurantAnalyticsScreen = lazy(() =>
+  import('./features/analytics').then((m) => ({
+    default: m.RestaurantAnalyticsScreen,
+  })),
+);
+const Catalog = lazy(() =>
+  import('./features/catalog').then((m) => ({ default: m.Catalog })),
+);
+const Orders = lazy(() =>
+  import('./features/orders').then((m) => ({ default: m.Orders })),
+);
+const RestaurantProfile = lazy(() =>
+  import('./features/settings').then((m) => ({ default: m.RestaurantProfile })),
+);
+const Account = lazy(() =>
+  import('./features/settings').then((m) => ({ default: m.Account })),
+);
 
 const navigation = [
   { key: 'analytics', label: 'التحليلات', icon: BarChart3 },
@@ -165,12 +181,12 @@ function Workspace() {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const logoutTrigger = useRef<HTMLButtonElement>(null);
   const menuTrigger = useRef<HTMLButtonElement>(null);
-  const [initialOrder, setInitialOrder] = useState<string | null>(null);
   const [ordersStatus, setOrdersStatus] = useState('');
   const [authNotice, setAuthNotice] = useState('');
   const [realtimeStatus, setRealtimeStatus] =
     useState<RealtimeStatus>('connecting');
   const lastStatusRefreshAt = useRef(0);
+  const statusInFlightRef = useRef(false);
   const hasDashboardRef = useRef(false);
   hasDashboardRef.current = Boolean(dashboard && profile);
   const navigate = useCallback((key: string, filter?: string) => {
@@ -184,10 +200,10 @@ function Workspace() {
     setRoute(key);
     setMobile(false);
   }, []);
-  const consumeInitial = useCallback(() => setInitialOrder(null), []);
   const consumeOrdersStatus = useCallback(() => setOrdersStatus(''), []);
   const refreshStatus = useCallback(async (force = false) => {
     const now = Date.now();
+    if (!force && statusInFlightRef.current) return;
     if (
       !force &&
       hasDashboardRef.current &&
@@ -195,6 +211,7 @@ function Workspace() {
     ) {
       return;
     }
+    statusInFlightRef.current = true;
     const generation = sessionGeneration.current;
     setError(null);
     setBusy(true);
@@ -211,6 +228,7 @@ function Workspace() {
     } catch (cause) {
       if (generation === sessionGeneration.current) setError(cause);
     } finally {
+      statusInFlightRef.current = false;
       if (generation === sessionGeneration.current) setBusy(false);
     }
   }, []);
@@ -239,12 +257,21 @@ function Workspace() {
   const authenticated = !!user;
   useEffect(() => {
     if (!authenticated || !dashboard?.can_manage) return;
-    return watchOrders({
-      baseUrl: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-      getToken: () => api.tokenForRealtime(),
-      changed: () => window.dispatchEvent(new Event('akeela:orders-changed')),
-      status: setRealtimeStatus,
+    let active = true;
+    let stop: (() => void) | undefined;
+    void import('@akeela/portal/realtime').then(({ watchOrders }) => {
+      if (!active) return;
+      stop = watchOrders({
+        baseUrl: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+        getToken: () => api.tokenForRealtime(),
+        changed: () => window.dispatchEvent(new Event('akeela:orders-changed')),
+        status: setRealtimeStatus,
+      });
     });
+    return () => {
+      active = false;
+      stop?.();
+    };
   }, [authenticated, dashboard?.can_manage]);
   useEffect(() => {
     if (authenticated) void refreshStatus(false);
@@ -332,8 +359,6 @@ function Workspace() {
       />
     ) : route === 'orders' ? (
       <Orders
-        initialId={initialOrder}
-        onInitialConsumed={consumeInitial}
         initialStatus={ordersStatus}
         onInitialStatusConsumed={consumeOrdersStatus}
       />
@@ -414,6 +439,7 @@ function Workspace() {
               aria-hidden="true"
               width="38"
               height="38"
+              loading="lazy"
               decoding="async"
             />
           </picture>
@@ -535,7 +561,7 @@ function Workspace() {
         </header>
         {!!error && dashboard && <Notice error={error} />}
         <div className="workspace-body" key={route} data-route={route}>
-          {body}
+          <Suspense fallback={<Loading />}>{body}</Suspense>
         </div>
         {dashboard && !dashboard.can_manage && (
           <div className="status-refresh">

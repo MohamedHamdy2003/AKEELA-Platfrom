@@ -1,15 +1,13 @@
 # AKEELA Restaurant Application
 
-Implementation update (2026-11-14): the local React/Vite Arabic RTL client now implements the supported screens below. See [run guide](../../apps/restaurant/README.md) and [design system](../DESIGN-SYSTEM.md). The owner chose tab-scoped sessionStorage tokens; refresh/reload restores login after a server check. The planning statements below describe the original baseline; no public hosting or live authenticated integration verification is implied.
-
 Frontend design scope for **restaurant.akeelaonline.tech**. Login role: `Restaurant`.
-This application is implemented locally. Production hosting requires the tested release and valid DNS; see [deployment](../DEPLOYMENT.md).
+This React/Vite/TypeScript Arabic RTL client is implemented and live on `https://restaurant.akeelaonline.tech`; see [run guide](../../apps/restaurant/README.md), [design system](../DESIGN-SYSTEM.md), and [deployment](../DEPLOYMENT.md).
 
 ## Read First
 
 Read root [AGENTS.md](../../AGENTS.md) and [this app's instructions](../../apps/restaurant/AGENTS.md) for the scoped reading path. Use this guide for screens and permissions; consult only the matching canonical API sections/models for the feature in progress. Do not read other app guides or the full backend for orientation. Existing root specifications remain authoritative; this guide adds no backend features.
 
-All API paths below omit `/api/v1`. Configure the full API base URL; the API domain is api.akeelaonline.tech. The vendor domain is a frontend origin, not an API prefix.
+All API paths below omit `/api/v1`. Configure the full API base URL; the API domain is `api.akeelaonline.tech`. `restaurant.akeelaonline.tech` is the frontend origin, not an API prefix.
 
 ## Screens and Features
 
@@ -108,7 +106,7 @@ All API paths below omit `/api/v1`. Configure the full API base URL; the API dom
 - Offer form: title, optional description/image URL, `initial_price`, `real_price`, `starts_at`, `expires_at`, `is_active`. Real price cannot exceed initial price; end must follow start. Offers have no addons.
 - Offer date inputs mean Cairo time; send Z or the correct explicit offset. Never use a fixed +02 offset for all dates or silently use the browser's timezone.
 - Image picker: JPEG/PNG/WebP up to 5MB; multipart field `file`. The server returns `{image_url}` and saves the URL. Show preview, upload progress/error and an image fallback. See [Images](../IMAGES.md).
-- There are no owner category/addon/offer detail GET routes: use list row data for those forms. Only use filters supported by the contract; no global server search/bulk-edit API exists.
+- There are no owner category/addon/offer detail GET routes: use list row data for those forms. Only use filters supported by the contract; no management bulk-edit API exists (public search is `GET /api/v1/search` for customers).
 
 ## 04. Orders
 
@@ -133,9 +131,7 @@ All API paths below omit `/api/v1`. Configure the full API base URL; the API dom
 - Read paginated `data` and `meta`; keep IDs, money and coordinates as strings. Display EGP and Cairo time. Do not present page totals as all-time analytics.
 - JWT access goes in Authorization. Refresh tokens travel in JSON. Tab-scoped sessionStorage restores login after reload; see [AUTH](../AUTH.md). Coordinate refreshes and never loop retries. Do not assume SSO across subdomains or put secrets in frontend configuration.
 - Orders use REST reads with Socket.IO invalidation notifications; see [realtime](../REALTIME.md).
-- Proposed build order: auth → activation/profile → categories/products → addons → offers/images → orders → error/responsive checks.
-- Before implementation, agree on framework, Arabic/English and RTL, branding, app setup in apps/restaurant, browser token storage and refresh strategy. DNS/Caddy hosting and exact CORS origins need a separate deployment change.
-- Out of scope: payments/refunds, notifications, driver tracking, staff accounts and multiple restaurants per owner.
+- Out of scope: payments/refunds, driver tracking, staff accounts, and multiple restaurants per owner.
 
 Monorepo location: `apps/restaurant`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
 

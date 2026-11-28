@@ -134,6 +134,19 @@ export class RestaurantAnalyticsService {
           'Start date must not be after end date.',
         );
       }
+      const fromMs = Date.parse(`${query.date_from}T00:00:00Z`);
+      const toMs = Date.parse(`${query.date_to}T00:00:00Z`);
+      if (
+        Number.isNaN(fromMs) ||
+        Number.isNaN(toMs) ||
+        Math.round((toMs - fromMs) / 86_400_000) + 1 > 366
+      ) {
+        throw new ApiError(
+          422,
+          'VALIDATION_ERROR',
+          'Custom date range cannot exceed 366 days.',
+        );
+      }
       const cacheKey = `admin-rest:${restId}:custom:${query.date_from}:${query.date_to}`;
       return this.cache.getOrLoad(cacheKey, async () => {
         const customWindow = await resolveCustomCairoWindow(

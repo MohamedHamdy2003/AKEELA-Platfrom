@@ -336,6 +336,12 @@ function toNum(value: string | number | null | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+const generatedAtFormatter = new Intl.DateTimeFormat('ar-EG', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'Africa/Cairo',
+});
+
 export function buildRestaurantEarningsWorkbook({
   restId,
   restTitle,
@@ -350,11 +356,9 @@ export function buildRestaurantEarningsWorkbook({
   analytics: AdminRestaurantAnalytics;
 }): Uint8Array {
   const kpis = analytics.kpis;
-  const generatedAt = new Intl.DateTimeFormat('ar-EG', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Africa/Cairo',
-  }).format(new Date(analytics.generated_at));
+  const generatedAt = generatedAtFormatter.format(
+    new Date(analytics.generated_at),
+  );
 
   const summarySheet: ExcelSheet = {
     name: 'ملخص المكاسب',

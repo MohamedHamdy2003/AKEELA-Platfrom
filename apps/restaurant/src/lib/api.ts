@@ -137,7 +137,12 @@ export class ApiClient {
     if (expMs !== null && expMs - Date.now() > 60_000) {
       return this.tokens.access_token;
     }
-    await this.request('/me');
+    try {
+      if (expMs !== null) await this.refresh();
+      else await this.request('/me');
+    } catch {
+      return null;
+    }
     return this.tokens?.access_token ?? null;
   }
   private async refresh() {
@@ -153,7 +158,11 @@ export class ApiClient {
           body: { refresh_token: refreshToken },
           public: true,
         });
-        if (generation !== this.generation)
+        if (
+          generation !== this.generation ||
+          !result.data?.access_token ||
+          !result.data?.refresh_token
+        )
           throw new ApiError(401, 'UNAUTHENTICATED', 'انتهت الجلسة.');
         this.tokens = result.data;
         this.sessionStore?.write(result.data);
@@ -259,5 +268,6 @@ export function query(values: Record<string, string | number | undefined>) {
   Object.entries(values).forEach(([key, value]) => {
     if (value !== undefined && value !== '') params.set(key, String(value));
   });
-  return '?' + params.toString();
+  const encoded = params.toString();
+  return encoded ? '?' + encoded : '';
 }

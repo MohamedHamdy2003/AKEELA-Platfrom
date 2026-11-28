@@ -14,6 +14,8 @@ import {
 import { PaginationQuery } from '../users/admin.dto';
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
+const trimLower = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim().toLowerCase() : value;
 export class CreateDriverDto {
   @ApiProperty({
     type: 'string',
@@ -40,7 +42,7 @@ export class CreateDriverDto {
   @Transform(trim)
   @Matches(/^\+[1-9]\d{7,14}$/, {
     message:
-      'Enter a phone number starting with + and the country code (8-15 digits). ',
+      'Enter a phone number starting with + and the country code (8-15 digits).',
   })
   driver_phone!: string;
   @ApiProperty({
@@ -52,7 +54,7 @@ export class CreateDriverDto {
     required: false,
   })
   @IsOptional()
-  @Transform(trim)
+  @Transform(trimLower)
   @IsEmail({}, { message: 'Enter a valid driver email address.' })
   @MaxLength(254)
   driver_email?: string | null;
@@ -104,7 +106,7 @@ export class UpdateDriverDto {
     required: false,
   })
   @ValidateIf((_o, v: unknown) => v !== undefined && v !== null)
-  @Transform(trim)
+  @Transform(trimLower)
   @IsEmail({}, { message: 'Enter a valid driver email address.' })
   @MaxLength(254)
   driver_email?: string | null;
@@ -151,7 +153,7 @@ export class UpdateCompanyDto {
     required: false,
   })
   @ValidateIf((_o, v: unknown) => v !== undefined && v !== null)
-  @Transform(trim)
+  @Transform(trimLower)
   @IsEmail({}, { message: 'Enter a valid company email address.' })
   @MaxLength(254)
   company_email?: string | null;

@@ -22,6 +22,7 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 @Index('uq_orders_rest_order', ['rest_id', 'order_id'], { unique: true })
 @Index('ix_orders_customer_created', ['customer_id', 'created_at', 'order_id'])
 @Index('ix_orders_rest_status', ['rest_id', 'status', 'created_at'])
+@Index('ix_orders_rest_created_id', ['rest_id', 'created_at', 'order_id'])
 @Index('ix_orders_company_driver', ['company_id', 'driver_id'])
 @Index('ix_orders_status_created_id', ['status', 'created_at', 'order_id'])
 @Index('ix_orders_created_id', ['created_at', 'order_id'])
@@ -29,6 +30,13 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
   'ix_orders_company_status_created_id',
   ['company_id', 'status', 'created_at', 'order_id'],
   { where: 'company_id IS NOT NULL' },
+)
+@Index(
+  'ix_orders_company_created_id',
+  ['company_id', 'created_at', 'order_id'],
+  {
+    where: 'company_id IS NOT NULL',
+  },
 )
 @Index('ix_orders_picked_up_updated', ['updated_at'], {
   where: "status = 'Picked_Up'",

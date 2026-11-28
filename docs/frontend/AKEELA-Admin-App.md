@@ -1,7 +1,7 @@
 # AKEELA Admin Application
 
 Frontend design scope for **admin.akeelaonline.tech**. Login role: `Admin`.
-This application is implemented locally. Production hosting requires the tested release and valid DNS; see [deployment](../DEPLOYMENT.md).
+This application is implemented and live on `https://admin.akeelaonline.tech`; see [deployment](../DEPLOYMENT.md).
 
 ## Read First
 
@@ -108,9 +108,8 @@ API paths omit `/api/v1`. Use a configured full API base URL; the production API
 - Access JWT uses Authorization; refresh currently uses a JSON token. Tokens use tab-scoped sessionStorage so reload restores login; see [AUTH](../AUTH.md). No remember-me across browser sessions is implemented. Coordinate refreshes; avoid retry loops, shared-subdomain SSO assumptions and secrets in frontend configuration.
 - OTP resend/reset follows server cooldown, expiry and attempt errors; show Retry-After when provided. Recovery uses a generic account-eligibility message.
 - Socket.IO notifications invalidate order REST reads; reconnect also refreshes. See [realtime](../REALTIME.md).
-- Build order: auth → user list/detail → restaurant approval → company creation → order monitoring/failure → account/security → responsive/error checks.
-- Implemented stack: React/Vite/TypeScript, Arabic RTL and tab-scoped sessionStorage sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
-- Not supported: creating more Admins, manual company assignment, payment/refund tools, commission settings, general delivery-fee editing, notifications, data export and arbitrary database administration. Ask for specifications/backend APIs before adding them.
+- Implemented stack: React/Vite/TypeScript, Arabic RTL, HTML5 path routing, and tab-scoped sessionStorage sessions. Use the approved identities in [portal design](../PORTAL-DESIGN.md) and the production hostnames in [deployment](../DEPLOYMENT.md).
+- Not supported in Admin UI: creating more Admins, manual company assignment, payment/refund tools, commission settings, general delivery-fee editing, and arbitrary database administration. (Push notification dispatch `POST /admin/notifications/send` exists on the API for Feature 18; Excel export is implemented client-side for per-restaurant earnings.) Ask for specifications before adding new backend features.
 
 Monorepo location: `apps/admin`. API code is in `apps/api`; shared contracts/docs/Bruno stay at the repository root. The app is implemented using the root npm workspace/lockfile; see [Monorepo](../MONOREPO.md).
 

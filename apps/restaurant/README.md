@@ -1,6 +1,6 @@
 # AKEELA Restaurant
 
-Arabic-first React + Vite + TypeScript client for the Restaurant role. Planned origin: `https://vendor.akeela.com`.
+Arabic-first React + Vite + TypeScript client for the Restaurant role. Production origin: `https://restaurant.akeelaonline.tech`.
 
 Read the root [AGENTS.md](../../AGENTS.md), local [app instructions](AGENTS.md) and [Restaurant design guide](../../docs/frontend/AKEELA-Restaurant-App.md) before work.
 
@@ -24,13 +24,13 @@ Public `VITE_API_BASE_URL` must include `/api/v1`. Default `/api/v1` uses the de
 
 ## Implemented
 
-Registration, email OTP/resend, login, password recovery/reset, activation, recent and filtered orders/details, accept/reject, paginated categories/products/addons/offers, product-addon links, images, restaurant profile/service hours and owner account/password/logout. Hash routes need no SPA rewrite.
+Registration, email OTP/resend, login, password recovery/reset, activation, kitchen analytics (`GET /restaurant/analytics`), realtime Socket.IO order updates, recent and filtered orders/details, accept/reject, paginated categories/products/addons/offers (including swap ordering and unlinked pool deletions), product-addon links, WebP image uploads, restaurant profile/service hours and owner account/password/logout. Uses HTML5 History path routing with Nginx `try_files` SPA fallback.
 
-Pending/Suspended owners can read own account/profile/status and use password security. Management stays locked until Active. Stopped service still permits existing-order handling. Refresh is manual; no revenue, staff, branches or customer-phone functionality is invented.
+Pending/Suspended owners can read own account/profile/status and use password security. Management stays locked until Active. Stopped service still permits existing-order handling.
 
 Tokens use tab-scoped sessionStorage, per the current owner request. Reload checks /me and restores login. Refresh coordinates concurrent requests in the same page and retries once. No localStorage tokens, cookies or SSO. Wrong-role login never opens the workspace; password change ends login. The server remains authoritative.
 
-`src/features` owns auth/home/orders/catalog/settings. `components/ui.tsx` provides primitives; `lib` owns HTTP, API response types, Cairo/decimal formatting and cancellable reads. `@akeela/brand` owns reusable tokens/assets; no backend internals are imported.
+`src/features` owns auth/analytics/orders/catalog/settings. `components/` provides primitives and lazy-loaded Leaflet map; `lib` owns HTTP, API response types, Cairo/decimal formatting and cancellable reads. `@akeela/brand` owns reusable tokens/assets and `@akeela/portal` provides shared realtime, session-storage, date-field, error-message, and logout-confirmation helpers; no backend internals are imported.
 
 ## Packaging
 
@@ -38,7 +38,7 @@ Tokens use tab-scoped sessionStorage, per the current owner request. Reload chec
 docker build -f apps/restaurant/Dockerfile -t akeela-restaurant:local .
 ```
 
-The image serves static assets on 8080. Use `--build-arg VITE_API_BASE_URL=https://your-approved-api-origin/api/v1` for a separate API host; relative paths require a separately configured proxy. The independent Restaurant workflow checks/types/tests/builds and publishes a commit-tagged GHCR image on future owner-approved main changes. It does not deploy or enable Caddy sites. DNS, certificates, production Compose and backend configuration are unchanged.
+The image serves static assets on port `8080`. Use `--build-arg VITE_API_BASE_URL=https://your-approved-api-origin/api/v1` for a separate API host; the default relative `/api/v1` works behind Caddy's same-origin proxy. The consolidated CI/release workflows verify and publish all four images (`api`, `admin`, `restaurant`, `delivery`) together on owner-approved `main` releases.
 
 ## Registration map
 

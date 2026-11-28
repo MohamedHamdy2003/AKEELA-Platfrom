@@ -10,7 +10,6 @@ import {
 } from 'typeorm';
 
 @Entity('products')
-@Index('ix_products_rest_id', ['rest_id'])
 @Index('ix_products_rest_cat', ['rest_id', 'cat_id'])
 @Index('uq_products_rest_prod', ['rest_id', 'prod_id'], { unique: true })
 @Index('ix_products_rest_active_created', [

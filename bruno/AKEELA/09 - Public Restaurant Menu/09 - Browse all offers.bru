@@ -1,0 +1,28 @@
+meta {
+  name: Browse all offers
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/offers?page=1&per_page=20
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  per_page: 20
+}
+
+tests {
+  test('Successful browse global offers feed', function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data).to.be.an('array');
+    expect(res.getBody().meta).to.be.an('object');
+  });
+}
+
+docs {
+  Browse active sale-window offers across all active restaurants, ranked by demand, discount, freshness, urgency, and restaurant diversity. No authentication required.
+}

@@ -66,6 +66,7 @@ function belongsToRole(path: string, role: SwaggerRole): boolean {
     (path === '/api/v1/auth/register' ||
       path === '/api/v1/restaurants' ||
       path.startsWith('/api/v1/restaurants/') ||
+      path === '/api/v1/offers' ||
       path === '/api/v1/search')
   )
     return true;

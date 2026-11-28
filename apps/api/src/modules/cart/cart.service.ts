@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager, In } from 'typeorm';
 import { ApiError } from '../../common/http/api-error';
-import { moneyCents } from '../../common/money';
+import { formatMoneyCents, moneyCents } from '../../common/money';
 import { CustomersService } from '../customers/customers.service';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 import { CatalogService } from '../catalog/catalog.service';
@@ -15,9 +15,6 @@ import {
   AddonChoiceDto,
 } from './cart.dto';
 import { CartView, CartItemView, GENERAL_DELIVERY_FEE } from './cart.types';
-function displayAmount(cents: bigint): string {
-  return `${cents / 100n}.${(cents % 100n).toString().padStart(2, '0')}`;
-}
 export function amount(cents: bigint): string {
   if (cents < 0n || cents > 999999999999n)
     throw new ApiError(
@@ -25,8 +22,17 @@ export function amount(cents: bigint): string {
       'VALIDATION_ERROR',
       'The total exceeds the supported money range.',
     );
-  return `${cents / 100n}.${(cents % 100n).toString().padStart(2, '0')}`;
+  return formatMoneyCents(cents);
 }
+const EMPTY_CART_VIEW: CartView = {
+  cart_id: null,
+  rest_id: null,
+  items: [],
+  items_subtotal: '0.00',
+  addons_subtotal: '0.00',
+  subtotal: '0.00',
+  updated_at: null,
+};
 @Injectable()
 export class CartService {
   constructor(
@@ -67,21 +73,16 @@ export class CartService {
     if (lock) qb.setLock('pessimistic_write');
     return qb.getOne();
   }
-  async snapshot(
+  private async snapshotWithStatus(
     userId: string,
     manager: EntityManager,
     lock = true,
-  ): Promise<CartView> {
+  ) {
     const cart = await this.cart(userId, manager, lock);
     if (!cart)
       return {
-        cart_id: null,
-        rest_id: null,
-        items: [],
-        items_subtotal: '0.00',
-        addons_subtotal: '0.00',
-        subtotal: '0.00',
-        updated_at: null,
+        view: { ...EMPTY_CART_VIEW, items: [] },
+        status: null,
       };
     const status = await this.restaurants.saleStatus(cart.rest_id, manager);
     const rows = await manager.getRepository(CartItem).find({
@@ -131,7 +132,7 @@ export class CartService {
           addon_name: addon.name,
           quantity: choice.quantity,
           unit_price: addon.price,
-          subtotal: displayAmount(sum),
+          subtotal: formatMoneyCents(sum),
         };
       });
       itemsTotal += subtotal;
@@ -143,9 +144,9 @@ export class CartService {
         item_name: sale.item?.name ?? '',
         quantity: row.quantity,
         unit_price: price,
-        subtotal: displayAmount(subtotal),
+        subtotal: formatMoneyCents(subtotal),
         addons,
-        line_total: displayAmount(subtotal + lineAddons),
+        line_total: formatMoneyCents(subtotal + lineAddons),
         is_available:
           status.is_available &&
           Boolean(sale.item?.is_available) &&
@@ -153,14 +154,24 @@ export class CartService {
       });
     }
     return {
-      cart_id: cart.cart_id,
-      rest_id: cart.rest_id,
-      items,
-      items_subtotal: displayAmount(itemsTotal),
-      addons_subtotal: displayAmount(addonsTotal),
-      subtotal: displayAmount(itemsTotal + addonsTotal),
-      updated_at: cart.updated_at.toISOString(),
+      status,
+      view: {
+        cart_id: cart.cart_id,
+        rest_id: cart.rest_id,
+        items,
+        items_subtotal: formatMoneyCents(itemsTotal),
+        addons_subtotal: formatMoneyCents(addonsTotal),
+        subtotal: formatMoneyCents(itemsTotal + addonsTotal),
+        updated_at: cart.updated_at.toISOString(),
+      },
     };
+  }
+  async snapshot(
+    userId: string,
+    manager: EntityManager,
+    lock = true,
+  ): Promise<CartView> {
+    return (await this.snapshotWithStatus(userId, manager, lock)).view;
   }
   async get(userId: string) {
     return this.db.transaction('REPEATABLE READ', async (m) => {
@@ -400,7 +411,7 @@ export class CartService {
   async clear(userId: string) {
     return this.transaction(userId, async (m) => {
       await this.clearInTransaction(userId, m);
-      return this.snapshot(userId, m);
+      return { ...EMPTY_CART_VIEW, items: [] };
     });
   }
   async address(userId: string, input: QuoteDto, m: EntityManager) {
@@ -419,8 +430,12 @@ export class CartService {
       latitude: Number(a.latitude).toFixed(7),
     };
   }
-  async ready(userId: string, input: QuoteDto, m: EntityManager) {
-    const cart = await this.snapshot(userId, m);
+  async ready(userId: string, input: QuoteDto, m: EntityManager, lock = true) {
+    const { view: cart, status } = await this.snapshotWithStatus(
+      userId,
+      m,
+      lock,
+    );
     if (!cart.items.length || !cart.rest_id)
       throw new ApiError(409, 'EMPTY_CART', 'Your cart is empty.');
     if (cart.items.some((i) => !i.is_available))
@@ -429,8 +444,7 @@ export class CartService {
         'UNAVAILABLE',
         'Some cart selections are unavailable. Refresh your cart.',
       );
-    const status = await this.restaurants.saleStatus(cart.rest_id, m);
-    if (!status.profile || !this.catalog.isOpen(status.profile))
+    if (!status?.profile || !this.catalog.isOpen(status.profile))
       throw new ApiError(409, 'RESTAURANT_CLOSED', 'The restaurant is closed.');
     const address = await this.address(userId, input, m);
     return {
@@ -444,8 +458,9 @@ export class CartService {
     };
   }
   async quote(userId: string, input: QuoteDto) {
-    return this.transaction(userId, async (m) => {
-      const result = await this.ready(userId, input, m);
+    return this.db.transaction('REPEATABLE READ', async (m) => {
+      await this.customers.assertExists(userId, m);
+      const result = await this.ready(userId, input, m, false);
       return {
         address_id: result.address_id,
         delivery_address: result.address,

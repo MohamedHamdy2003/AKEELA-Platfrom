@@ -34,7 +34,7 @@ API testing: [BRUNO.md](BRUNO.md) explains the collection inside this repository
 
 Interactive API reference: [SWAGGER.md](SWAGGER.md) explains UI/OpenAPI JSON, mobile usage and keeping every endpoint documented.
 
-Features 13-14: [ORDER-DELIVERY.md](ORDER-DELIVERY.md). Features 11-12: [CART-ORDERS.md](CART-ORDERS.md). Feature 10: [DELIVERY.md](DELIVERY.md). Review findings: [REVIEW.md](REVIEW.md).
+Features 10, 13–14: [ORDER-DELIVERY.md](ORDER-DELIVERY.md). Features 11–12: [CART-ORDERS.md](CART-ORDERS.md).
 
 ## Canonical business specifications
 
@@ -53,17 +53,15 @@ The legacy `Rico` title inside the database document refers to AKEELA; it does n
 
 ## Frontend application guides
 
-Restaurant is now implemented locally; see its [run guide](../apps/restaurant/README.md) and the shared [design system](DESIGN-SYSTEM.md). The planning table remains the screen/API guide inventory. Admin and Delivery are not implemented; no public frontend hosting is enabled.
+All three web dashboards (Restaurant, Admin, and Delivery Company) are implemented and live on `*.akeelaonline.tech`. See the [Restaurant run guide](../apps/restaurant/README.md), [design system](DESIGN-SYSTEM.md), and [portal design](PORTAL-DESIGN.md). The four root specifications remain authoritative for API contracts.
 
-These screen/feature guides describe clients of the existing API. Restaurant is implemented; Admin and Delivery remain planned. The four root specifications remain authoritative for API contracts.
+| Application      | Production origin                      | Design guide                                                |
+| ---------------- | -------------------------------------- | ----------------------------------------------------------- |
+| Restaurant       | `https://restaurant.akeelaonline.tech` | [Restaurant application](frontend/AKEELA-Restaurant-App.md) |
+| Admin            | `https://admin.akeelaonline.tech`      | [Admin application](frontend/AKEELA-Admin-App.md)           |
+| Delivery company | `https://delivery.akeelaonline.tech`   | [Delivery application](frontend/AKEELA-Delivery-App.md)     |
 
-| Application      | Planned frontend origin       | Design guide                                                |
-| ---------------- | ----------------------------- | ----------------------------------------------------------- |
-| Restaurant       | `https://vendor.akeela.com`   | [Restaurant application](frontend/AKEELA-Restaurant-App.md) |
-| Admin            | `https://admin.akeela.com`    | [Admin application](frontend/AKEELA-Admin-App.md)           |
-| Delivery company | `https://delivery.akeela.com` | [Delivery application](frontend/AKEELA-Delivery-App.md)     |
-
-The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery` alongside `apps/api`. Restaurant uses React/Vite, Arabic RTL and tab-scoped sessionStorage sessions. Admin and Delivery use the same stack and session policy. Subdomain DNS/hosting/CORS configuration remains deployment work.
+The repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery`, and `apps/api`, plus shared `packages/brand` and `packages/portal`. All three dashboards use React/Vite/TypeScript, Arabic RTL, HTML5 path routing, and tab-scoped `sessionStorage` sessions.
 
 ## Resolving changes
 
@@ -73,6 +71,9 @@ The agreed repository layout is `apps/restaurant`, `apps/admin`, `apps/delivery`
 4. Update implementation status and checks. All unimplemented features must remain labeled as planned.
 5. Run `npm run docs:check`; keep endpoint method/path inventories aligned in the two API documents.
 
+- [Global mobile search](SEARCH.md): `GET /api/v1/search` parameters, all response/error examples, Arabic normalization, and mobile integration tips.
+- [Global home offers feed](OFFERS-FEED.md): `GET /api/v1/offers` pagination, smart composite ranking algorithm, restaurant diversity, and response examples.
+- [Push notifications (FCM)](NOTIFICATIONS.md): Firebase HTTP v1 configuration, device token registration, and order push triggers.
 - [Realtime orders](REALTIME.md): Socket.IO connection, permissions, payload and REST recovery.
 - [Admin/Delivery design](PORTAL-DESIGN.md): identity, shared components and checks.
 

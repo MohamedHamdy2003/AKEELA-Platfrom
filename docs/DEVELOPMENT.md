@@ -18,7 +18,7 @@ npm run migration:run
 npm run start:dev
 ```
 
-Run from the repository root. Use an existing PostgreSQL server by changing DATABASE_URL instead of starting Compose. Run the reviewed Feature 01 migration explicitly; never enable automatic schema changes.
+Run from the repository root. Use an existing PostgreSQL server by changing `DATABASE_URL` instead of starting Compose. Run pending reviewed migrations explicitly (`npm run migration:run`); never enable automatic schema changes.
 
 ## Settings
 
@@ -38,20 +38,24 @@ The project-local `.npm-cache/` avoids relying on a writable user-global cache. 
 
 Manual API testing uses [Bruno](BRUNO.md). Real Gmail setup uses [GMAIL.md](GMAIL.md); run `npm run smtp:check` after privately configuring credentials. `npm run bruno:check` validates all numbered collection folders and is included in `npm run check`.
 
-| Command                | Purpose                                                                |
-| ---------------------- | ---------------------------------------------------------------------- |
-| `npm run start:dev`    | Start with file watching; requires PostgreSQL                          |
-| `npm run build`        | Compile API to `apps/api/dist/`                                        |
-| `npm run start:prod`   | Run compiled application; build first                                  |
-| `npm run typecheck`    | Strict application TypeScript check                                    |
-| `npm run lint`         | ESLint without auto-fixes                                              |
-| `npm run format`       | Format foundation code/docs; excludes the four original specifications |
-| `npm run format:check` | Check formatting without changing files                                |
-| `npm test`             | Compile API tests to `apps/api/dist-test/`, then run Node test runner  |
-| `npm run docs:check`   | Check API route parity, JSON examples, and local doc links             |
-| `npm run check`        | All local foundation checks                                            |
+| Command                         | Purpose                                                                      |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `npm run start:dev`             | Start with file watching; requires PostgreSQL                                |
+| `npm run build`                 | Compile API to `apps/api/dist/`                                              |
+| `npm run start:prod`            | Run compiled application; build first                                        |
+| `npm run typecheck`             | Strict application TypeScript check                                          |
+| `npm run lint`                  | ESLint without auto-fixes                                                    |
+| `npm run format`                | Format foundation code/docs; excludes the four original specifications       |
+| `npm run format:check`          | Check formatting without changing files                                      |
+| `npm test`                      | Compile API tests to `apps/api/dist-test/`, then run Node test runner        |
+| `npm run docs:check`            | Check API route parity, JSON examples, and local doc links                   |
+| `npm run check`                 | All repository, API, and frontend (`admin`, `delivery`, `restaurant`) checks |
+| `npm run dev:restaurant`        | Start Restaurant Vite dev server (`:5173`; also `dev:admin`, `dev:delivery`) |
+| `npm run audit:runtime`         | Audit production runtime npm dependencies                                    |
+| `npm run smoke:production`      | Build & verify isolated production Docker/Caddy smoke stack                  |
+| `npm run seed:demo-restaurants` | Seed 5 local demo restaurants into the local `akeela` DB                     |
 
-Unit/bootstrap tests do not open a database. `npm run test:integration` uses the actual Auth APIs with a dedicated local PostgreSQL database and Mailpit. Read `AUTH.md` first: tests intentionally truncate that test database and roll back/reapply migrations. Auth secrets and SMTP/token/OTP/rate-limit settings are described in `AUTH.md` and `apps/api/.env.example`.
+Unit/bootstrap tests do not open a database. `npm run test:integration` runs the full PostgreSQL + Mailpit integration suite across all API features. Read `AUTH.md` first: tests intentionally truncate that test database and roll back/reapply migrations. Auth secrets and SMTP/token/OTP/rate-limit settings are described in `AUTH.md` and `apps/api/.env.example`.
 
 ## Migration workflow
 
@@ -73,7 +77,7 @@ Development commands use TypeScript and dev dependencies. Production uses `npm r
 
 ## Future feature workflow
 
-1. Obtain authorization for the feature; Features 01-16 are already implemented.
+1. Obtain authorization for the feature; Features 01–18 are already implemented.
 2. Read AGENTS and relevant docs; resolve only decisions that block that feature.
 3. Add minimal DTO/service/controller/entity files within the owning module.
 4. Implement database constraints and tested transaction boundaries when schema work is authorized.
@@ -81,6 +85,6 @@ Development commands use TypeScript and dev dependencies. Production uses `npm r
 
 ## Production target
 
-Production is planned on one Hostinger VPS using Docker and Caddy, with backend, database, and primary image files on the same server. Read [DEPLOYMENT.md](DEPLOYMENT.md). Local compose.yml provides PostgreSQL and Mailpit only; never reuse its sample credentials or published database port as production configuration. No production services are started by local setup.
+Production runs on one Hostinger KVM 2 VPS using Docker and Caddy, with backend, PostgreSQL, static frontends, and primary image files on the same server. Read [DEPLOYMENT.md](DEPLOYMENT.md). Local `compose.yml` provides PostgreSQL and Mailpit only; never reuse its sample credentials or published database port as production configuration. No production services are started by local setup.
 
 Repository commands run from the root and delegate to the API workspace. Run npm ci only at the root; no per-app lockfiles. Existing local root .env must be moved to apps/api/.env in older checkouts without overwriting a destination. Read [MONOREPO.md](MONOREPO.md).

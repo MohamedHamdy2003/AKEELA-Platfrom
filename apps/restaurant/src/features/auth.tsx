@@ -190,7 +190,7 @@ export function Auth({
         mode === 'reset'
           ? '/auth/forgot-password'
           : '/auth/resend-verification',
-        { method: 'POST', public: true, body: { email } },
+        { method: 'POST', public: true, body: { email: email.trim() } },
       );
       setCooldown(60);
       setMessage('إذا كان الحساب مؤهلًا، أرسلنا رمزًا جديدًا إلى بريدك.');
@@ -326,11 +326,7 @@ export function Auth({
                     name="otp"
                     value={otp}
                     onChange={(event) =>
-                      setOtp(
-                        normalizeOtpDigits(event.target.value)
-                          .replace(/\D/g, '')
-                          .slice(0, 6),
-                      )
+                      setOtp(normalizeOtpDigits(event.target.value))
                     }
                     inputMode="numeric"
                     pattern="[0-9]{6}"
@@ -541,6 +537,7 @@ export function Auth({
             alt=""
             width={960}
             height={960}
+            loading="lazy"
             decoding="async"
           />
         </picture>

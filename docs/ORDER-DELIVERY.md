@@ -1,6 +1,12 @@
 # Restaurant Orders and Delivery
 
-Features 13 and 14 implement the final twelve routes in the root specifications. No new tables or migrations are needed.
+Features 10, 13, and 14 cover delivery company profiles/drivers, restaurant order handling, Admin monitoring/failure, single-query order counts, and Cairo-windowed analytics.
+
+## Delivery company & drivers (Feature 10)
+
+- The `Delivery` module owns `delivery_company_profiles` and `delivery_drivers`. Admin provisions the `Delivery_Company` account via Feature 02; the company manages its own profile (`GET/PATCH /delivery-company/profile`) and paginated drivers (`GET/POST /delivery-company/drivers`, `PATCH /delivery-company/drivers/:driver_id`).
+- Drivers are never deleted or moved across companies; deactivate them with `is_active: false` instead.
+- Ownership is derived from the authenticated `Delivery_Company` actor (`company_id` is never accepted in request bodies).
 
 ## Setup
 
@@ -35,4 +41,4 @@ Bruno folders 13 and 14 use runtime order_id and driver_id. Log in with the role
 
 ## Tests
 
-Use npm run check and npm run test:integration. Tests use the dedicated local PostgreSQL database and Mailpit only. Coverage includes role/ownership, default-company failures, driver activity/ownership, immutable final states, restaurant suspension, acceptance retries, Cairo day boundaries, concurrent state changes, and idempotent pickup/auto-deliver behaviour. No application database migrations, real account provisioning or deployment are performed.
+Use `npm run check` and `npm run test:integration`. Tests use the dedicated local PostgreSQL database and Mailpit only. Coverage includes role/ownership, default-company failures, driver activity/ownership, immutable final states, restaurant suspension, acceptance retries, Cairo day boundaries, concurrent state changes, counts, analytics, and idempotent pickup/auto-deliver behaviour.

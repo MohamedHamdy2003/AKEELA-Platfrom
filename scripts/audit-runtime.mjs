@@ -39,10 +39,12 @@ if (
     const result = spawnSync(
       process.execPath,
       [process.env.npm_execpath, 'audit', '--omit=dev', '--json'],
-      { encoding: 'utf8', timeout: 120000 },
+      { encoding: 'utf8', timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
     );
     if (result.error || result.signal)
-      throw new Error('npm audit did not complete.');
+      throw new Error(
+        `npm audit did not complete: ${result.error?.message ?? result.signal}`,
+      );
     const review = reviewAudit(JSON.parse(result.stdout));
     if (review.accepted)
       console.log(
@@ -55,8 +57,10 @@ if (
       console.log(
         'Runtime audit passed the approved policy; no other moderate/high/critical advisories.',
       );
-  } catch {
-    console.error('Runtime audit failed or returned an unreadable report.');
+  } catch (error) {
+    console.error(
+      `Runtime audit failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
     process.exitCode = 1;
   }
 }

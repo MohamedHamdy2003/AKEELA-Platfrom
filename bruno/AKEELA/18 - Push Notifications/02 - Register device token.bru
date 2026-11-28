@@ -18,6 +18,12 @@ body:json {
   }
 }
 
+script:post-response {
+  if (res.getStatus() === 200 && res.getBody()?.data?.token_id) {
+    bru.setVar('token_id', res.getBody().data.token_id);
+  }
+}
+
 tests {
   test("Successful response", function () { expect(res.getStatus()).to.equal(200); });
 }

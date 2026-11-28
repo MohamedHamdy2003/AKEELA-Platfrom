@@ -8,8 +8,6 @@ import { Account, NewAccount, Role } from './account.types';
 export interface UserListFilters {
   role?: Role;
   is_active?: boolean;
-  page?: number;
-  per_page?: number;
   skip?: number;
   take?: number;
 }
@@ -86,10 +84,6 @@ export class UsersService {
     };
   }
 
-  async activeVerifiedRestaurantIds(): Promise<string[]> {
-    return this.activeVerifiedIdsByRole('Restaurant');
-  }
-
   async activeVerifiedIdsByRole(role: Role): Promise<string[]> {
     const users = await this.dataSource
       .getRepository(User)
@@ -125,12 +119,13 @@ export class UsersService {
     id: string,
     manager = this.dataSource.manager,
     lock = false,
+    includePassword = false,
   ): Promise<Account | null> {
     const query = manager
       .getRepository(User)
       .createQueryBuilder('u')
-      .addSelect('u.password_hash')
       .where('u.user_id = :id', { id });
+    if (includePassword) query.addSelect('u.password_hash');
     if (lock) query.setLock('pessimistic_write');
     return query.getOne();
   }
@@ -192,89 +187,91 @@ export class UsersService {
     period: { new_customers: number; new_restaurants: number };
     previous: { new_customers: number; new_restaurants: number } | null;
   }> {
-    const repo = this.dataSource.getRepository(User);
-    const [roleRows, unverifiedCount, periodRows, prevRows] = await Promise.all(
-      [
-        repo
-          .createQueryBuilder('u')
-          .select('u.role', 'role')
-          .addSelect('COUNT(*)::int', 'count')
-          .groupBy('u.role')
-          .getRawMany<{ role: Role; count: number }>(),
-        repo
-          .createQueryBuilder('u')
-          .where("u.role = 'Delivery_Company' AND u.email_verified_at IS NULL")
-          .getCount(),
-        since
-          ? repo
-              .createQueryBuilder('u')
-              .select('u.role', 'role')
-              .addSelect('COUNT(*)::int', 'count')
-              .where("u.role IN ('Customer', 'Restaurant')")
-              .andWhere('u.created_at >= :since', { since })
-              .groupBy('u.role')
-              .getRawMany<{ role: Role; count: number }>()
-          : repo
-              .createQueryBuilder('u')
-              .select('u.role', 'role')
-              .addSelect('COUNT(*)::int', 'count')
-              .where("u.role IN ('Customer', 'Restaurant')")
-              .groupBy('u.role')
-              .getRawMany<{ role: Role; count: number }>(),
-        since && prevSince
-          ? repo
-              .createQueryBuilder('u')
-              .select('u.role', 'role')
-              .addSelect('COUNT(*)::int', 'count')
-              .where("u.role IN ('Customer', 'Restaurant')")
-              .andWhere(
-                'u.created_at >= :prevSince AND u.created_at < :since',
-                {
-                  prevSince,
-                  since,
-                },
-              )
-              .groupBy('u.role')
-              .getRawMany<{ role: Role; count: number }>()
-          : Promise.resolve(null),
-      ],
-    );
+    const qb = this.dataSource
+      .getRepository(User)
+      .createQueryBuilder('u')
+      .select('COUNT(*)::int', 'total_users')
+      .addSelect(
+        "COUNT(*) FILTER (WHERE u.role = 'Customer')::int",
+        'customers',
+      )
+      .addSelect(
+        "COUNT(*) FILTER (WHERE u.role = 'Restaurant')::int",
+        'restaurants',
+      )
+      .addSelect(
+        "COUNT(*) FILTER (WHERE u.role = 'Delivery_Company')::int",
+        'delivery_companies',
+      )
+      .addSelect(
+        "COUNT(*) FILTER (WHERE u.role = 'Delivery_Company' AND u.email_verified_at IS NULL)::int",
+        'unverified_companies',
+      );
 
-    const byRole = new Map(roleRows.map((r) => [r.role, Number(r.count)]));
-    const total_users = roleRows.reduce((sum, r) => sum + Number(r.count), 0);
-    const periodMap = new Map(periodRows.map((r) => [r.role, Number(r.count)]));
-    const prevMap = prevRows
-      ? new Map(prevRows.map((r) => [r.role, Number(r.count)]))
-      : null;
+    if (since) {
+      qb.addSelect(
+        "COUNT(*) FILTER (WHERE u.role = 'Customer' AND u.created_at >= :since)::int",
+        'new_customers',
+      )
+        .addSelect(
+          "COUNT(*) FILTER (WHERE u.role = 'Restaurant' AND u.created_at >= :since)::int",
+          'new_restaurants',
+        )
+        .setParameter('since', since);
+    } else {
+      qb.addSelect(
+        "COUNT(*) FILTER (WHERE u.role = 'Customer')::int",
+        'new_customers',
+      ).addSelect(
+        "COUNT(*) FILTER (WHERE u.role = 'Restaurant')::int",
+        'new_restaurants',
+      );
+    }
+
+    if (since && prevSince) {
+      qb.addSelect(
+        "COUNT(*) FILTER (WHERE u.role = 'Customer' AND u.created_at >= :prevSince AND u.created_at < :since)::int",
+        'prev_customers',
+      )
+        .addSelect(
+          "COUNT(*) FILTER (WHERE u.role = 'Restaurant' AND u.created_at >= :prevSince AND u.created_at < :since)::int",
+          'prev_restaurants',
+        )
+        .setParameter('prevSince', prevSince);
+    }
+
+    const row = await qb.getRawOne<{
+      total_users: number;
+      customers: number;
+      restaurants: number;
+      delivery_companies: number;
+      unverified_companies: number;
+      new_customers: number;
+      new_restaurants: number;
+      prev_customers?: number;
+      prev_restaurants?: number;
+    }>();
 
     return {
       totals: {
-        total_users,
-        customers: byRole.get('Customer') ?? 0,
-        restaurants: byRole.get('Restaurant') ?? 0,
-        delivery_companies: byRole.get('Delivery_Company') ?? 0,
-        unverified_companies: unverifiedCount,
+        total_users: Number(row?.total_users ?? 0),
+        customers: Number(row?.customers ?? 0),
+        restaurants: Number(row?.restaurants ?? 0),
+        delivery_companies: Number(row?.delivery_companies ?? 0),
+        unverified_companies: Number(row?.unverified_companies ?? 0),
       },
       period: {
-        new_customers: periodMap.get('Customer') ?? 0,
-        new_restaurants: periodMap.get('Restaurant') ?? 0,
+        new_customers: Number(row?.new_customers ?? 0),
+        new_restaurants: Number(row?.new_restaurants ?? 0),
       },
-      previous: prevMap
-        ? {
-            new_customers: prevMap.get('Customer') ?? 0,
-            new_restaurants: prevMap.get('Restaurant') ?? 0,
-          }
-        : null,
+      previous:
+        since && prevSince
+          ? {
+              new_customers: Number(row?.prev_customers ?? 0),
+              new_restaurants: Number(row?.prev_restaurants ?? 0),
+            }
+          : null,
     };
-  }
-
-  async createAdminProfile(
-    userId: string,
-    manager: EntityManager,
-  ): Promise<void> {
-    await manager
-      .getRepository(AdminProfile)
-      .save(manager.getRepository(AdminProfile).create({ user_id: userId }));
   }
 
   async listUsers(
@@ -291,8 +288,8 @@ export class UsersService {
     if (filters.is_active !== undefined) {
       qb.andWhere('u.is_active = :is_active', { is_active: filters.is_active });
     }
-    const take = filters.take ?? filters.per_page ?? 20;
-    const skip = filters.skip ?? ((filters.page ?? 1) - 1) * take;
+    const take = filters.take ?? 20;
+    const skip = filters.skip ?? 0;
     const [accounts, total] = await qb.skip(skip).take(take).getManyAndCount();
 
     const profiles = await this.resolveProfiles(accounts, manager);

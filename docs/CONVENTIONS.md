@@ -2,7 +2,7 @@
 
 ## Frontend additions
 
-Restaurant uses React/Vite/strict TypeScript in apps/restaurant and shared CSS variables/assets in packages/brand. Keep feature components focused, App as composition, API types independent of backend internals, Arabic labels/RTL native and tokens centralized. Use npm workspaces/root lockfile. Run npm run check:restaurant and its Playwright contract-fixture flows in addition to root check. Browser screenshots/reports stay outside source. See [design system](DESIGN-SYSTEM.md).
+Restaurant, Admin, and Delivery use React/Vite/strict TypeScript in `apps/{restaurant,admin,delivery}`, shared brand tokens/assets in `packages/brand`, and shared HTTP/session/realtime/dialog helpers in `packages/portal`. Keep feature components focused, API types independent of backend internals, and Arabic labels/RTL native. Use npm workspaces and the single root lockfile. Run `npm run check` and each changed app's Playwright flows. Browser screenshots/reports stay outside source. See [design system](DESIGN-SYSTEM.md) and [portal design](PORTAL-DESIGN.md).
 
 ## Code
 
@@ -22,7 +22,7 @@ Restaurant uses React/Vite/strict TypeScript in apps/restaurant and shared CSS v
 - Preserve decimal money/coordinate values as strings in JSON; use decimal-safe arithmetic or PostgreSQL numeric operations, never binary floating point for prices.
 - Do not silently implement every editable field merely because it appears in an example. Apply role-specific allowlists and document ambiguity first.
 - Use 401 for unauthenticated, 403 for role/account/activation denial, and the documented 404/409/422/429 cases. Do not expose SQL, stack traces, hashes, or secrets to clients.
-- Shared HTTP exception handling and explicit success envelopes follow the API contract. Unknown routes use the error envelope too. Features 01-16 are implemented.
+- Shared HTTP exception handling and explicit success envelopes follow the API contract. Unknown routes use the error envelope too. Features 01–18 are implemented.
 
 ## Persistence
 
@@ -51,8 +51,8 @@ Restaurant uses React/Vite/strict TypeScript in apps/restaurant and shared CSS v
 - Do not add tests that merely mirror empty module declarations. Check business behavior only after it is authorized.
 - Run `npm run check` and record what passed and what was not tested. Keep the four business specs unchanged unless needed; update architecture/status alongside technical changes.
 
-Image operations follow [IMAGES.md](IMAGES.md); do not add general uploads or delete old files without a specified policy. Production readiness includes actual PostgreSQL and isolated Caddy TLS/persistence tests, not only Compose syntax.
+Image operations follow [IMAGES.md](IMAGES.md) (including 24-hour orphan WebP cleanup). Production readiness includes actual PostgreSQL and isolated Caddy TLS/persistence tests, not only Compose syntax.
 
 ## Monorepo paths
 
-API code and tests live in `apps/api`; root scripts delegate with the correct working directory. Add dependencies to the owning workspace, shared checks at root. Keep local secrets per app and do not create nested repositories or lockfiles. Frontend placeholders have no code or builds. Follow [MONOREPO.md](MONOREPO.md).
+API code and tests live in `apps/api`; dashboards live in `apps/{restaurant,admin,delivery}`; shared packages live in `packages/{brand,portal}`. Root scripts delegate with the correct working directory. Add dependencies to the owning workspace, shared checks at root. Keep local secrets per app and do not create nested repositories or lockfiles. Follow [MONOREPO.md](MONOREPO.md).

@@ -1,10 +1,12 @@
 vars {
   base_url: http://localhost:3000/api/v1
-  email: {{process.env.API_EMAIL}}
-  password: {{process.env.API_PASSWORD}}
-  new_password: {{process.env.API_NEW_PASSWORD}}
-  phone: {{process.env.API_PHONE}}
-  full_name: {{process.env.API_FULL_NAME}}
-  verification_otp: {{process.env.VERIFICATION_OTP}}
-  reset_otp: {{process.env.RESET_OTP}}
+  email: 
+  phone: 
+  full_name: 
 }
+vars:secret [
+  password,
+  new_password,
+  verification_otp,
+  reset_otp
+]

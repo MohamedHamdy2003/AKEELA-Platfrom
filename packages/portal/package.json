@@ -15,9 +15,11 @@
     "./styles.css": "./src/styles.css",
     "./screens": "./src/screens.tsx",
     "./detail-workspace": "./src/detail-workspace.tsx",
+    "./arabic-date-utils": "./src/arabic-date-utils.ts",
     "./arabic-date-fields": "./src/arabic-date-fields.tsx"
   },
   "dependencies": {
+    "@akeela/brand": "0.1.0",
     "socket.io-client": "4.8.4",
     "react": "19.3.1",
     "lucide-react": "1.73.0"

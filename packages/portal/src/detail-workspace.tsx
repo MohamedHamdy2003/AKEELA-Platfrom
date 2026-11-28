@@ -15,6 +15,7 @@ export function DetailWorkspace({
   title,
   titleBadge,
   onClose,
+  disableClose = false,
   children,
   details,
   eyebrow,
@@ -23,6 +24,7 @@ export function DetailWorkspace({
   title: string;
   titleBadge?: string;
   onClose: () => void;
+  disableClose?: boolean;
   children: ReactNode;
   details: ReactNode;
   eyebrow?: string;
@@ -39,7 +41,11 @@ export function DetailWorkspace({
     setClosing(false);
     if (selectedKey) {
       const active = document.activeElement;
-      if (active instanceof HTMLElement && !pane.current?.contains(active))
+      if (
+        active instanceof HTMLElement &&
+        active !== document.body &&
+        !pane.current?.contains(active)
+      )
         trigger.current = active;
       closeButton.current?.focus({ preventScroll: true });
       if (window.matchMedia('(max-width: 1080px)').matches) {
@@ -53,7 +59,7 @@ export function DetailWorkspace({
   }, [selectedKey]);
 
   const close = () => {
-    if (timer.current || !selectedKey) return;
+    if (timer.current || !selectedKey || disableClose) return;
     setClosing(true);
     const reduced = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
@@ -132,7 +138,7 @@ export function DetailWorkspace({
                 className="admin-detail-close"
                 aria-label={`إغلاق ${title}`}
                 onClick={close}
-                disabled={closing}
+                disabled={closing || disableClose}
               >
                 <X size={18} aria-hidden="true" />
               </button>

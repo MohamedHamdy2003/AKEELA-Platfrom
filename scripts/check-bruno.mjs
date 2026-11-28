@@ -11,8 +11,44 @@ const read = (name) => readFile(path.join(collection, name), 'utf8');
 assert.equal(JSON.parse(await read('bruno.json')).name, 'AKEELA APIs');
 const config = lang.collectionBruToJson(await read('collection.bru'));
 assert.equal(config.auth.bearer.token, '{{access_token}}');
-for (const name of ['Local.bru', 'Production.bru'])
-  lang.bruToEnvJsonV2(await read(`environments/${name}`));
+const expectedBaseUrls = {
+  'Local.bru': 'http://localhost:3000/api/v1',
+  'Production.bru': 'https://api.akeelaonline.tech/api/v1',
+};
+const secretEnvVars = new Set([
+  'password',
+  'new_password',
+  'verification_otp',
+  'reset_otp',
+]);
+for (const [name, expectedBaseUrl] of Object.entries(expectedBaseUrls)) {
+  const env = lang.bruToEnvJsonV2(await read(`environments/${name}`));
+  const vars = new Map(env.variables.map((item) => [item.name, item]));
+  assert.equal(
+    vars.get('base_url')?.value,
+    expectedBaseUrl,
+    `${name} must define base_url=${expectedBaseUrl}`,
+  );
+  for (const item of env.variables) {
+    assert.ok(
+      !String(item.value ?? '').includes('process.env'),
+      `${name} variable ${item.name} must not use process.env placeholders`,
+    );
+    if (secretEnvVars.has(item.name)) {
+      assert.equal(
+        item.secret,
+        true,
+        `${name} sensitive variable ${item.name} must be marked secret`,
+      );
+    } else if (item.name !== 'base_url') {
+      assert.equal(
+        item.value,
+        '',
+        `${name} user-editable variable ${item.name} must be blank in Git`,
+      );
+    }
+  }
+}
 const spec = await readFile(path.join(root, 'AKEELA-Features.md'), 'utf8');
 const sections = new Map(
   spec.split(/^## /m).flatMap((section) => {
@@ -60,6 +96,7 @@ for (const folder of folders) {
     if (value.tests) new Script(value.tests);
     const isPublic =
       route.startsWith('/restaurants') ||
+      route === '/offers' ||
       route === '/search' ||
       route.startsWith('/health/') ||
       (route.startsWith('/auth/') && route !== '/auth/logout');

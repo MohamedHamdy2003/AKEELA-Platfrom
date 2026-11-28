@@ -31,58 +31,50 @@ export async function smokePortals({ docker, port }) {
  INSERT INTO products(rest_id,cat_id,prod_name,price) SELECT rest_id,cat_id,'Smoke Meal',100.00 FROM categories;
  `,
   ]);
-  docker([
-    'up',
-    '-d',
-    '--no-deps',
-    '--force-recreate',
-    '--wait',
-    '--wait-timeout',
-    '90',
-    'api',
-  ]);
+  // api was already recreated with updated SMOKE_CORS_ORIGINS by smoke.mjs.
   const browser = await chromium.launch();
-  // Local smoke certificates are trusted separately by the Node HTTPS checks.
-  const context = await browser.newContext({
-    ignoreHTTPSErrors: true,
-    locale: 'ar-EG',
-    timezoneId: 'Africa/Cairo',
-    viewport: { width: 1440, height: 1000 },
-  });
-  const errors = [];
-  async function call(path, body, token) {
-    const response = await context.request.post(
-      `https://localhost:${port}/api/v1${path}`,
-      {
-        data: body,
-        headers: token ? { Authorization: 'Bearer ' + token } : {},
-      },
-    );
-    const result = await response.json();
-    assert.equal(
-      response.ok(),
-      true,
-      `Real API ${path} failed (${response.status()}): ${result.error?.code}`,
-    );
-    return result.data;
-  }
-  async function open(app, email) {
-    const page = await context.newPage();
-    page.on('pageerror', (error) => errors.push(error.message));
-    page.on('console', (message) => {
-      if (message.type() === 'error') errors.push(message.text());
-    });
-    await page.goto(`https://${app}.localhost:${port}/`);
-    await page.getByLabel('البريد الإلكتروني', { exact: true }).fill(email);
-    await page
-      .getByLabel('كلمة المرور', { exact: true })
-      .fill('SmokeOnlyPassword123');
-    await page
-      .getByRole('button', { name: 'تسجيل الدخول', exact: true })
-      .click();
-    return page;
-  }
+  let context;
   try {
+    // Local smoke certificates are trusted separately by the Node HTTPS checks.
+    context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      locale: 'ar-EG',
+      timezoneId: 'Africa/Cairo',
+      viewport: { width: 1440, height: 1000 },
+    });
+    const errors = [];
+    async function call(path, body, token) {
+      const response = await context.request.post(
+        `https://localhost:${port}/api/v1${path}`,
+        {
+          data: body,
+          headers: token ? { Authorization: 'Bearer ' + token } : {},
+        },
+      );
+      const result = await response.json();
+      assert.equal(
+        response.ok(),
+        true,
+        `Real API ${path} failed (${response.status()}): ${result.error?.code}`,
+      );
+      return result.data;
+    }
+    async function open(app, email) {
+      const page = await context.newPage();
+      page.on('pageerror', (error) => errors.push(error.message));
+      page.on('console', (message) => {
+        if (message.type() === 'error') errors.push(message.text());
+      });
+      await page.goto(`https://${app}.localhost:${port}/`);
+      await page.getByLabel('البريد الإلكتروني', { exact: true }).fill(email);
+      await page
+        .getByLabel('كلمة المرور', { exact: true })
+        .fill('SmokeOnlyPassword123');
+      await page
+        .getByRole('button', { name: 'تسجيل الدخول', exact: true })
+        .click();
+      return page;
+    }
     const admin = await open('admin', 'smoke@example.com');
     await expect(
       admin.getByRole('heading', { name: 'نظرة عامة', exact: true }),
@@ -208,7 +200,7 @@ export async function smokePortals({ docker, port }) {
       'Real frontend/API smoke passed: checkout → Restaurant accept → company driver creation/assignment → pickup → delivery, with live Admin/Restaurant updates over Caddy. No HTTP mocks.',
     );
   } finally {
-    await context.close();
+    if (context) await context.close();
     await browser.close();
   }
 }

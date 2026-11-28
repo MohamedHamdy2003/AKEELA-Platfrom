@@ -12,18 +12,19 @@ Read this file before work. It applies across the repository; app-level `AGENTS.
 
 ## Project map
 
-| Path                                        | Purpose                                                                        |
-| ------------------------------------------- | ------------------------------------------------------------------------------ |
-| `apps/api`                                  | Implemented NestJS modular monolith, PostgreSQL, TypeORM; Features 01-17       |
-| `apps/restaurant`                           | Implemented React/Vite Restaurant frontend; `restaurant.akeelaonline.tech`     |
-| `apps/admin`                                | Implemented Admin frontend; `admin.akeelaonline.tech`                          |
-| `apps/delivery`                             | Implemented Delivery_Company dispatcher frontend; `delivery.akeelaonline.tech` |
-| `docs/frontend`                             | Per-app screens, APIs, permissions and unsupported features                    |
-| `AKEELA-*.md` at root                       | Canonical data, features, request/response and role-flow specifications        |
-| `bruno/AKEELA`                              | Implemented API request collection                                             |
-| `deploy`, root Compose, `.github/workflows` | Docker/Caddy, VPS preparation and CI/CD                                        |
+| Path                                        | Purpose                                                                                        |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `apps/api`                                  | Implemented NestJS modular monolith, PostgreSQL, TypeORM; Features 01–18, search & offers feed |
+| `apps/restaurant`                           | Implemented React/Vite Restaurant frontend; `restaurant.akeelaonline.tech`                     |
+| `apps/admin`                                | Implemented Admin frontend; `admin.akeelaonline.tech`                                          |
+| `apps/delivery`                             | Implemented Delivery_Company dispatcher frontend; `delivery.akeelaonline.tech`                 |
+| `packages/brand`, `packages/portal`         | Shared brand tokens/assets and shared portal HTTP/session/realtime/UI helpers                  |
+| `docs/frontend`                             | Per-app screens, APIs, permissions and unsupported features                                    |
+| `AKEELA-*.md` at root                       | Canonical data, features, request/response and role-flow specifications                        |
+| `bruno/AKEELA`                              | Implemented API request collection                                                             |
+| `deploy`, root Compose, `.github/workflows` | Docker/Caddy, VPS preparation and CI/CD                                                        |
 
-Restaurant is implemented locally; Admin and Delivery are implemented React/Vite dashboards with distinct visual identities. Implement only the app/features authorized by the current task. One Git repository, npm workspaces, one root lockfile; no nested repositories or per-app lockfiles.
+All three dashboards (Restaurant, Admin, Delivery) are implemented React/Vite/TypeScript apps with distinct visual identities and live production hosting on `*.akeelaonline.tech`. Implement only the app/features authorized by the current task. One Git repository, npm workspaces, one root lockfile; no nested repositories or per-app lockfiles.
 
 ## Read on demand
 
@@ -33,7 +34,7 @@ Restaurant is implemented locally; Admin and Delivery are implemented React/Vite
 | HTTP integration                                    | Common rules + relevant numbered sections in [Features](AKEELA-Features.md), matching sections/models in [Requests/Responses](AKEELA-Responses-Requests.md), relevant role in [Flows](AKEELA-Flows.md) |
 | Backend changes                                     | `apps/api/AGENTS.md`, [ARCHITECTURE](docs/ARCHITECTURE.md), [CONVENTIONS](docs/CONVENTIONS.md), owning module in [MODULES](docs/MODULES.md)                                                            |
 | Auth/session handling                               | [AUTH](docs/AUTH.md), approved decisions in [DECISIONS](docs/DECISIONS.md); [GMAIL](docs/GMAIL.md) only for real SMTP work                                                                             |
-| Order actions/delivery                              | [ORDER-DELIVERY](docs/ORDER-DELIVERY.md); [DELIVERY](docs/DELIVERY.md) for company/drivers; [CART-ORDERS](docs/CART-ORDERS.md) for checkout/cart                                                       |
+| Order actions/delivery                              | [ORDER-DELIVERY](docs/ORDER-DELIVERY.md) (includes Feature 10 company/drivers); [CART-ORDERS](docs/CART-ORDERS.md) for checkout/cart                                                                   |
 | Uploads                                             | [IMAGES](docs/IMAGES.md); deployment guide if changing storage/serving                                                                                                                                 |
 | Schema/constraints                                  | Relevant tables in [DB design](AKEELA-DB-Design.md), [DECISIONS](docs/DECISIONS.md)                                                                                                                    |
 | Docker, Caddy, CI/CD, database connections, hosting | [DEPLOYMENT](docs/DEPLOYMENT.md), [MONOREPO](docs/MONOREPO.md), [DECISIONS](docs/DECISIONS.md)                                                                                                         |
@@ -48,7 +49,7 @@ Restaurant is implemented locally; Admin and Delivery are implemented React/Vite
 - Reuse decisions already approved in the current task/docs. Resolve missing framework, language/RTL and browser-session choices when they affect implementation; continue independent work while awaiting answers. JSON refresh tokens are the current API contract; tab-scoped sessionStorage is approved to survive refresh. localStorage tokens, cookies and cross-subdomain SSO are not approved defaults.
 - Use a configurable API base URL including `/api/v1`. IDs, money and coordinates remain strings; currency is EGP, display time is Africa/Cairo. Backend role/ownership/activation checks remain authoritative.
 - Add the workspace, its actual lint/type/test/build scripts, CI coverage and appropriate Docker/static-build integration with the first implementation. Inspect existing manifests/workflows rather than guessing command names. Frontend sites stay disabled until application, DNS and release configuration are ready.
-- Existing root build/test shortcuts target the API. Root lint currently covers API/scripts. Passing root checks alone does not prove a frontend works; add/run its own checks and verify key UI flows and responsive/error states.
+- Existing root `build`/`test` shortcuts target the API, while `npm run check` runs repo, API, and all three frontend checks (`check:restaurant`, `check:admin`, `check:delivery`). Root `npm run lint` covers API, `packages/portal`, and `scripts`. Always run the changed app's own E2E/checks when modifying UI flows.
 - Shared manifests/lockfile, docs, Caddy and workflows need coordinated review across app tasks. Do not switch a shared checkout underneath another active task or overwrite another app's changes.
 
 ## Safety and change control

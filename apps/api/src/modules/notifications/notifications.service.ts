@@ -98,31 +98,33 @@ export class NotificationsService {
     const saved = await this.db.transaction(async (manager) => {
       const repo = manager.getRepository(DeviceToken);
       const now = new Date();
-      let row = await repo.findOneBy({ fcm_token: input.fcm_token });
-      if (row) {
-        row.user_id = actor.userId;
-        row.session_id = actor.sessionId;
-        row.platform = input.platform;
-        if (input.device_label !== undefined) {
-          row.device_label = input.device_label || null;
-        }
-        row.last_seen_at = now;
-        row = await repo.save(row);
-      } else {
-        row = await repo.save(
-          repo.create({
-            user_id: actor.userId,
-            session_id: actor.sessionId,
-            fcm_token: input.fcm_token,
-            platform: input.platform,
-            device_label: input.device_label ?? null,
-            last_seen_at: now,
-          }),
-        );
-      }
+      const hasLabel = input.device_label !== undefined;
+      const normalizedLabel = hasLabel ? input.device_label || null : null;
+      const [row] = (await manager.query(
+        `INSERT INTO device_tokens (user_id, session_id, fcm_token, platform, device_label, last_seen_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (fcm_token) DO UPDATE SET
+           user_id = EXCLUDED.user_id,
+           session_id = EXCLUDED.session_id,
+           platform = EXCLUDED.platform,
+           device_label = CASE WHEN $7::boolean THEN EXCLUDED.device_label ELSE device_tokens.device_label END,
+           last_seen_at = EXCLUDED.last_seen_at,
+           updated_at = NOW()
+         RETURNING *`,
+        [
+          actor.userId,
+          actor.sessionId,
+          input.fcm_token,
+          input.platform,
+          normalizedLabel,
+          now,
+          hasLabel,
+        ],
+      )) as DeviceToken[];
 
       // Enforce per-user device token cap by pruning oldest excess tokens.
       const userTokens = await repo.find({
+        select: { token_id: true },
         where: { user_id: actor.userId },
         order: { last_seen_at: 'DESC', token_id: 'DESC' },
       });
@@ -132,7 +134,7 @@ export class NotificationsService {
           .map((t) => t.token_id);
         await repo.delete({ token_id: In(excessIds) });
       }
-      return row;
+      return row!;
     });
     return this.serializeToken(saved);
   }
@@ -150,41 +152,24 @@ export class NotificationsService {
     }
   }
 
-  async sendToUsers(
-    userIds: string[],
+  private async pruneDeadTokens(deadTokenIds: string[]): Promise<void> {
+    const repo = this.db.getRepository(DeviceToken);
+    for (let i = 0; i < deadTokenIds.length; i += 500) {
+      await repo
+        .delete({ token_id: In(deadTokenIds.slice(i, i + 500)) })
+        .catch(() => undefined);
+    }
+  }
+
+  private async dispatchTokens(
+    tokens: DeviceToken[],
+    targetedUsers: number,
     payload: PushPayload,
   ): Promise<DispatchSummary> {
-    const uniqueUserIds = [...new Set(userIds.filter(Boolean))];
-    if (!uniqueUserIds.length) {
-      return {
-        fcm_configured: this.fcm.isConfigured,
-        targeted_users: 0,
-        targeted_tokens: 0,
-        sent: 0,
-        failed: 0,
-        pruned_tokens: 0,
-      };
-    }
-
-    const tokens = await this.db
-      .getRepository(DeviceToken)
-      .createQueryBuilder('dt')
-      .innerJoin(
-        'users',
-        'u',
-        'u.user_id = dt.user_id AND u.is_active = true AND u.email_verified_at IS NOT NULL',
-      )
-      .leftJoin('auth_sessions', 's', 's.session_id = dt.session_id')
-      .where('dt.user_id IN (:...userIds)', { userIds: uniqueUserIds })
-      .andWhere(
-        '(dt.session_id IS NULL OR (s.revoked_at IS NULL AND s.expires_at > NOW()))',
-      )
-      .getMany();
-
     if (!tokens.length || !this.fcm.isConfigured) {
       return {
         fcm_configured: this.fcm.isConfigured,
-        targeted_users: uniqueUserIds.length,
+        targeted_users: targetedUsers,
         targeted_tokens: tokens.length,
         sent: 0,
         failed: 0,
@@ -218,20 +203,97 @@ export class NotificationsService {
     );
 
     if (deadTokenIds.length) {
-      await this.db
-        .getRepository(DeviceToken)
-        .delete({ token_id: In(deadTokenIds) })
-        .catch(() => undefined);
+      await this.pruneDeadTokens(deadTokenIds);
     }
 
     return {
       fcm_configured: true,
-      targeted_users: uniqueUserIds.length,
+      targeted_users: targetedUsers,
       targeted_tokens: tokens.length,
       sent,
       failed,
       pruned_tokens: deadTokenIds.length,
     };
+  }
+
+  async sendToUsers(
+    userIds: string[],
+    payload: PushPayload,
+  ): Promise<DispatchSummary> {
+    const uniqueUserIds = [...new Set(userIds.filter(Boolean))];
+    if (!uniqueUserIds.length) {
+      return {
+        fcm_configured: this.fcm.isConfigured,
+        targeted_users: 0,
+        targeted_tokens: 0,
+        sent: 0,
+        failed: 0,
+        pruned_tokens: 0,
+      };
+    }
+
+    const tokens: DeviceToken[] = [];
+    for (let i = 0; i < uniqueUserIds.length; i += 5000) {
+      const batch = await this.db
+        .getRepository(DeviceToken)
+        .createQueryBuilder('dt')
+        .innerJoin(
+          'users',
+          'u',
+          'u.user_id = dt.user_id AND u.is_active = true AND u.email_verified_at IS NOT NULL',
+        )
+        .leftJoin('auth_sessions', 's', 's.session_id = dt.session_id')
+        .where('dt.user_id IN (:...userIds)', {
+          userIds: uniqueUserIds.slice(i, i + 5000),
+        })
+        .andWhere(
+          '(dt.session_id IS NULL OR (s.revoked_at IS NULL AND s.expires_at > NOW()))',
+        )
+        .getMany();
+      tokens.push(...batch);
+    }
+
+    return this.dispatchTokens(tokens, uniqueUserIds.length, payload);
+  }
+
+  private async sendToRole(
+    role: 'Customer' | 'Restaurant' | 'Delivery_Company' | 'Admin',
+    payload: PushPayload,
+  ): Promise<DispatchSummary> {
+    const [{ count }] = (await this.db.query(
+      `SELECT COUNT(*)::int AS count
+       FROM users
+       WHERE role = $1 AND is_active = true AND email_verified_at IS NOT NULL`,
+      [role],
+    )) as [{ count: number }];
+    const targetedUsers = Number(count ?? 0);
+    if (!targetedUsers) {
+      return {
+        fcm_configured: this.fcm.isConfigured,
+        targeted_users: 0,
+        targeted_tokens: 0,
+        sent: 0,
+        failed: 0,
+        pruned_tokens: 0,
+      };
+    }
+
+    const tokens = await this.db
+      .getRepository(DeviceToken)
+      .createQueryBuilder('dt')
+      .innerJoin(
+        'users',
+        'u',
+        'u.user_id = dt.user_id AND u.role = :role AND u.is_active = true AND u.email_verified_at IS NOT NULL',
+        { role },
+      )
+      .leftJoin('auth_sessions', 's', 's.session_id = dt.session_id')
+      .where(
+        '(dt.session_id IS NULL OR (s.revoked_at IS NULL AND s.expires_at > NOW()))',
+      )
+      .getMany();
+
+    return this.dispatchTokens(tokens, targetedUsers, payload);
   }
 
   async notifyOrderEvent(
@@ -425,21 +487,19 @@ export class NotificationsService {
       }
     }
 
-    let targetUserIds: string[];
+    const payload: PushPayload = {
+      title: input.title,
+      body: input.body,
+      data: Object.keys(sanitizedData).length ? sanitizedData : undefined,
+    };
+
     if (input.user_id) {
       const target = await this.users.byId(input.user_id);
       if (!target) {
         throw new ApiError(404, 'NOT_FOUND', 'Target user not found.');
       }
-      targetUserIds = [target.user_id];
-    } else {
-      targetUserIds = await this.users.activeVerifiedIdsByRole(input.role!);
+      return this.sendToUsers([target.user_id], payload);
     }
-
-    return this.sendToUsers(targetUserIds, {
-      title: input.title,
-      body: input.body,
-      data: Object.keys(sanitizedData).length ? sanitizedData : undefined,
-    });
+    return this.sendToRole(input.role!, payload);
   }
 }

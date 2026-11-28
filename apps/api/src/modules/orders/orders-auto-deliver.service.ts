@@ -72,30 +72,22 @@ export class OrdersAutoDeliverService implements OnModuleInit, OnModuleDestroy {
 
       for (const order of stale) {
         try {
-          const updated = await this.db.transaction(
-            'SERIALIZABLE',
-            async (m) => {
-              const locked = await m
-                .getRepository(Order)
-                .createQueryBuilder('o')
-                .where('o.order_id = :id', { id: order.order_id })
-                .andWhere("o.status = 'Picked_Up'")
-                .andWhere('o.updated_at <= :cutoff', { cutoff })
-                .setLock('pessimistic_write')
-                .getOne();
-              if (!locked) return false; // already transitioned by another operation
-              locked.status = 'Delivered';
-              await m.getRepository(Order).save(locked);
-              return true;
-            },
-          );
-          if (!updated) continue;
-          // Reload fresh order to broadcast correct state
-          const fresh = await repo.findOneBy({ order_id: order.order_id });
-          if (fresh) {
-            void this.events.notify('order.updated', fresh);
-            void this.notifications.notifyOrderEvent('order.updated', fresh);
-          }
+          const saved = await this.db.transaction('SERIALIZABLE', async (m) => {
+            const locked = await m
+              .getRepository(Order)
+              .createQueryBuilder('o')
+              .where('o.order_id = :id', { id: order.order_id })
+              .andWhere("o.status = 'Picked_Up'")
+              .andWhere('o.updated_at <= :cutoff', { cutoff })
+              .setLock('pessimistic_write')
+              .getOne();
+            if (!locked) return null; // already transitioned by another operation
+            locked.status = 'Delivered';
+            return m.getRepository(Order).save(locked);
+          });
+          if (!saved) continue;
+          void this.events.notify('order.updated', saved);
+          void this.notifications.notifyOrderEvent('order.updated', saved);
         } catch (err) {
           this.logger.warn(
             `Failed to auto-deliver order ${order.order_id}: ${String(err)}`,
