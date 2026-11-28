@@ -60,6 +60,7 @@ for (const folder of folders) {
     if (value.tests) new Script(value.tests);
     const isPublic =
       route.startsWith('/restaurants') ||
+      route === '/offers' ||
       route === '/search' ||
       route.startsWith('/health/') ||
       (route.startsWith('/auth/') && route !== '/auth/logout');

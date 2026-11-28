@@ -32,6 +32,11 @@ Backend Features 01-17, three browser dashboards and Compose initialization are 
 
 ## Implemented
 
+- **Global Home Page Offers Feed (`GET /api/v1/offers`, 2026-11-28, dev-only)**:
+  - **Smart Ranking & Diversity API (`CatalogModule`, 96 routes / 41 Customer Swagger operations)**: Added public paginated `GET /api/v1/offers` (`page`, `per_page`, `limit`, `offset`, optional `open_only=true|false` evaluated in `Africa/Cairo`; `sort` intentionally deferred as a future feature and rejected by DTO whitelist). Ranks offers across all active, verified, approved restaurants with open-restaurant priority (`is_open DESC`), composite 0–100 relevance score (last-30d non-cancelled/rejected/failed demand with 2× last-7d weight up to 45 pts, discount value up to 25 pts, 7-day freshness cold-start boost up to 15 pts, and 48-hour ending-soon urgency up to 15 pts), and per-restaurant diversity round-robin (`ROW_NUMBER() OVER (PARTITION BY is_open, rest_id ...)`).
+  - **Migration & Indexes (`1795100000000-AddPublicOffersFeedIndexes.ts`)**: Added partial indexes `ix_order_items_offer_order` (`order_items(offer_id, order_id) WHERE offer_id IS NOT NULL`) and `ix_offers_public_active_window` (`offers(starts_at, expires_at, rest_id) WHERE is_active = true`) with matching entity `@Index` declarations.
+  - **Docs, Bruno & Integration Suite**: Updated `AKEELA-Features.md`, `AKEELA-Responses-Requests.md`, Swagger/OpenAPI, Bruno folder 09 (`09 - Browse all offers.bru`), `docs/OFFERS-FEED.md`, `docs/README.md`, and PostgreSQL integration tests (`offers-feed.integration.ts`). Kept on `dev` only per owner policy.
+
 - **Full-Project Production Readiness Audit Remediation (2026-11-22, dev-only)**:
   - **Backend Stability, Security, Concurrency & Data Integrity (`apps/api`, 11 migrations)**:
     - Bounded native memory & CPU concurrency via `Semaphore(2)` on `scrypt` (`AuthCryptoService`) and Sharp (`ImagesService` with `sharp.cache(false); sharp.concurrency(1)`, `failOn: 'error'`, and fast read-only ownership/activation pre-checks before decoding or writing to disk).

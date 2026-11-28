@@ -17,6 +17,13 @@ import {
   'starts_at',
   'expires_at',
 ])
+@Index(
+  'ix_offers_public_active_window',
+  ['starts_at', 'expires_at', 'rest_id'],
+  {
+    where: 'is_active = true',
+  },
+)
 @Index('uq_offers_rest_offer', ['rest_id', 'offer_id'], { unique: true })
 @ForeignKey('restaurant_profiles', ['rest_id'], ['rest_id'], {
   name: 'fk_offers_restaurant',

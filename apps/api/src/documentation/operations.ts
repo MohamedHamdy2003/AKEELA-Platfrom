@@ -578,6 +578,15 @@ export const operations: OperationDoc[] = [
   },
   {
     method: 'get',
+    path: '/api/v1/offers',
+    tag: '09. Public Restaurant Menu',
+    summary:
+      'Browse active sale-window offers across all active restaurants, ranked by recent demand, discount value, freshness, urgency, and restaurant diversity.',
+    status: 200,
+    model: 'List<PublicOfferFeedItem>',
+  },
+  {
+    method: 'get',
     path: '/api/v1/delivery-company/profile',
     tag: '10. Delivery Company and Drivers',
     summary: "Read the company's own profile.",
