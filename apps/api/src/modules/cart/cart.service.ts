@@ -27,6 +27,8 @@ export function amount(cents: bigint): string {
 const EMPTY_CART_VIEW: CartView = {
   cart_id: null,
   rest_id: null,
+  rest_title: null,
+  rest_image_url_mobile: null,
   items: [],
   items_subtotal: '0.00',
   addons_subtotal: '0.00',
@@ -142,6 +144,7 @@ export class CartService {
         prod_id: row.prod_id,
         offer_id: row.offer_id,
         item_name: sale.item?.name ?? '',
+        item_image_url: sale.item?.image_url ?? null,
         quantity: row.quantity,
         unit_price: price,
         subtotal: formatMoneyCents(subtotal),
@@ -158,6 +161,8 @@ export class CartService {
       view: {
         cart_id: cart.cart_id,
         rest_id: cart.rest_id,
+        rest_title: status.profile?.rest_title ?? null,
+        rest_image_url_mobile: status.profile?.rest_image_url_mobile ?? null,
         items,
         items_subtotal: formatMoneyCents(itemsTotal),
         addons_subtotal: formatMoneyCents(addonsTotal),

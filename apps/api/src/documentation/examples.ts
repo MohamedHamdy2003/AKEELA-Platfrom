@@ -220,12 +220,15 @@ export const responseExamples: Record<string, unknown> = {
   Cart: {
     cart_id: '70',
     rest_id: '10',
+    rest_title: 'AKEELA Kitchen',
+    rest_image_url_mobile: 'https://example.com/restaurant.jpg',
     items: [
       {
         cart_item_id: '60',
         prod_id: '200',
         offer_id: null,
         item_name: 'Burger',
+        item_image_url: 'https://example.com/burger.jpg',
         quantity: 2,
         unit_price: '100.00',
         subtotal: '200.00',
@@ -250,6 +253,8 @@ export const responseExamples: Record<string, unknown> = {
   EmptyCart: {
     cart_id: null,
     rest_id: null,
+    rest_title: null,
+    rest_image_url_mobile: null,
     items: [],
     items_subtotal: '0.00',
     addons_subtotal: '0.00',
@@ -266,12 +271,15 @@ export const responseExamples: Record<string, unknown> = {
     cart: {
       cart_id: '70',
       rest_id: '10',
+      rest_title: 'AKEELA Kitchen',
+      rest_image_url_mobile: 'https://example.com/restaurant.jpg',
       items: [
         {
           cart_item_id: '60',
           prod_id: '200',
           offer_id: null,
           item_name: 'Burger',
+          item_image_url: 'https://example.com/burger.jpg',
           quantity: 2,
           unit_price: '100.00',
           subtotal: '200.00',

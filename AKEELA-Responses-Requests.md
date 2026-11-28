@@ -598,12 +598,15 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 {
   "cart_id": "70",
   "rest_id": "10",
+  "rest_title": "AKEELA Kitchen",
+  "rest_image_url_mobile": "https://example.com/restaurant.jpg",
   "items": [
     {
       "cart_item_id": "60",
       "prod_id": "200",
       "offer_id": null,
       "item_name": "Burger",
+      "item_image_url": "https://example.com/burger.jpg",
       "quantity": 2,
       "unit_price": "100.00",
       "subtotal": "200.00",
@@ -627,7 +630,7 @@ For Restaurant users, `profile` contains `RestaurantProfile` plus `user_id` and 
 }
 ```
 
-Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` excludes the delivery fee. Names, prices, availability, and totals here are calculated from current catalog data.
+Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` excludes the delivery fee. Restaurant title/image (`rest_title`, `rest_image_url_mobile`), item names/images (`item_name`, `item_image_url` from the product or offer), prices, availability, and totals here are calculated from current catalog data.
 
 ### EmptyCart
 
@@ -635,6 +638,8 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
 {
   "cart_id": null,
   "rest_id": null,
+  "rest_title": null,
+  "rest_image_url_mobile": null,
   "items": [],
   "items_subtotal": "0.00",
   "addons_subtotal": "0.00",
@@ -652,12 +657,15 @@ Item `subtotal` excludes addons. `line_total` includes them. Cart `subtotal` exc
   "cart": {
     "cart_id": "70",
     "rest_id": "10",
+    "rest_title": "AKEELA Kitchen",
+    "rest_image_url_mobile": "https://example.com/restaurant.jpg",
     "items": [
       {
         "cart_item_id": "60",
         "prod_id": "200",
         "offer_id": null,
         "item_name": "Burger",
+        "item_image_url": "https://example.com/burger.jpg",
         "quantity": 2,
         "unit_price": "100.00",
         "subtotal": "200.00",

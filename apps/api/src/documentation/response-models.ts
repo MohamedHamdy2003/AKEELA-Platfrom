@@ -146,6 +146,11 @@ const addonSnapshot = {
 const cart = {
   cart_id: nullableId,
   rest_id: nullableId,
+  rest_title: text(
+    'Current restaurant display name, or null when empty.',
+    true,
+  ),
+  rest_image_url_mobile: url,
   items: array('CartItem'),
   items_subtotal: money,
   addons_subtotal: money,
@@ -339,6 +344,7 @@ export const responseModels: Record<string, SchemaObject> = {
       prod_id: nullableId,
       offer_id: nullableId,
       item_name: text('Current item name.'),
+      item_image_url: url,
       quantity: { ...integer, minimum: 1 },
       unit_price: money,
       subtotal: money,

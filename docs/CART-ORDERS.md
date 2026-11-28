@@ -5,6 +5,7 @@ Features 11 and 12 implement the ten customer routes from the root specification
 ## Confirmed behavior
 
 - Currency: EGP. Initial general delivery fee: 30.00, defined once in cart.types.ts. The Admin endpoint for managing the fee is a future feature.
+- Cart and quote responses include live restaurant metadata (`rest_title`, `rest_image_url_mobile`) and each cart line's live product/offer image (`item_image_url`, resolved from `prod_image_url` or `offer_image_url`, or `null` when unset). Empty carts return `null` for `cart_id`, `rest_id`, `rest_title`, `rest_image_url_mobile`, and `updated_at`.
 - A customer has one cart for one restaurant. Switching requires explicitly clearing it; the server returns 409 rather than clearing it automatically.
 - Matching product/addon choices merge quantities when their per-product addon ratios match. Different addon choices or ratios remain separate. Addon quantities mean total addon units per line.
 - PATCH addons replaces the complete selection. An omitted selection stays unchanged; changing an item quantity with existing addons requires the intended total addon quantities. Quantity zero removes the line.
